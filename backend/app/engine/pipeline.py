@@ -45,6 +45,7 @@ def build_home_with_features(customer: Customer, txs: list[Transaction], balance
         suggestions=plan.suggestions,
         gallery=plan.gallery,
         declared=prefs.declared,
+        tile_grid=prefs.tile_grid,
     ), features
 
 

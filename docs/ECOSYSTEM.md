@@ -87,7 +87,8 @@ Frontend:
 
 | File | What |
 |---|---|
-| `ecosystem/GoalsStrip.tsx` | Top of the home: active goals with a progress ring, what KBC noticed, household invitations |
+| `ecosystem/GoalsScreen.tsx` | The Goals tab: overview, shared-with-you invitations, goals in motion, every available goal (KBC's suggestions first), achieved goals |
+| `ecosystem/RoadmapSheet.tsx` | A goal's roadmap before it starts (preview endpoint), with Approve & start or Not now |
 | `ecosystem/JourneySheet.tsx` | One goal as a checklist: provider, why them, win, result, measured outcomes, stall prompt, invite |
 | `ecosystem/ConsentSheet.tsx` | Approve a step: what the provider will and will not see, for how long, partner choice, what KBC earns |
 | `ecosystem/PassportSheet.tsx` | Consent passport both ways: partners with access to your data, and sources KBC reads, with proof of deletion |
@@ -320,6 +321,7 @@ of their simulated future (§16).
 | Method and path | What |
 |---|---|
 | `GET /api/me/goals` | Candidates, active goals with journeys, household invitations, holdings, all playbooks |
+| `GET /api/me/goals/preview/{playbook_id}` | The roadmap before starting: the steps, partners, data and fees `POST` would set up. Read-only: nothing is stored or shared |
 | `POST /api/me/goals` | Start a goal `{playbook_id}` (detected or stated) |
 | `POST /api/me/goals/{goal_id}/steps/{step_id}` | `{decision: approve \| decline \| reset, partner_id?}` |
 | `POST /api/me/goals/{goal_id}/cancel` | Stop a goal; partners are asked to delete the data |

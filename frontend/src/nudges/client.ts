@@ -1,7 +1,7 @@
-// Nudge endpoints, switching to the in-memory mock with ?mock=1 (like data.ts and ecosystem/client.ts).
+// Nudge endpoints, or with ?mock=1 the demo engine (demo/nudges.ts), like data.ts and ecosystem/client.ts.
 import { call } from "../api";
 import { MOCK } from "../data";
-import { mockNudges } from "./mock";
+import { localNudges } from "../demo/nudges";
 import type { AckResponse, NudgeAck, NudgeStats, NudgesResponse } from "./types";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -14,12 +14,12 @@ function query(asOf?: string, since?: string): string {
   return s ? `?${s}` : "";
 }
 
-export const nudgeApi = {
-  list: (asOf?: string, since?: string): Promise<NudgesResponse> =>
-    MOCK ? mockNudges.list(asOf, since) : call<NudgesResponse>("GET", `/api/me/nudges${query(asOf, since)}`),
+const apiNudges = {
+  list: (asOf?: string, since?: string): Promise<NudgesResponse> => call<NudgesResponse>("GET", `/api/me/nudges${query(asOf, since)}`),
   ack: (key: string, action: NudgeAck, asOf?: string): Promise<AckResponse> =>
-    MOCK ? mockNudges.ack(key, action)
-      : call<AckResponse>("POST", `/api/me/nudges/${encodeURIComponent(key)}/ack${query(asOf)}`, { action }),
-  reset: () => (MOCK ? mockNudges.reset() : call<{ ok: boolean }>("POST", "/api/me/nudges-reset")),
-  stats: (): Promise<NudgeStats> => (MOCK ? mockNudges.stats() : call<NudgeStats>("GET", "/api/ecosystem/nudge-stats")),
+    call<AckResponse>("POST", `/api/me/nudges/${encodeURIComponent(key)}/ack${query(asOf)}`, { action }),
+  reset: (): Promise<{ ok: boolean }> => call<{ ok: boolean }>("POST", "/api/me/nudges-reset"),
+  stats: (): Promise<NudgeStats> => call<NudgeStats>("GET", "/api/ecosystem/nudge-stats"),
 };
+
+export const nudgeApi: typeof apiNudges = MOCK ? localNudges : apiNudges;

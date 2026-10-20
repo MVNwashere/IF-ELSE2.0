@@ -12,7 +12,8 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from .schemas import (CorrectionRow, Customer, DeclaredSignalRow, FeedbackRow, LayoutPrefRow, Prefs,
-                      ProfileFactRow, StylePrefs, SuggestionDismissal, Transaction, default_permissions)
+                      ProfileFactRow, StylePrefs, SuggestionDismissal, TileGridPrefs, Transaction,
+                      default_permissions)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DB_PATH = os.path.abspath(os.path.join(HERE, "..", "kbc.db"))
@@ -108,6 +109,10 @@ CREATE TABLE IF NOT EXISTS profile_permissions (
   allowed INTEGER NOT NULL,
   updated_at TEXT NOT NULL,
   PRIMARY KEY (customer_id, purpose)
+);
+CREATE TABLE IF NOT EXISTS tile_grid (
+  customer_id INTEGER PRIMARY KEY REFERENCES customers(id),
+  data TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY,
@@ -273,7 +278,13 @@ def get_prefs(conn: sqlite3.Connection, customer_id: int) -> Prefs:
         corrections=[CorrectionRow(kind=r["kind"], target=r["target"],
                                    created_at=dt.date.fromisoformat(r["created_at"][:10])) for r in corrections],
         permissions=get_permissions(conn, customer_id),
+        tile_grid=get_tile_grid(conn, customer_id),
     )
+
+
+def get_tile_grid(conn: sqlite3.Connection, customer_id: int) -> TileGridPrefs | None:
+    row = conn.execute("SELECT data FROM tile_grid WHERE customer_id = ?", (customer_id,)).fetchone()
+    return TileGridPrefs.model_validate_json(row["data"]) if row else None
 
 
 def get_permissions(conn: sqlite3.Connection, customer_id: int) -> dict[str, bool]:
@@ -344,8 +355,17 @@ def unpin_heroes(conn: sqlite3.Connection, customer_id: int, heroes: tuple[str, 
     )
 
 
+def set_tile_grid(conn: sqlite3.Connection, customer_id: int, grid: TileGridPrefs) -> None:
+    conn.execute(
+        "INSERT INTO tile_grid (customer_id, data) VALUES (?, ?) "
+        "ON CONFLICT(customer_id) DO UPDATE SET data = excluded.data",
+        (customer_id, grid.model_dump_json(by_alias=True)),
+    )
+
+
 def reset_layout(conn: sqlite3.Connection, customer_id: int) -> None:
     conn.execute("DELETE FROM layout_prefs WHERE customer_id = ?", (customer_id,))
+    conn.execute("DELETE FROM tile_grid WHERE customer_id = ?", (customer_id,))
     conn.execute("DELETE FROM suggestion_dismissals WHERE customer_id = ?", (customer_id,))
 
 

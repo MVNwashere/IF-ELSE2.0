@@ -3,9 +3,12 @@ import ConsentSheet from "./ConsentSheet";
 import JourneySheet from "./JourneySheet";
 import PassportSheet from "./PassportSheet";
 import PlaybooksSheet from "./PlaybooksSheet";
+import RoadmapSheet from "./RoadmapSheet";
+import type { GoalCandidate, PlaybookSummary } from "./types";
 import type { GoalsState } from "./useGoals";
 
 export type EcoSheet =
+  | { kind: "roadmap"; candidate: GoalCandidate | PlaybookSummary }
   | { kind: "journey"; goalId: number }
   | { kind: "consent"; goalId: number; stepId: string }
   | { kind: "passport"; back?: number }
@@ -23,6 +26,9 @@ interface Props {
 export default function EcoSheets({ sheet, goals, asOf, setSheet, startGoal, notify }: Props) {
   const close = () => setSheet(null);
   switch (sheet.kind) {
+    case "roadmap":
+      return <RoadmapSheet candidate={sheet.candidate} busy={goals.busy} onStart={startGoal}
+        onNotNow={() => { if ("why_now" in sheet.candidate) goals.hide(sheet.candidate.playbook_id); close(); }} onClose={close} />;
     case "journey": {
       const goal = goals.goal(sheet.goalId);
       if (!goal) return null;

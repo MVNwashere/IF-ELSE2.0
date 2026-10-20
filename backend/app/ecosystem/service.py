@@ -440,6 +440,41 @@ def start_goal(conn, customer_id: int, playbook_id: str, as_of: dt.date, declare
     return goal_model(conn, store.goal(conn, customer_id, goal_id), as_of)
 
 
+def preview_goal(conn, customer_id: int, playbook_id: str, as_of: dt.date,
+                 declared: list[DeclaredSignalRow]) -> Goal:
+    """The roadmap of a goal before it starts: the same steps, partners, data and fees start_goal would set up, but
+    nothing is stored and no consent is asked. A goal that is already running is returned as it is."""
+    reg = registry()
+    pb = reg.playbooks.get(playbook_id)
+    if not pb:
+        raise EcosystemError(404, "Unknown goal")
+    existing = next((g for g in store.goals(conn, customer_id)
+                     if g["playbook_id"] == playbook_id and g["status"] == "active"), None)
+    if existing:
+        return goal_model(conn, existing, as_of)
+    ctx = context_for(conn, customer_id, as_of)
+    hit = next((d for pid, d in detect(ctx, declared) if pid == playbook_id), None)
+    try:
+        connected = sources.connected_ids(conn, customer_id, as_of)
+    except Exception:  # noqa: BLE001
+        connected = set()
+    demoted = demoted_partners(conn)
+    steps = []
+    for i, s in enumerate(pb.steps):
+        held = bool(set(s.held_if) & ctx.holdings)
+        draft = {"status": "done" if held else "proposed", "already_held": int(held), "ref": "", "grant_id": None,
+                 "updated_at": None, "result": "Already arranged with KBC: nothing to do." if held else ""}
+        steps.append(_step_model(pb, s, i + 1, draft, connected, demoted))
+    return Goal(
+        goal_id=0, playbook_id=pb.id, title=pb.title, icon=pb.icon, tagline=pb.tagline, ecosystems=pb.ecosystems,
+        status="active", created_on=as_of, target_date=as_of + dt.timedelta(days=pb.target_days),
+        origin="detected" if hit else "stated", evidence=hit[1] if hit else ["You set this goal yourself"],
+        progress=Progress(done=sum(1 for s in steps if s.status == "done"), total=len(steps)), steps=steps,
+        outcome=WinTotals(), potential=_potential(pb), next_goal=pb.next_goal,
+        next_goal_title=reg.playbooks[pb.next_goal].title if pb.next_goal in reg.playbooks else None,
+    )
+
+
 def payload_for(step: PlaybookStep, grant_fields: list[str], ctx: CustomerContext) -> dict[str, str]:
     """Data minimisation in code: only fields in the active grant AND in the partner's allowed list leave KBC."""
     allowed = set(registry().partners[step.provider].allowed_fields)

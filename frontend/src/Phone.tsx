@@ -1,25 +1,27 @@
-import { AnimatePresence, LayoutGroup, MotionConfig, motion, type HTMLMotionProps } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion, type HTMLMotionProps } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AccountsZoom, { type ZoomOrigin } from "./accounts/AccountsZoom";
 import { accountsFor } from "./accounts/accounts";
-import { ChevronRight } from "./accounts/glyphs";
 import type {
-  Card, Component, Decision, HomeResponse, KateAction, KateReply, KateTurn, LayoutPrefState, Section, StylePrefs,
+  Card, Component, Decision, HomeResponse, KateAction, KateReply, KateTurn, LayoutPrefState, StylePrefs, TileGridPrefs,
 } from "./api";
 import { NAV_ICONS } from "./components/icons";
+import AccountLogo from "./components/AccountLogo";
 import { resolve } from "./components/registry";
 import type { SectionCtx } from "./components/types";
 import { FEED_PERSONA_LABEL, longDate, PERSONA_LABEL, pct } from "./format";
 import { maskText, PrivacyContext } from "./privacy";
-import { greeting, themeVars } from "./theme";
-import GallerySheet from "./ui/GallerySheet";
+import { themeVars } from "./theme";
+import AboutYouSheet from "./ui/AboutYouSheet";
+import ProfileSheet from "./ui/ProfileSheet";
 import KateSheet, { useKateChat } from "./ui/KateSheet";
 import PersonaliseSheet from "./ui/PersonaliseSheet";
-import ProfileSheet from "./ui/ProfileSheet";
-import SuggestionBanner from "./ui/SuggestionBanner";
+import CardStack from "./feed/CardStack";
+import type { GridTile } from "./feed/tileGrid";
+import { data } from "./data";
 import { eco } from "./ecosystem/client";
 import EcoSheets, { type EcoSheet } from "./ecosystem/EcoSheets";
-import GoalsStrip from "./ecosystem/GoalsStrip";
+import GoalsScreen from "./ecosystem/GoalsScreen";
 import { useGoals } from "./ecosystem/useGoals";
 import "./ecosystem/eco.css";
 import NudgeLayer, { NudgeBell } from "./nudges/NudgeLayer";
@@ -44,42 +46,18 @@ interface Props {
   onRefresh: () => void;
 }
 
-type SheetKind = "gallery" | "style" | "kate" | "profile" | null;
+type SheetKind = "style" | "kate" | "profile" | "about" | null;
+type Tab = "home" | "goals";
 
 const REVEAL_MS = 8000;
-
-/** Movable tiles: the non-hero sections after ForYouFeed. Their index is the `position` the backend expects. */
-function movable(sections: Section[]): Component[] {
-  const feed = sections.findIndex((s) => s.component === "ForYouFeed");
-  return sections.filter((s, i) => i > feed && s.size !== "hero").map((s) => s.component);
-}
-
-function EditBar({ s, pos, count, onMove, onPin, onHide }: {
-  s: Section; pos: number; count: number;
-  onMove: (to: number) => void; onPin: () => void; onHide: () => void;
-}) {
-  const hero = s.size === "hero";
-  return (
-    <div className="edit-bar">
-      {!hero && pos >= 0 && (
-        <>
-          <button type="button" aria-label="Move up" title="Move up" disabled={pos <= 0} onClick={() => onMove(pos - 1)}>↑</button>
-          <button type="button" aria-label="Move down" title="Move down" disabled={pos >= count - 1} onClick={() => onMove(pos + 1)}>↓</button>
-        </>
-      )}
-      {hero && <span className="edit-label">Main tile</span>}
-      <span className="spacer" />
-      <button type="button" className={s.pinned ? "on" : ""} aria-pressed={s.pinned} title={s.pinned ? "Unpin (let it adapt again)" : "Pin here"} onClick={onPin}>📌</button>
-      <button type="button" aria-label="Hide" title="Hide this tile" onClick={onHide}>✕</button>
-    </div>
-  );
-}
 
 export default function Phone(p: Props) {
   const { home, asOf, explain, loading, toast } = p;
   const theme = home.layout.theme;
   const [editing, setEditing] = useState(false);
+  const [gridReset, setGridReset] = useState(0);
   const [sheet, setSheet] = useState<SheetKind>(null);
+  const [tab, setTab] = useState<Tab>("home");
   const [revealed, setRevealed] = useState(false);
   const phoneRef = useRef<HTMLDivElement>(null);
   // Turning "Hide amounts" off and on again must start masked: a reveal never outlives a privacy change.
@@ -112,6 +90,12 @@ export default function Phone(p: Props) {
   }, []);
   const goals = useGoals(asOf, home.customer.first_name, notify);
   const [ecoSheet, setEcoSheetRaw] = useState<EcoSheet | null>(null);
+  useEffect(() => {
+    if (!ecoSheet) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setEcoSheetRaw(null); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [ecoSheet]);
   const setEcoSheet = useCallback((s: EcoSheet | null) => { if (s) setSheet(null); setEcoSheetRaw(s); }, []);
   const { start: startGoalRaw } = goals;
   const startGoal = useCallback(async (playbookId: string): Promise<boolean> => {
@@ -141,7 +125,7 @@ export default function Phone(p: Props) {
       setEcoSheet({ kind: "journey", goalId: id });
       return true;
     }
-    if (action.kind === "open_profile") { setSheet("profile"); return true; }
+    if (action.kind === "open_profile") { setSheet("about"); return true; }
     if (action.kind === "open_passport") { setEcoSheet({ kind: "passport" }); return true; }
     if (action.kind === "revoke_consent") {
       if (action.grant_id == null) return false;
@@ -156,6 +140,7 @@ export default function Phone(p: Props) {
     }
     if (action.kind === "open_card") {
       setSheet(null);
+      setTab("home");
       const key = action.card_key;
       if (key) {
         window.setTimeout(() => {
@@ -186,14 +171,36 @@ export default function Phone(p: Props) {
     chat.start(cardKey ?? null, message);
   }, [chat]);
 
-  const ctx: SectionCtx = { home, asOf, explain, onFeedback: p.onFeedback, onCta, openKate };
+  const ctx: SectionCtx = {
+    home, asOf, explain, onFeedback: p.onFeedback, onCta, openKate,
+  };
   const mix = home.feed_personas?.length
     ? home.feed_personas.map((w) => `${pct(w.weight)} ${FEED_PERSONA_LABEL[w.code] ?? w.code}`).join(" · ")
     : home.persona_mix.map((w) => `${pct(w.weight)} ${PERSONA_LABEL[w.persona] ?? w.persona}`).join(" · ");
   const themeExplain = home.layout.explanations["theme"];
   const initials = home.customer.first_name.slice(0, 1).toUpperCase();
-  const order = movable(home.layout.sections);
-  const suggestion = home.suggestions[0];
+  // Every registered tile can go on the wall. Only tiles the home shows have their data (props); placing another one
+  // pins it through the regular layout endpoint, and the refreshed home brings its data.
+  const personalTiles: GridTile[] = home.gallery
+    .filter((g) => !g.is_hero && g.component !== "ForYouFeed")
+    .flatMap((g) => {
+      const s = home.layout.sections.find((section) => section.component === g.component);
+      const C = resolve(g.component);
+      if (!C) return [];
+      const size = s?.size ?? g.size ?? "half";
+      return [{ id: `widget:${g.component}`, title: g.label, description: g.description,
+        span: size === "half" ? 1 as const : 2 as const, eligible: !!s,
+        content: s ? <C props={s.props} ctx={ctx} /> : <div className="grid-loading">Loading {g.label}…</div> }];
+    });
+  const initialPins = home.layout.sections.filter((s) => s.pinned && s.size !== "hero").map((s) => `widget:${s.component}`);
+  const { onPinAt } = p;
+  const saveGrid = useCallback((grid: TileGridPrefs) => {
+    data.saveTileGrid(grid).catch(() => notify("Your arrangement couldn't be saved. Please try again."));
+  }, [notify]);
+  const placeTile = useCallback((tile: GridTile) => {
+    const component = tile.id.startsWith("widget:") ? tile.id.slice("widget:".length) as Component : null;
+    if (component && !home.layout.sections.some((s) => s.component === component)) onPinAt(component, null);
+  }, [home.layout.sections, onPinAt]);
 
   const revealOnTap = (e: React.MouseEvent) => {
     if (!masked) return;
@@ -236,7 +243,7 @@ export default function Phone(p: Props) {
       w: r.width / k,
       h: r.height / k,
       radius: parseFloat(getComputedStyle(card).borderTopLeftRadius) || 20,
-      variant: card.className,
+      variant: card.classList.contains("account-orb") ? "hero" : card.className,
       stageW: phone.offsetWidth,
       stageH: phone.offsetHeight,
     });
@@ -261,27 +268,19 @@ export default function Phone(p: Props) {
             <div className="phone-top">
               <div className="greet">
                 <div>
-                  <h1>{greeting(theme.tone, home.customer.first_name)}</h1>
+                  <h1>{home.customer.first_name}</h1>
                   <div className="date">{longDate(home.as_of)}</div>
                 </div>
                 <div className="head-tools">
-                  {theme.privacy && (
-                    <button type="button" className="icon-btn" aria-label={masked ? "Show amounts" : "Hide amounts"} title={masked ? "Show amounts for a few seconds" : "Hide amounts"} onClick={() => setRevealed((v) => !v)}>
-                      {masked ? <NAV_ICONS.eye /> : <NAV_ICONS.eyeOff />}
-                    </button>
-                  )}
                   <NudgeBell nudges={nudges} />
-                  <button type="button" className={`icon-btn ${editing ? "on" : ""}`} aria-label="Edit home" title="Edit home" onClick={() => setEditing((v) => !v)}>
-                    <NAV_ICONS.edit />
-                  </button>
-                  <button type="button" className="avatar" aria-label="Personalise" title="Personalise" onClick={() => setSheet("style")}>{initials}</button>
+                  <button type="button" className="avatar" aria-label="Profile" title="Profile" onClick={() => { setEcoSheetRaw(null); setSheet("profile"); }}>{initials}</button>
                 </div>
               </div>
               <AnimatePresence initial={false}>
                 {editing && (
                   <motion.div className="edit-head" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
                     <span>Editing your home</span>
-                    <button type="button" className="link" onClick={p.onLayoutReset}>Reset to adaptive</button>
+                    <button type="button" className="link" onClick={() => { p.onLayoutReset(); setGridReset((v) => v + 1); }}>Reset to adaptive</button>
                     <button type="button" className="btn-primary small" onClick={() => setEditing(false)}>Done</button>
                   </motion.div>
                 )}
@@ -305,90 +304,24 @@ export default function Phone(p: Props) {
 
             {loading && <div className="phone-loading">updating…</div>}
 
-            <div className="phone-scroll" onClickCapture={revealOnTap}>
-              <AnimatePresence initial={false}>
-                {suggestion && !editing && (
-                  <SuggestionBanner key={suggestion.component} suggestion={suggestion} onDecide={p.onSuggestion} />
-                )}
-              </AnimatePresence>
-              {goals.data && !editing && (
-                <GoalsStrip
-                  data={goals.data}
-                  hidden={goals.hidden}
-                  busy={goals.busy}
-                  onOpenGoal={(id) => setEcoSheet({ kind: "journey", goalId: id })}
-                  onStart={(pb) => void startGoal(pb)}
-                  onHide={(pb) => { goals.hide(pb); notify("Okay, not now"); }}
-                  onPlaybooks={() => setEcoSheet({ kind: "playbooks" })}
-                  onPassport={() => setEcoSheet({ kind: "passport" })}
-                  onAnswerInvite={(id, accept) => void goals.answerInvite(id, accept)}
-                />
+            <div className="phone-scroll" onClickCapture={revealOnTap} hidden={tab !== "goals"}>
+              <GoalsScreen data={goals.data} hidden={goals.hidden} busy={goals.busy}
+                onOpenGoal={(id) => setEcoSheet({ kind: "journey", goalId: id })}
+                onPreview={(candidate) => setEcoSheet({ kind: "roadmap", candidate })}
+                onAnswerInvite={(id, accept) => void goals.answerInvite(id, accept)} />
+            </div>
+
+            <div className="phone-scroll" onClickCapture={revealOnTap} hidden={tab !== "home"}>
+              {accounts?.accounts[0] && (
+                <motion.div className={`account-entry${tileHidden ? " tile-hidden" : ""}`} {...tileProps}>
+                  <AccountLogo account={accounts.accounts[0]} />
+                </motion.div>
               )}
-              <LayoutGroup id="home-sections">
-                <div className={`sections ${editing ? "editing" : ""}`}>
-                  <AnimatePresence initial={false} mode="popLayout">
-                    {home.layout.sections.map((s) => {
-                      const C = resolve(s.component);
-                      if (!C) return null;
-                      const why = home.layout.explanations[s.component];
-                      const pos = order.indexOf(s.component);
-                      const tappable = s.size === "hero" && accounts !== null && !editing;
-                      return (
-                        <motion.div
-                          key={s.component}
-                          layout
-                          layoutId={s.component}
-                          className={`section s-${s.size} ${s.pinned ? "pinned" : ""}${tappable ? " tappable" : ""}${tappable && tileHidden ? " tile-hidden" : ""}`}
-                          initial={{ opacity: 0, scale: 0.96, y: 14 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.2 } }}
-                          transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.9 }}
-                          {...(tappable ? tileProps : {})}
-                        >
-                          {editing && s.component !== "ForYouFeed" && (
-                            <EditBar
-                              s={s}
-                              pos={pos}
-                              count={order.length}
-                              onMove={(to) => p.onPinAt(s.component, to)}
-                              onPin={() => (s.pinned ? p.onLayoutPref(s.component, "reset") : p.onPinAt(s.component, pos >= 0 ? pos : null))}
-                              onHide={() => p.onLayoutPref(s.component, "hidden")}
-                            />
-                          )}
-                          {s.pinned && !editing && <span className="pin-badge" title="Pinned by you" aria-label="Pinned">📌</span>}
-                          <C props={s.props} ctx={ctx} />
-                          {tappable && <span className="hero-chevron" aria-hidden="true"><ChevronRight /></span>}
-                          {explain && (
-                            <div className="explain-badge">
-                              <span>{why ? maskText(why, masked) : `${s.component}: no explanation provided.`}</span>
-                              {s.component !== "ForYouFeed" && s.size !== "hero" && (
-                                <span className="tools">
-                                  <button type="button" title="Pin this section" onClick={() => p.onLayoutPref(s.component, "pinned")}>📌</button>
-                                  <button type="button" title="Hide this section" onClick={() => p.onLayoutPref(s.component, "hidden")}>hide</button>
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
-              </LayoutGroup>
-              <AnimatePresence>
-                {editing && (
-                  <motion.button
-                    type="button"
-                    className="add-tile"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    onClick={() => setSheet("gallery")}
-                  >
-                    + Add tile
-                  </motion.button>
-                )}
-              </AnimatePresence>
+              <CardStack cards={home.feed.cards} caughtUp={home.feed.caught_up} hiddenCount={home.feed.hidden_count}
+                asOf={asOf} onFeedback={p.onFeedback} onCta={onCta} onAskKate={(key) => openKate(key)}
+                personalTiles={personalTiles} editing={editing} onEditing={setEditing}
+                initialPins={initialPins} resetVersion={gridReset}
+                savedGrid={home.tile_grid ?? null} onSaveGrid={saveGrid} onPlaceTile={placeTile} />
             </div>
 
             <AnimatePresence
@@ -404,7 +337,7 @@ export default function Phone(p: Props) {
                   view={accounts}
                   home={home}
                   hero={heroSection}
-                  tile={<HeroC props={heroSection.props} ctx={ctx} />}
+                  tile={<AccountLogo account={accounts.accounts[0]} />}
                   onClose={() => setZoom(null)}
                   onReveal={() => setRevealed(true)}
                 />
@@ -422,26 +355,22 @@ export default function Phone(p: Props) {
             <NudgeLayer nudges={nudges} reduceMotion={theme.reduce_motion} onRun={runNudge} />
 
             <nav className="bottom-nav" aria-label="Main navigation">
-              <button type="button" className={sheet !== "kate" ? "active" : ""} onClick={() => setSheet(null)}><NAV_ICONS.home />Home</button>
+              <button type="button" className={sheet !== "kate" && tab === "home" ? "active" : ""} onClick={() => { setTab("home"); setSheet(null); setEcoSheetRaw(null); }}><NAV_ICONS.home />Home</button>
               <button type="button"><NAV_ICONS.pay />Pay</button>
               <button type="button" className={sheet === "kate" ? "active" : ""} onClick={() => openKate()}><NAV_ICONS.kate />Kate</button>
               <button type="button"><NAV_ICONS.cards />Cards</button>
-              <button type="button"><NAV_ICONS.more />More</button>
+              <button type="button" className={sheet !== "kate" && tab === "goals" ? "active" : ""} onClick={() => { setTab("goals"); setSheet(null); setEcoSheetRaw(null); }}><NAV_ICONS.goals />Goals</button>
             </nav>
 
-            <AnimatePresence>
-              {sheet === "gallery" && (
-                <GallerySheet
-                  key="gallery"
-                  gallery={home.gallery}
-                  onAdd={(c) => { p.onPinAt(c, null); setSheet(null); }}
-                  onClose={() => setSheet(null)}
-                />
-              )}
-              {sheet === "style" && <PersonaliseSheet key="style" home={home} onStyle={p.onStyle} onClose={() => setSheet(null)} onPassport={() => setEcoSheet({ kind: "passport" })} onProfile={() => setSheet("profile")} />}
-              {sheet === "profile" && (
-                <ProfileSheet
-                  key="profile"
+            <AnimatePresence mode="wait">
+              {sheet === "profile" && <ProfileSheet key="profile" name={home.customer.first_name} onClose={() => setSheet(null)}
+                onSettings={() => setSheet("style")} onPermissions={() => setEcoSheet({ kind: "passport" })}
+                onAboutYou={() => setSheet("about")}
+                onEdit={() => { setSheet(null); setTab("home"); setEditing(true); }} privacy={theme.privacy} masked={masked}
+                onReveal={() => { setRevealed((v) => !v); setSheet(null); }} />}
+              {sheet === "about" && (
+                <AboutYouSheet
+                  key="about"
                   asOf={asOf}
                   onClose={() => setSheet(null)}
                   onPassport={() => setEcoSheet({ kind: "passport" })}
@@ -449,6 +378,7 @@ export default function Phone(p: Props) {
                   notify={notify}
                 />
               )}
+              {sheet === "style" && <PersonaliseSheet key="style" home={home} onStyle={p.onStyle} onClose={() => setSheet(null)} onPassport={() => setEcoSheet({ kind: "passport" })} />}
               {sheet === "kate" && <KateSheet key="kate" chat={chat} onClose={() => setSheet(null)} />}
               {ecoSheet && !sheet && (
                 <EcoSheets

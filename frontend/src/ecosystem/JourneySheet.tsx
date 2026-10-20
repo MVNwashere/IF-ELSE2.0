@@ -1,11 +1,11 @@
 // One goal as a checklist: every step shows who does it, why them, what it wins, and what came back.
 import { motion } from "framer-motion";
 import { longDate } from "../format";
-import { maskFrac, MaskedText, useEur, useMasked } from "../privacy";
+import { MaskedText, useEur } from "../privacy";
 import Sheet from "../ui/Sheet";
 import { hours, KindBadge, ProductChips, ProgressRing, StatusPill } from "./bits";
 import { useState } from "react";
-import type { Goal, MeasuredOutcome, StallAnswer, Step, WinTotals } from "./types";
+import type { Goal, MeasuredOutcome, StallAnswer, Step } from "./types";
 
 interface Props {
   goal: Goal;
@@ -74,29 +74,6 @@ function Measured({ items }: { items: MeasuredOutcome[] }) {
         ))}
       </ul>
       <div className="eco-assume">Measured from your own transactions after the steps were done. Synthetic data.</div>
-    </div>
-  );
-}
-
-function TripleWin({ outcome, potential }: { outcome: WinTotals; potential: WinTotals }) {
-  const masked = useMasked();
-  const eur = useEur();
-  const rows = [
-    { who: "You", now: `${eur(outcome.customer_eur)} · ${hours(outcome.hours_saved)}`, max: `${eur(potential.customer_eur)} · ${hours(potential.hours_saved)}`, frac: potential.customer_eur + potential.hours_saved > 0 ? (outcome.customer_eur + outcome.hours_saved) / (potential.customer_eur + potential.hours_saved) : 0 },
-    { who: "KBC", now: eur(outcome.kbc_revenue_eur), max: eur(potential.kbc_revenue_eur), frac: potential.kbc_revenue_eur > 0 ? outcome.kbc_revenue_eur / potential.kbc_revenue_eur : 0 },
-    { who: "Partners", now: eur(outcome.partner_fees_eur), max: eur(potential.partner_fees_eur), frac: potential.partner_fees_eur > 0 ? outcome.partner_fees_eur / potential.partner_fees_eur : 0 },
-  ];
-  return (
-    <div className="eco-triple" aria-label="Triple win">
-      <div className="eco-triple-h">Triple win · realised <span>of potential</span></div>
-      {rows.map((r) => (
-        <div key={r.who} className="eco-triple-row">
-          <span className="who">{r.who}</span>
-          <span className="bar"><motion.i initial={{ width: 0 }} animate={{ width: `${Math.round(maskFrac(r.frac, masked) * 100)}%` }} /></span>
-          <span className="val"><b>{r.now}</b> <small>/ {r.max}</small></span>
-        </div>
-      ))}
-      <div className="eco-assume">Illustrative estimates.</div>
     </div>
   );
 }
@@ -201,7 +178,6 @@ export default function JourneySheet({ goal, busy, onReview, onReset, onPassport
       )}
       <Household goal={goal} busy={busy} onInvite={onInvite} />
       <Measured items={measured} />
-      <TripleWin outcome={goal.outcome} potential={goal.potential} />
       <ol className="eco-steps">
         {steps.map((s) => (
           <StepRow key={s.step_id} step={s} busy={busy} onReview={() => onReview(s)} onReset={() => onReset(s)} onConnect={onConnectSource} />

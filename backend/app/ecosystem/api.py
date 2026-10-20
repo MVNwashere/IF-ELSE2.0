@@ -48,6 +48,19 @@ def me_goals(as_of: dt.date | None = Query(default=None),
     return response
 
 
+@router.get("/api/me/goals/preview/{playbook_id}", response_model=Goal)
+def me_preview_goal(playbook_id: str = Path(pattern=r"^[a-z_]{2,40}$"), as_of: dt.date | None = Query(default=None),
+                    user: Principal = Depends(auth.require_customer)) -> Goal:
+    """A goal's roadmap before the customer starts it. Read-only: nothing is stored, nothing is shared."""
+    with db.tx() as conn:
+        at = _as_of(conn, user.customer_id, as_of)
+        declared = db.get_prefs(conn, user.customer_id).declared
+        try:
+            return service.preview_goal(conn, user.customer_id, playbook_id, at, declared)
+        except service.EcosystemError as e:
+            _raise(e)
+
+
 @router.post("/api/me/goals", response_model=Goal)
 def me_start_goal(body: StartGoalRequest, as_of: dt.date | None = Query(default=None),
                   user: Principal = Depends(auth.require_customer)) -> Goal:

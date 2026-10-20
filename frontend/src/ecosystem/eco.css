@@ -68,14 +68,6 @@
 .eco-sheet-title { display: inline-flex; align-items: center; gap: 8px; }
 .eco-journey-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .eco-tagline { font-weight: 700; font-size: .95em; margin-bottom: 2px; }
-.eco-triple { padding: 12px; border-radius: 14px; background: var(--card); border: var(--border-w) solid var(--border); display: flex; flex-direction: column; gap: 6px; }
-.eco-triple-h { font-size: .72em; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
-.eco-triple-h span { font-weight: 500; text-transform: none; letter-spacing: 0; }
-.eco-triple-row { display: grid; grid-template-columns: 62px 1fr auto; align-items: center; gap: 8px; font-size: .8em; }
-.eco-triple-row .who { font-weight: 700; }
-.eco-triple-row .bar { height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
-.eco-triple-row .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-2)); }
-.eco-triple-row .val small { color: var(--muted); }
 .eco-assume { font-size: .68em; color: var(--muted); }
 
 .eco-steps { list-style: none; padding: 0; margin: 16px 0 0; position: relative; }

@@ -37,7 +37,7 @@ from .recommender.feed import recommend
 from .schemas import (
     HERO_COMPONENTS, AdvisorOverview, ConsentRequest, DeclareRequest, FeedbackRequest, FeedPersona, HomeResponse, KateReply,
     KateRequest, LayoutPrefRequest, LoginRequest, LoginResponse, Milestone, StylePrefs, SuggestionRequest,
-    TimelineResponse,
+    TileGridPrefs, TimelineResponse,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -253,6 +253,14 @@ def me_layout_reset(as_of: dt.date | None = Depends(_as_of_param),
     with db.tx() as conn:
         db.reset_layout(conn, user.customer_id)
     return _home(user.customer_id, as_of)
+
+
+@app.put("/api/me/tile-grid")
+def me_tile_grid(body: TileGridPrefs, user: Principal = Depends(auth.require_customer)) -> dict:
+    """How the customer arranged their "For you" wall. Applies at every date, like pins."""
+    with db.tx() as conn:
+        db.set_tile_grid(conn, user.customer_id, body)
+    return {"ok": True}
 
 
 @app.post("/api/me/style", response_model=HomeResponse)

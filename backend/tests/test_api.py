@@ -259,3 +259,36 @@ def test_kate_validation_and_isolation(client):
     assert client.post("/api/me/kate", json={"message": "hi", "card_key": "../etc"}).status_code == 422
     client.cookies.clear()
     assert client.post("/api/me/kate", json={"message": "hi"}).status_code == 401
+
+
+def test_tile_grid_roundtrip_validation_and_reset(client):
+    _as(client, "sara")
+    assert client.get("/api/me/home").json()["tile_grid"] is None
+    grid = {"placements": {"widget:SavingsGoal": {"slot": 2, "span": 1}, "card:core_money": {"slot": 0, "span": 2}},
+            "hidden": ["card:core_spending"], "slotCount": 14}
+    assert client.put("/api/me/tile-grid", json=grid).status_code == 200
+    assert client.get("/api/me/home").json()["tile_grid"] == grid
+    for bad in ({"placements": {"<img>": {"slot": 0, "span": 1}}},                    # unknown id shape
+                {"placements": {"card:x": {"slot": 13, "span": 2}}, "slotCount": 14},  # outside the grid
+                {"placements": {"card:x": {"slot": 0, "span": 3}}},                     # spans are 1 or 2
+                {"slotCount": 100000}):
+        assert client.put("/api/me/tile-grid", json=bad).status_code == 422, bad
+    _as(client, "jan")
+    assert client.get("/api/me/home").json()["tile_grid"] is None                       # per customer
+    _as(client, "sara")
+    client.post("/api/me/layout-reset")
+    assert client.get("/api/me/home").json()["tile_grid"] is None
+    client.cookies.clear()
+    assert client.put("/api/me/tile-grid", json=grid).status_code == 401
+
+
+def test_goal_preview_is_read_only(client):
+    _as(client, "sara")
+    before = client.get("/api/me/goals").json()
+    p = client.get("/api/me/goals/preview/buy_home").json()
+    assert p["playbook_id"] == "buy_home" and p["steps"] and p["goal_id"] == 0
+    assert all(s["status"] in ("proposed", "done") and s["grant_id"] is None for s in p["steps"])
+    after = client.get("/api/me/goals").json()
+    assert [g["goal_id"] for g in after["goals"]] == [g["goal_id"] for g in before["goals"]]
+    assert client.get("/api/me/goals/preview/not_a_goal").status_code == 404
+    assert client.get("/api/me/goals/preview/Buy-Home").status_code == 422

@@ -1,13 +1,14 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Card as CardT, Decision } from "../api";
+import type { Card as CardT, Decision, TileGridPrefs } from "../api";
 import { maskText, MASK_PCT, useEur, useMasked } from "../privacy";
 import Sheet from "../ui/Sheet";
 import { ProductChips } from "../ecosystem/bits";
 import type { ProductRef } from "../ecosystem/types";
 import Card from "./Card";
-import CaughtUp from "./CaughtUp";
+import RecommendationTile, { wideTile } from "./RecommendationTile";
+import HomeTileGrid from "./HomeTileGrid";
+import type { GridTile } from "./tileGrid";
 
 interface Props {
   cards: CardT[];
@@ -17,11 +18,19 @@ interface Props {
   onFeedback: (card: CardT, decision: Decision) => void;
   onCta: (action: string, card?: CardT) => void;
   onAskKate: (cardKey: string) => void;
+  personalTiles?: GridTile[];
+  editing?: boolean;
+  onEditing?: (value: boolean) => void;
+  initialPins?: string[];
+  resetVersion?: number;
+  savedGrid?: TileGridPrefs | null;
+  onSaveGrid?: (prefs: TileGridPrefs) => void;
+  onPlaceTile?: (tile: GridTile) => void;
 }
 
 type DetailCard = Pick<CardT, "card_key" | "card_type" | "title" | "body" | "evidence" | "details">;
 
-export default function CardStack({ cards, caughtUp, hiddenCount, asOf, onFeedback, onCta, onAskKate }: Props) {
+export default function CardStack({ cards, asOf, onFeedback, onCta, onAskKate, personalTiles = [], editing = false, onEditing = () => {}, initialPins = [], resetVersion = 0, savedGrid = null, onSaveGrid = () => {}, onPlaceTile }: Props) {
   const [active, setActive] = useState<{ title: string; body: string; card?: DetailCard } | null>(null);
   const [target, setTarget] = useState(0);
   const [monthly, setMonthly] = useState(0);
@@ -40,45 +49,33 @@ export default function CardStack({ cards, caughtUp, hiddenCount, asOf, onFeedba
   useEffect(() => { setActive(null); }, [asOf]);
   const monthsToTarget = planner?.kind === "savings" && monthly > 0
     ? Math.ceil(Math.max(0, target - planner.current) / monthly) : null;
+  const cardTiles: GridTile[] = cards.map((c) => ({
+    id: `card:${c.card_key}`, cardKey: c.card_key, title: maskText(c.title, masked),
+    description: maskText(c.body, masked), span: wideTile(c) ? 2 : 1, eligible: true,
+    content: <RecommendationTile card={c} onOpen={() => setActive({ title: c.title, body: c.body, card: c })} />,
+  }));
+  const tiles: GridTile[] = [
+    ...cardTiles, ...personalTiles,
+  ];
   return (
-    <div className="feed">
-      <div className="feed-head">
-        <h2>For you</h2>
-        <span>{cards.length} {cards.length === 1 ? "item" : "items"}</span>
-      </div>
-      <AnimatePresence initial={false} mode="popLayout">
-        {cards.map((c) => (
-          <motion.div
-            key={c.card_key}
-            layout
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -80, scale: 0.96, transition: { duration: 0.22 } }}
-            transition={{ type: "spring", stiffness: 380, damping: 32 }}
-          >
-            <Card card={c} asOf={asOf} onFeedback={onFeedback} onCta={onCta} onAskKate={onAskKate}
-              onOpen={() => setActive({ title: c.title, body: c.body, card: c })} />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-      {(caughtUp || cards.length === 0) && (
-        <motion.div layout key="caught-up">
-          <CaughtUp hiddenCount={hiddenCount} empty={cards.length === 0} />
-        </motion.div>
-      )}
+    <>
+      <HomeTileGrid tiles={tiles} editing={editing} onEditing={onEditing} initialPins={initialPins} resetVersion={resetVersion}
+        saved={savedGrid} onSave={onSaveGrid} onPlace={onPlaceTile} />
       {active && phone && createPortal(
         <Sheet title={maskText(active.title, masked)} onClose={() => setActive(null)} full>
           <div className="feed-detail">
-            <p>{maskText(active.body, masked)}</p>
+            {(() => {
+              const full = cards.find((c) => c.card_key === active.card?.card_key);
+              return full ? <Card card={full} asOf={asOf}
+                onFeedback={(card, decision) => { setActive(null); onFeedback(card, decision); }}
+                onCta={(action, card) => { setActive(null); onCta(action, card); }}
+                onAskKate={(key) => { setActive(null); onAskKate(key); }}
+                onOpen={() => document.querySelector(".feed-detail-metrics")?.scrollIntoView({ behavior: "smooth", block: "nearest" })} />
+                : <p>{maskText(active.body, masked)}</p>;
+            })()}
             {Array.isArray(active.card?.details?.products) && (active.card.details.products as ProductRef[]).length > 0 && (
               <ProductChips products={active.card.details.products as ProductRef[]} />
             )}
-            {(() => {
-              const full = cards.find((c) => c.card_key === active.card?.card_key);
-              return full?.cta?.action === "start_goal" && typeof full.details?.playbook_id === "string" ? (
-                <button type="button" className="btn-primary" onClick={() => { setActive(null); onCta("start_goal", full); }}>{maskText(full.cta.label, masked)}</button>
-              ) : null;
-            })()}
             {Array.isArray(metrics) && metrics.length > 0 && (
               <div className="feed-detail-metrics">
                 {(metrics as { label: string; value: number }[]).map((row, i) => (
@@ -116,6 +113,6 @@ export default function CardStack({ cards, caughtUp, hiddenCount, asOf, onFeedba
             </>}
           </div>
         </Sheet>, phone)}
-    </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { componentLabel } from "./format";
 import { AUTO_STYLE } from "./ui/PersonaliseSheet";
 import { data, MOCK, profileData } from "./data";
 import ControlPanel from "./demo/ControlPanel";
+import { STORAGE_KEY as DEMO_STORAGE_KEY } from "./demo/store";
 import Login from "./Login";
 import EcosystemConsole from "./ecosystem/EcosystemConsole";
 import Phone from "./Phone";
@@ -14,10 +15,15 @@ interface Session { role: "customer" | "advisor"; username: string }
 
 const DEMO_PASSWORD = "demo";
 
-/** Per-user browser storage must not survive a customer change. The app owns this origin, so clear it all. */
+/** Per-user browser storage must not survive a customer change. The app owns this origin, so clear it all, except,
+ * with ?mock=1, the demo engine's own store: there it plays the backend's role. */
 function clearClientStorage(): void {
   try { window.sessionStorage.clear(); } catch { /* storage blocked */ }
-  try { window.localStorage.clear(); } catch { /* storage blocked */ }
+  try {
+    const keep = MOCK ? window.localStorage.getItem(DEMO_STORAGE_KEY) : null;
+    window.localStorage.clear();
+    if (keep !== null) window.localStorage.setItem(DEMO_STORAGE_KEY, keep);
+  } catch { /* storage blocked */ }
 }
 
 export default function App() {

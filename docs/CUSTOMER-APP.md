@@ -264,9 +264,10 @@ The home stays adaptive by default. Customisation is a sparse layer of overrides
 | Pin a hero | It stays the main tile. Only one hero can be pinned; pinning another releases the first. | same |
 | Hide a tile | The tile is left out of the layout and never suggested. | same, `state: hidden` |
 | Unpin / unhide | `state: reset` removes the preference; the tile adapts again. | same |
-| Reset to adaptive | Removes all pins, hides and suggestion dismissals. | `POST /api/me/layout-reset` |
+| Arrange the wall | Drag tiles and feed cards to any spot of the For you wall, remove them, add rows. Stored as one arrangement per customer and applied at every date. | `PUT /api/me/tile-grid` |
+| Reset to adaptive | Removes all pins, hides, suggestion dismissals and the wall arrangement. | `POST /api/me/layout-reset` |
 | Tile gallery | `HomeResponse.gallery`: every tile with label, description, score, state (shown, available, hidden) and the same reason Explain mode gives. The top 3 available tiles are marked suggested. Adding a tile pins it to the first free slot. | `POST /api/me/layout-prefs` |
-| Suggestions | Up to 2 at a time (see below). Accept = pin (as hero if it is one). "Not now" = snoozed 90 days. | `POST /api/me/suggestion` |
+| Suggestions | Up to 2 at a time (see below). Accept = pin (as hero if it is one). "Not now" = snoozed 90 days. The current home does not show them (the wall marks auto-placed tiles "Suggested" instead); the API still returns them. | `POST /api/me/suggestion` |
 | Style | Density, contrast, tone, appearance (light/dark), accent, reduce motion, hide amounts. `null` = Auto. The theme lists the keys the customer set in `overrides`, and the theme explanation starts with "You chose …". | `POST /api/me/style` |
 | Declared signals | "We're expecting", "I'm going freelance", "I'm retiring", "I'm studying". Changes both persona models. `state: clear` removes one. | `POST /api/me/declare` |
 | Card feedback | Dismiss, snooze (7 days), less like this, accept; `reset` clears all feedback. | `POST /api/me/feedback` |
@@ -411,6 +412,7 @@ customer from the session; there are no customer ids in customer URLs. Mutations
 | POST | `/api/me/suggestion` | `{component, decision: accept\|dismiss}` | `HomeResponse` |
 | POST | `/api/me/declare` | `{signal, state: set\|clear}` | `HomeResponse` |
 | POST | `/api/me/kate` | `{message ≤ 500, card_key?, history ≤ 12 turns}` | `KateReply {reply, actions, quick_replies, source}` |
+| PUT | `/api/me/tile-grid` | `{placements: {id: {slot, span: 1\|2}}, hidden: [id], slotCount}` (ids `card:<card_key>` or `widget:<Component>`) | `{ok}`; returned as `HomeResponse.tile_grid`, cleared by layout-reset |
 | GET | `/api/me/profile` | – | `ProfileResponse` |
 | PUT | `/api/me/profile/facts/{key}` | `{value, via: you\|kate}` | `ProfileResponse` (422 invalid value, 403 `via: kate` with memory off) |
 | DELETE | `/api/me/profile/facts/{key}` | – | `ProfileResponse` |
@@ -426,7 +428,8 @@ The goals, consent, sources, nudges, partner webhook and ecosystem console endpo
 
 `HomeResponse` fields: `as_of`, `customer` (first name, language, consent), `persona_mix`, `feed_personas`, `layout`
 (`theme`, `sections[{component, size, props, pinned}]`, `explanations`), `feed` (`cards`, `caught_up`,
-`hidden_count`), `generated_at`, `llm_copy` (always false), `style`, `suggestions`, `gallery`, `declared`. A `Card`
+`hidden_count`), `generated_at`, `llm_copy` (always false), `style`, `suggestions`, `gallery` (each item with its
+`size`), `declared`, `tile_grid` (the customer's arrangement of the For you wall, or null). A `Card`
 has `card_key`, `card_type`, `family`, `stage`, `title`, `body`, `eur_impact`, `due_date`, `confidence`,
 `commercial`, `evidence`, `rank_explanation`, `score`, `cta` and `details`.
 
@@ -454,30 +457,37 @@ traversal. The OpenAPI docs are switched off.
 
 ## Frontend (`frontend/src/`)
 
-React 19 + TypeScript + Vite, with Framer Motion for the layout morphs. In development Vite proxies `/api` to port
-8000. With `?mock=1` the UI runs without a backend on fixtures (`data.ts`, `ecosystem/mock.ts`, `nudges/mock.ts`).
+React 19 + TypeScript + Vite, with Framer Motion. In development Vite proxies `/api` to port 8000. With `?mock=1`
+(or `npm run dev:mock`) the same UI runs on the demo engine in `demo/` instead: bundled fixtures per demo customer
+(`demo-data/customers.json`) and browser-local state (`demo/store.ts`), behind the same interfaces (`data.ts`,
+`ecosystem/client.ts`, `nudges/client.ts`). Design decisions behind the home: [FRONTEND-DECISIONS.md](FRONTEND-DECISIONS.md).
 
 | Part | File(s) | What it does |
 |---|---|---|
 | Shell | `App.tsx` | Session check, login, customer switching, all mutations. An advisor login shows `EcosystemConsole` instead of the phone. |
 | Demo panel | `demo/ControlPanel.tsx` | Customer switcher, time slider with milestone ticks (snaps near a milestone), Explain mode, consent switch, reset feedback, and the ecosystem controls (reset goals, play and reset nudges). |
-| Phone | `Phone.tsx`, `PhoneScaler.tsx` | Renders the layout spec. Each section is a `motion.div` with `layoutId={component}`, so a new spec animates into the new arrangement. Bottom nav: Home, Kate (Pay, Cards and More are placeholders). |
+| Phone | `Phone.tsx`, `PhoneScaler.tsx` | Top bar (name, date, notifications, Profile), the KBC logo with the primary account inside the ball (`components/AccountLogo.tsx`, opens the accounts screen), and the For you wall. Bottom nav: Home, Kate, Goals (Pay and Cards are placeholders). |
+| For you wall | `feed/CardStack.tsx`, `feed/HomeTileGrid.tsx`, `feed/tileGrid.ts`, `feed/RecommendationTile.tsx`, `home.css` | One grid of feed cards (`card:<key>`) and home tiles (`widget:<Component>`), each a whole multiple of a square unit. Edit mode: drag a tile onto any spot, remove it (×), tap a free spot to place one, add rows. The arrangement is saved with `PUT /api/me/tile-grid`; placing a tile the home doesn't show yet pins it through layout-prefs so its data loads. |
+| Goals tab | `ecosystem/GoalsScreen.tsx`, `ecosystem/RoadmapSheet.tsx` | Overview, goals shared with you (join or decline), goals in motion, every available goal (KBC's suggestions first) and achieved goals. Tapping one opens its roadmap (`GET /api/me/goals/preview/{id}`) with Approve & start or Not now. |
 | Registry | `components/registry.tsx`, `components/*.tsx` | Component name → React component. Unknown names are logged once and skipped. |
 | Theme | `theme.ts` | Density, tone, contrast, appearance and accent → CSS variables on the phone. |
 | Feed | `feed/Card.tsx`, `feed/CardStack.tsx`, `feed/CaughtUp.tsx` | Swipe left to dismiss; a menu for snooze and "show me less"; ⓘ opens "Why am I seeing this?" with the evidence; "Ask Kate"; a detail sheet with metrics, savings planner, related cards and linked journey products. |
-| Edit home | `Phone.tsx` (edit mode), `ui/GallerySheet.tsx`, `ui/SuggestionBanner.tsx` | Move tiles up and down (pins them at that slot), pin, unpin, hide, "+ Add tile" from the gallery, accept or dismiss a suggestion. |
+| Profile | `ui/ProfileSheet.tsx` | The hub behind the avatar: Settings & appearance, What KBC knows about you, Permissions & data (consent passport), Edit home, show/hide amounts. |
 | Personalise | `ui/PersonaliseSheet.tsx`, `privacy.tsx` | Style settings with Auto, "Reset all to Auto". Hidden amounts show as `€ ••••` and are revealed for 8 seconds on tap. |
 | Kate | `ui/KateSheet.tsx` | Chat with quick replies and action buttons. A tapped action runs through the same handlers as the rest of the app. |
-| My profile | `ui/ProfileSheet.tsx`, `data.ts` (`profileData`) | The three layers and the purpose switches; every change reloads the home screen. Opened from Personalise or by Kate. |
+| What KBC knows about you | `ui/AboutYouSheet.tsx`, `data.ts` (`profileData`) | The customer profile: three layers and the purpose switches; every change reloads the home screen. Opened from the Profile hub or by Kate. |
 | Advisor profile view | `ecosystem/AdvisorProfilePanel.tsx` | In the ecosystem console: one demo customer's profile, or a notice when they haven't shared it. |
 | Accounts | `accounts/` | Tapping the hero opens an accounts screen. Until the backend sends `accounts` on the hero (see [COMPONENT-PROPS.md](COMPONENT-PROPS.md)), it derives clearly labelled demo accounts and bookings from the home data. |
-| Explain mode | `Phone.tsx` | A header with the feed persona mix and the theme explanation; a badge with its explanation on every section. |
+| Explain mode | `Phone.tsx` | A header with the feed persona mix and the theme explanation. |
+| Demo engine | `demo/` (`data.ts`, `ecosystem.ts`, `nudges.ts`, `profile.ts`, `store.ts`), `demo-data/` | Backend-free mode for `?mock=1`. Signing in or switching customers keeps its store (it plays the backend's role); everything else in browser storage is cleared as usual. |
+| UI tests | `tests/demo-mode.spec.ts`, `playwright.config.ts` | `npm test`: Playwright against the demo engine (fails on any `/api` request). |
 
 ## How the app surfaces the ecosystem
 
 - **Feed cards** link to a goal journey (`details.playbook_id`); the CTA "Let KBC take care of it" starts it.
-- **Goals strip** on the home screen: detected goals ("KBC noticed…"), running journeys, household invites, and links to
-  all playbooks and the consent passport (`ecosystem/GoalsStrip.tsx`, `JourneySheet.tsx`, `PassportSheet.tsx`).
+- **Goals tab**: detected goals ("Suggested for you"), every other goal, running and achieved journeys, household
+  invites; each goal opens its roadmap first (`ecosystem/GoalsScreen.tsx`, `RoadmapSheet.tsx`, `JourneySheet.tsx`).
+  The consent passport opens from Profile → Permissions & data (`PassportSheet.tsx`).
 - **Kate** offers, starts and opens goals (`start_goal`, `open_goal`) and answers deadline and forecast questions.
 - **Nudges** appear as a lock-screen banner and an inbox; their actions run through Kate's action handlers
   (`nudges/NudgeLayer.tsx`).

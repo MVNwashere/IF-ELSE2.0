@@ -817,7 +817,7 @@ def plan_gallery(scores: dict[str, float], reasons: dict[str, str], order: list[
         reason = "" if state == "hidden" else _explain(comp, ctx, reasons, False)
         items.append(GalleryItem(component=comp, label=label, description=desc,
                                  reason=reason, score=round(scores[comp], 3),
-                                 state=state, is_hero=comp in HERO_COMPONENTS))
+                                 state=state, is_hero=comp in HERO_COMPONENTS, size=SIZE[comp]))
     for item in [i for i in items if i.state == "available"][:3]:
         item.suggested = True
     return items

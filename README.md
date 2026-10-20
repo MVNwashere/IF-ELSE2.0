@@ -54,8 +54,11 @@ npm install
 npm run dev            # http://localhost:5173 (proxies /api to :8000)
 ```
 
-Or run `npm run build` and let the backend serve the app at http://localhost:8000. A standalone UI without a backend
-runs at http://localhost:5173/?mock=1.
+Or run `npm run build` and let the backend serve the app at http://localhost:8000.
+
+Without a backend: `npm run dev:mock` (http://127.0.0.1:5175), or any URL with `?mock=1`. The app then runs on its
+demo engine (`frontend/src/demo/`): bundled fixtures for lotte, sara, jan, marc and the advisor (password `demo`), with
+choices saved in the browser. `npm test` runs the Playwright UI tests against that mode.
 
 To rebuild the synthetic data explicitly: `py -3.12 -m synth.generate --n 1000 --seed 42` (or delete
 `backend/kbc.db`).

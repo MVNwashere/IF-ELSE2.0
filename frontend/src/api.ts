@@ -78,6 +78,7 @@ export interface GalleryItem {
   suggested: boolean;
   state: "shown" | "available" | "hidden";
   is_hero: boolean;
+  size?: Size;                    // when shown; older fixtures leave it out
 }
 export interface DeclaredSignalRow { signal: DeclaredSignal; created_at: string }
 export interface Layout { version: number; theme: Theme; sections: Section[]; explanations: Record<string, string> }
@@ -96,6 +97,13 @@ export interface HomeResponse {
   suggestions: TileSuggestion[];
   gallery: GalleryItem[];
   declared: DeclaredSignalRow[];
+  tile_grid?: TileGridPrefs | null;   // the For you wall as arranged by the customer; null: never arranged
+}
+/** The For you wall (feed/tileGrid.ts). Tile ids are "card:<card_key>" or "widget:<Component>". */
+export interface TileGridPrefs {
+  placements: Record<string, { slot: number; span: 1 | 2 }>;
+  hidden: string[];
+  slotCount: number;
 }
 
 // ---- Kate ----
@@ -254,4 +262,7 @@ export const api = {
   revokeConsent: (grantId: number) => call<ConsentsResponse>("POST", `/api/me/consents/${encodeURIComponent(grantId)}/revoke`),
   goalsReset: () => call<{ ok: boolean }>("POST", "/api/me/goals-reset"),
   ecosystemOverview: () => call<EcosystemOverview>("GET", "/api/ecosystem/overview"),
+  previewGoal: (playbook_id: string, asOf?: string) =>
+    call<Goal>("GET", withAsOf(`/api/me/goals/preview/${encodeURIComponent(playbook_id)}`, asOf)),
+  saveTileGrid: (grid: TileGridPrefs) => call<{ ok: boolean }>("PUT", "/api/me/tile-grid", grid),
 };

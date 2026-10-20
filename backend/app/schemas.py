@@ -8,9 +8,10 @@ Everything the engine consumes or produces is a Pydantic model so that:
 from __future__ import annotations
 
 import datetime as dt
+import re
 from typing import Literal
 
-from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
 
 # ----------------------------------------------------------------------------------
 # Vocabularies
@@ -165,6 +166,33 @@ class CorrectionRow(BaseModel):
     created_at: dt.date
 
 
+TILE_ID_PATTERN = r"^(card|widget):[A-Za-z0-9_:\-]{1,80}$"
+GRID_MAX_SLOTS = 120
+
+
+class TilePlacement(BaseModel):
+    slot: int = Field(ge=0, lt=GRID_MAX_SLOTS)
+    span: Literal[1, 2]
+
+
+class TileGridPrefs(BaseModel):
+    """The "For you" tile wall as the customer arranged it (frontend feed/tileGrid.ts): tiles they placed, tiles they
+    removed, and how many cells the wall has. Ids are "card:<card_key>" or "widget:<Component>"."""
+    model_config = ConfigDict(populate_by_name=True)
+    placements: dict[str, TilePlacement] = Field(default_factory=dict, max_length=60)
+    hidden: list[str] = Field(default_factory=list, max_length=200)
+    slot_count: int = Field(default=12, ge=2, le=GRID_MAX_SLOTS, alias="slotCount")
+
+    @model_validator(mode="after")
+    def valid_ids(self) -> "TileGridPrefs":
+        ids = list(self.placements) + self.hidden
+        if any(not re.fullmatch(TILE_ID_PATTERN, i) for i in ids):
+            raise ValueError("Unknown tile id")
+        if any(p.slot + p.span > self.slot_count for p in self.placements.values()):
+            raise ValueError("Placement outside the grid")
+        return self
+
+
 def default_permissions() -> dict[str, bool]:
     # kate_ai sends data to an external model: off until the customer says yes
     return {p: p != "kate_ai" for p in PURPOSES}
@@ -181,6 +209,7 @@ class Prefs(BaseModel):
     facts: list[ProfileFactRow] = Field(default_factory=list)
     corrections: list[CorrectionRow] = Field(default_factory=list)
     permissions: dict[str, bool] = Field(default_factory=default_permissions)
+    tile_grid: TileGridPrefs | None = None
 
     def fact(self, key: str):
         """The stated value for `key`, or None."""
@@ -346,6 +375,7 @@ class GalleryItem(BaseModel):
     suggested: bool = False
     state: Literal["shown", "available", "hidden"] = "available"
     is_hero: bool = False
+    size: Size = "half"          # how wide the tile is when shown (the For you wall reserves room before it loads)
 
 
 class Feed(BaseModel):
@@ -379,6 +409,7 @@ class HomeResponse(BaseModel):
     suggestions: list[TileSuggestion] = Field(default_factory=list)
     gallery: list[GalleryItem] = Field(default_factory=list)
     declared: list[DeclaredSignalRow] = Field(default_factory=list)
+    tile_grid: TileGridPrefs | None = None     # None: never arranged; the wall starts from the pinned tiles
 
 
 class Milestone(BaseModel):

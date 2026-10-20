@@ -5,6 +5,7 @@ import { ECO_RESET_EVENT } from "../ecosystem/useGoals";
 import { addDays, daysBetween, longDate, PERSONA_LABEL, pct } from "../format";
 import { nudgeApi } from "../nudges/client";
 import { NUDGE_REPLAY_EVENT, NUDGE_RESET_EVENT } from "../nudges/types";
+import { STORAGE_KEY } from "./store";
 
 interface Props {
   username: string | null;
@@ -79,7 +80,7 @@ export default function ControlPanel(p: Props) {
     <aside className="panel">
       <h1>
         KBC Takes Care
-        <small>Demo controls · synthetic data{p.mock ? " · MOCK MODE" : ""}</small>
+        <small>Demo controls · synthetic data{p.mock ? " · demo engine, no backend" : ""}</small>
       </h1>
 
       <section>
@@ -184,6 +185,10 @@ export default function ControlPanel(p: Props) {
           </div>
         )}
         <div className="row" style={{ marginTop: 6 }}>
+          {p.mock && <button className="pbtn small" title="Clear all saved demo choices in this browser" onClick={() => {
+            try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* Storage may be disabled. */ }
+            window.location.reload();
+          }}>Reset demo</button>}
           <button className="pbtn small" disabled={p.busy || !p.home} onClick={p.onResetFeedback}>Reset feedback</button>
           <button className="pbtn small" disabled={p.busy || !p.home} title="Delete this customer's goals and consent grants" onClick={() => { void eco.goalsReset().then(() => window.dispatchEvent(new Event(ECO_RESET_EVENT))).catch(() => undefined); }}>Reset goals</button>
           <button className="pbtn small" disabled={p.busy || !p.home} title="Replay the Kate nudges of the last 10 days on the phone" onClick={() => window.dispatchEvent(new CustomEvent(NUDGE_REPLAY_EVENT, { detail: { days: 10 } }))}>Play nudges</button>
