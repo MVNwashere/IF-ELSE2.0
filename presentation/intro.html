@@ -549,7 +549,7 @@ const CHAPTERS = [
 const chEl = document.getElementById('chapters');
 CHAPTERS.forEach(([name, prod, f], i) => {
   const p = at(f), el = document.createElement('div');
-  el.className = 'chap' + (i === 6 ? ' next' : '');
+  el.className = 'chap' + (i === 4 ? ' next' : '');
   el.dataset.steps = '2 3';
   el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
   el.style.setProperty('--d', (0.9 + i * 0.2) + 's');
