@@ -1,0 +1,357 @@
+import { AnimatePresence, MotionConfig, motion, type HTMLMotionProps } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AccountsZoom, { type ZoomOrigin } from "./accounts/AccountsZoom";
+import { accountsFor } from "./accounts/accounts";
+import type {
+  Card, Component, Decision, HomeResponse, KateAction, KateReply, KateTurn, LayoutPrefState, StylePrefs,
+} from "./api";
+import { NAV_ICONS } from "./components/icons";
+import AccountLogo from "./components/AccountLogo";
+import { resolve } from "./components/registry";
+import type { SectionCtx } from "./components/types";
+import { FEED_PERSONA_LABEL, longDate, PERSONA_LABEL, pct } from "./format";
+import { PrivacyContext } from "./privacy";
+import { themeVars } from "./theme";
+import ProfileSheet from "./ui/ProfileSheet";
+import KateSheet, { useKateChat } from "./ui/KateSheet";
+import PersonaliseSheet from "./ui/PersonaliseSheet";
+import CardStack from "./feed/CardStack";
+import { customerFixture } from "./demo/store";
+import type { GridTile } from "./feed/tileGrid";
+import EcoSheets, { type EcoSheet } from "./ecosystem/EcoSheets";
+import GoalsScreen from "./ecosystem/GoalsScreen";
+import { useGoals } from "./ecosystem/useGoals";
+import "./ecosystem/eco.css";
+import NudgeLayer, { NudgeBell } from "./nudges/NudgeLayer";
+import type { Nudge } from "./nudges/types";
+import { useNudges } from "./nudges/useNudges";
+
+interface Props {
+  home: HomeResponse;
+  asOf: string;
+  explain: boolean;
+  loading: boolean;
+  toast: string | null;
+  onFeedback: (card: Card, decision: Decision) => void;
+  onCta: (action: string, card?: Card) => void;
+  onLayoutPref: (component: Component, state: LayoutPrefState) => void;
+  onPinAt: (component: Component, position: number | null) => void;
+  onLayoutReset: () => void;
+  onStyle: (style: StylePrefs) => void;
+  onSuggestion: (component: Component, decision: "accept" | "dismiss") => void;
+  onKate: (message: string, cardKey: string | null, history: KateTurn[]) => Promise<KateReply>;
+  onKateAction: (action: KateAction) => Promise<boolean>;
+}
+
+type SheetKind = "style" | "kate" | "profile" | null;
+type Tab = "home" | "goals";
+
+const REVEAL_MS = 8000;
+
+export default function Phone(p: Props) {
+  const { home, asOf, explain, loading, toast } = p;
+  const theme = home.layout.theme;
+  const [editing, setEditing] = useState(false);
+  const [gridReset, setGridReset] = useState(0);
+  const [sheet, setSheet] = useState<SheetKind>(null);
+  const [tab, setTab] = useState<Tab>("home");
+  const [revealed, setRevealed] = useState(false);
+  const phoneRef = useRef<HTMLDivElement>(null);
+  const masked = theme.privacy && !revealed;
+
+  // Reveal masked amounts for a few seconds.
+  useEffect(() => {
+    if (!revealed) return;
+    const t = window.setTimeout(() => setRevealed(false), REVEAL_MS);
+    return () => window.clearTimeout(t);
+  }, [revealed]);
+
+  useEffect(() => {
+    if (!sheet) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheet(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheet]);
+
+  // ---- ecosystem: goals, journeys, consent ----
+  const [ecoMsg, setEcoMsg] = useState<string | null>(null);
+  const notify = useCallback((msg: string) => {
+    setEcoMsg(msg);
+    window.setTimeout(() => setEcoMsg((m) => (m === msg ? null : m)), 2400);
+  }, []);
+  const goals = useGoals(asOf, home.customer.first_name, notify);
+  const [ecoSheet, setEcoSheetRaw] = useState<EcoSheet | null>(null);
+  useEffect(() => {
+    if (!ecoSheet) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setEcoSheetRaw(null); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [ecoSheet]);
+  const setEcoSheet = useCallback((s: EcoSheet | null) => { if (s) setSheet(null); setEcoSheetRaw(s); }, []);
+  const { start: startGoalRaw } = goals;
+  const startGoal = useCallback(async (playbookId: string): Promise<boolean> => {
+    const g = await startGoalRaw(playbookId);
+    if (!g) return false;
+    notify("KBC takes it from here. You approve every step.");
+    setEcoSheet({ kind: "journey", goalId: g.goal_id });
+    return true;
+  }, [startGoalRaw, notify, setEcoSheet]);
+
+  const { onCta: onCtaRaw } = p;
+  const onCta = useCallback((action: string, card?: Card) => {
+    const pb = card?.details?.playbook_id;
+    if (action === "start_goal" && typeof pb === "string") { void startGoal(pb); return; }
+    onCtaRaw(action, card);
+  }, [onCtaRaw, startGoal]);
+
+  const { onKate, onKateAction } = p;
+  const execKate = useCallback(async (action: KateAction) => {
+    if (action.kind === "start_goal") {
+      if (!action.playbook_id) return false;
+      return startGoal(action.playbook_id);
+    }
+    if (action.kind === "open_goal") {
+      const id = action.goal_id ?? goals.data?.goals.find((g) => g.playbook_id === action.playbook_id)?.goal_id;
+      if (id == null) return false;
+      setEcoSheet({ kind: "journey", goalId: id });
+      return true;
+    }
+    if (action.kind === "open_card") {
+      setSheet(null);
+      setTab("home");
+      const key = action.card_key;
+      if (key) {
+        window.setTimeout(() => {
+          const el = phoneRef.current?.querySelector<HTMLElement>(`[data-card-key="${CSS.escape(key)}"]`);
+          if (!el) return;
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("flash");
+          window.setTimeout(() => el.classList.remove("flash"), 1800);
+        }, 320);
+      }
+      return true;
+    }
+    return onKateAction(action);
+  }, [onKateAction, startGoal, goals.data, setEcoSheet]);
+
+  const chat = useKateChat(onKate, execKate, home.gallery);
+
+  // ---- Kate nudges (proactive): lock-screen banner + inbox; the action runs through the same paths as Kate's ----
+  const nudges = useNudges(asOf, home.customer.first_name);
+  const runNudge = useCallback((n: Nudge) => {
+    if (n.open_view === "passport") { setEcoSheet({ kind: "passport" }); return true; }
+    return execKate(n.action);
+  }, [execKate, setEcoSheet]);
+
+  const openKate = useCallback((cardKey?: string | null, message?: string) => {
+    setEcoSheetRaw(null);
+    setSheet("kate");
+    chat.start(cardKey ?? null, message);
+  }, [chat]);
+
+  const ctx: SectionCtx = {
+    home, asOf, explain, onFeedback: p.onFeedback, onCta, openKate,
+  };
+  const mix = home.feed_personas?.length
+    ? home.feed_personas.map((w) => `${pct(w.weight)} ${FEED_PERSONA_LABEL[w.code] ?? w.code}`).join(" · ")
+    : home.persona_mix.map((w) => `${pct(w.weight)} ${PERSONA_LABEL[w.persona] ?? w.persona}`).join(" · ");
+  const themeExplain = home.layout.explanations["theme"];
+  const initials = home.customer.first_name.slice(0, 1).toUpperCase();
+  // Read once: Phone remounts per customer, and the store has no session while switching.
+  const [fixtureTiles] = useState(() => customerFixture().tiles);
+  const personalTiles: GridTile[] = Object.values(fixtureTiles)
+    .filter((s) => s.size !== "hero" && s.component !== "ForYouFeed")
+    .flatMap((fallback) => {
+      const s = home.layout.sections.find((section) => section.component === fallback.component) ?? fallback;
+      const C = resolve(s.component);
+      const info = home.gallery.find((item) => item.component === s.component);
+      return C ? [{ id: `widget:${s.component}`, title: info?.label ?? s.component,
+        description: info?.description ?? "Your personal home tile", span: s.size === "half" ? 1 as const : 2 as const,
+        eligible: home.layout.sections.some((section) => section.component === s.component),
+        content: <C props={s.props} ctx={ctx} /> }] : [];
+    });
+  const initialPins = home.layout.sections.filter((s) => s.pinned && s.size !== "hero").map((s) => `widget:${s.component}`);
+
+  const revealOnTap = (e: React.MouseEvent) => {
+    if (!masked) return;
+    if ((e.target as HTMLElement).closest("button, a, input")) return;
+    setRevealed(true);
+  };
+
+  // The hero tile opens the accounts screen with a zoom.
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const restoreFocus = useRef(false);
+  const [zoom, setZoom] = useState<ZoomOrigin | null>(null);
+  const [tileHidden, setTileHidden] = useState(false);
+  const heroSection = home.layout.sections.find((s) => s.size === "hero");
+  const HeroC = heroSection ? resolve(heroSection.component) : null;
+  const accounts = useMemo(() => accountsFor(home, heroSection), [home, heroSection]);
+
+  // A different customer or hero means the tile we zoomed from is gone: close.
+  const heroKey = `${home.customer.first_name}|${heroSection?.component ?? ""}`;
+  useEffect(() => { setZoom(null); }, [heroKey]);
+
+  // After the zoom closes, hand the keyboard focus back to the tile (it can only take focus once visible again).
+  useEffect(() => {
+    if (!tileHidden && restoreFocus.current) {
+      restoreFocus.current = false;
+      triggerRef.current?.focus({ preventScroll: true });
+    }
+  }, [tileHidden]);
+
+  const openAccounts = (section: HTMLElement) => {
+    const phone = phoneRef.current;
+    const card = section.querySelector<HTMLElement>(".hero");
+    if (!phone || !card || !accounts) return;
+    const pr = phone.getBoundingClientRect();
+    const k = pr.width / phone.offsetWidth || 1; // PhoneScaler shrinks the phone with a CSS transform
+    const r = card.getBoundingClientRect();
+    triggerRef.current = section;
+    setZoom({
+      x: (r.left - pr.left) / k,
+      y: (r.top - pr.top) / k,
+      w: r.width / k,
+      h: r.height / k,
+      radius: parseFloat(getComputedStyle(card).borderTopLeftRadius) || 20,
+      variant: card.classList.contains("account-orb") ? "hero" : card.className,
+      stageW: phone.offsetWidth,
+      stageH: phone.offsetHeight,
+    });
+    setTileHidden(true);
+  };
+
+  const tileProps: HTMLMotionProps<"div"> = {
+    role: "button",
+    tabIndex: 0,
+    "aria-label": "Show all accounts",
+    onClick: (e) => openAccounts(e.currentTarget),
+    onKeyDown: (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openAccounts(e.currentTarget); }
+    },
+  };
+
+  return (
+    <div className="phone-bezel">
+      <MotionConfig reducedMotion={theme.reduce_motion ? "always" : "never"}>
+        <PrivacyContext.Provider value={masked}>
+          <div ref={phoneRef} className={`phone ${theme.appearance === "dark" ? "dark" : ""} ${theme.privacy ? "privacy" : ""}`} style={themeVars(theme)}>
+            <div className="phone-top">
+              <div className="greet">
+                <div>
+                  <h1>{home.customer.first_name}</h1>
+                  <div className="date">{longDate(home.as_of)}</div>
+                </div>
+                <div className="head-tools">
+                  <NudgeBell nudges={nudges} />
+                  <button type="button" className="avatar" aria-label="Profile" title="Profile" onClick={() => { setEcoSheetRaw(null); setSheet("profile"); }}>{initials}</button>
+                </div>
+              </div>
+              <AnimatePresence initial={false}>
+                {editing && (
+                  <motion.div className="edit-head" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                    <span>Editing your home</span>
+                    <button type="button" className="link" onClick={() => { p.onLayoutReset(); setGridReset((v) => v + 1); }}>Reset to adaptive</button>
+                    <button type="button" className="btn-primary small" onClick={() => setEditing(false)}>Done</button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false}>
+                {explain && (
+                  <motion.div
+                    className="explain-head"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <div><b>Composed for:</b> {mix}</div>
+                    {themeExplain && <div>{themeExplain}</div>}
+                    {theme.overrides.length > 0 && <div><b>You chose:</b> {theme.overrides.join(", ").replace(/_/g, " ")}</div>}
+                    <div style={{ opacity: .8 }}>theme: {theme.density} · {theme.tone} · {theme.contrast} contrast · {theme.appearance}{theme.accent ? ` · ${theme.accent}` : ""}</div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {loading && <div className="phone-loading">updating…</div>}
+
+            <div className="phone-scroll" onClickCapture={revealOnTap} hidden={tab !== "goals"}>
+              <GoalsScreen data={goals.data} hidden={goals.hidden}
+                onOpenGoal={(id) => setEcoSheet({ kind: "journey", goalId: id })}
+                onPreview={(candidate) => setEcoSheet({ kind: "roadmap", candidate })} />
+            </div>
+
+            <div className="phone-scroll" onClickCapture={revealOnTap} hidden={tab !== "home"}>
+              {accounts?.accounts[0] && (
+                <motion.div className={`account-entry${tileHidden ? " tile-hidden" : ""}`} {...tileProps}>
+                  <AccountLogo account={accounts.accounts[0]} />
+                </motion.div>
+              )}
+              <CardStack cards={home.feed.cards} caughtUp={home.feed.caught_up} hiddenCount={home.feed.hidden_count}
+                asOf={asOf} onFeedback={p.onFeedback} onCta={onCta} onAskKate={(key) => openKate(key)}
+                personalTiles={personalTiles} editing={editing} onEditing={setEditing}
+                initialPins={initialPins} resetVersion={gridReset} />
+            </div>
+
+            <AnimatePresence
+              onExitComplete={() => {
+                restoreFocus.current = true;
+                setTileHidden(false);
+              }}
+            >
+              {zoom && accounts && HeroC && heroSection && (
+                <AccountsZoom
+                  key="accounts"
+                  origin={zoom}
+                  view={accounts}
+                  home={home}
+                  hero={heroSection}
+                  tile={<AccountLogo account={accounts.accounts[0]} />}
+                  onClose={() => setZoom(null)}
+                  onReveal={() => setRevealed(true)}
+                />
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {(toast ?? ecoMsg) && (
+                <motion.div className="toast" key={toast ?? ecoMsg} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
+                  {toast ?? ecoMsg}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <NudgeLayer nudges={nudges} reduceMotion={theme.reduce_motion} onRun={runNudge} />
+
+            <nav className="bottom-nav" aria-label="Main navigation">
+              <button type="button" className={sheet !== "kate" && tab === "home" ? "active" : ""} onClick={() => { setTab("home"); setSheet(null); setEcoSheetRaw(null); }}><NAV_ICONS.home />Home</button>
+              <button type="button"><NAV_ICONS.pay />Pay</button>
+              <button type="button" className={sheet === "kate" ? "active" : ""} onClick={() => openKate()}><NAV_ICONS.kate />Kate</button>
+              <button type="button"><NAV_ICONS.cards />Cards</button>
+              <button type="button" className={sheet !== "kate" && tab === "goals" ? "active" : ""} onClick={() => { setTab("goals"); setSheet(null); setEcoSheetRaw(null); }}><NAV_ICONS.goals />Goals</button>
+            </nav>
+
+            <AnimatePresence mode="wait">
+              {sheet === "profile" && <ProfileSheet key="profile" name={home.customer.first_name} onClose={() => setSheet(null)}
+                onSettings={() => setSheet("style")} onPermissions={() => setEcoSheet({ kind: "passport" })}
+                onEdit={() => { setSheet(null); setEditing(true); }} privacy={theme.privacy} masked={masked}
+                onReveal={() => { setRevealed((v) => !v); setSheet(null); }} />}
+              {sheet === "style" && <PersonaliseSheet key="style" home={home} onStyle={p.onStyle} onClose={() => setSheet(null)} onPassport={() => setEcoSheet({ kind: "passport" })} />}
+              {sheet === "kate" && <KateSheet key="kate" chat={chat} onClose={() => setSheet(null)} />}
+              {ecoSheet && !sheet && (
+                <EcoSheets
+                  key={`eco-${ecoSheet.kind}`}
+                  sheet={ecoSheet}
+                  goals={goals}
+                  asOf={asOf}
+                  setSheet={setEcoSheet}
+                  startGoal={(pb) => void startGoal(pb)}
+                  notify={notify}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+        </PrivacyContext.Provider>
+      </MotionConfig>
+    </div>
+  );
+}
