@@ -1,8 +1,8 @@
 ---
 title: KBC Adaptive Home design (round 1)
 type: spec          # context | spec | decision | notes
-status: final          # draft | review | final | outdated
-incorporated: yes      # no | partial | yes | n/a
+status: review         # draft | review | final | outdated
+incorporated: partial  # no | partial | yes | n/a
 code_refs: [backend/app/, frontend/src/]
 owner: team IF-ELSE
 created: 2026-09-30
@@ -11,6 +11,11 @@ source: round 1 repo, github.com/Senne-Meuleman/IF-ELSE
 ---
 
 # KBC Adaptive Home — High-Level Design
+
+> **Partly outdated (round 1).** §4–§8 (architecture, components, API, security) still describe the code, except
+> that `engine/copywriter.py` was never built and the feed now runs on `customer_state/` + `recommender/` (see
+> [CUSTOMER-STATE.md](CUSTOMER-STATE.md) and the README). §2, §3, §10, §11 and §12 are round 1 planning. For
+> round 2, see [ROUND2-DESIGN.md](ROUND2-DESIGN.md).
 
 > **Audience:** the coding agents and teammates building this project.
 > **Status:** v2, 2026-09-30 (adds §6.9 customisation and §6.10 Kate) (Tectonic Hackathon, KBC challenge).

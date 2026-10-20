@@ -1,8 +1,8 @@
 ---
 title: How round 1 answered KBC's questions
 type: context          # context | spec | decision | notes
-status: final          # draft | review | final | outdated
-incorporated: yes      # no | partial | yes | n/a
+status: outdated       # draft | review | final | outdated
+incorporated: n/a      # no | partial | yes | n/a
 code_refs: []
 owner: team IF-ELSE
 created: 2026-09-30
@@ -11,6 +11,9 @@ source: round 1 repo, github.com/Senne-Meuleman/IF-ELSE
 ---
 
 # KBC Challenge — Our Answers
+
+> **Outdated for round 2.** This answers the round 1 brief (personalisation). The round 2 brief and our answer are
+> in [ROUND2-DESIGN.md](ROUND2-DESIGN.md). It's still useful material for the "recognise emerging needs" part.
 
 > How **KBC Adaptive Home** answers the questions in the Tectonic participants guide.
 > Companion to [`DESIGN.md`](DESIGN.md) (section numbers like §6.4 refer to it).
