@@ -15,7 +15,9 @@ import { greeting, themeVars } from "./theme";
 import GallerySheet from "./ui/GallerySheet";
 import KateSheet, { useKateChat } from "./ui/KateSheet";
 import PersonaliseSheet from "./ui/PersonaliseSheet";
+import ProfileSheet from "./ui/ProfileSheet";
 import SuggestionBanner from "./ui/SuggestionBanner";
+import { eco } from "./ecosystem/client";
 import EcoSheets, { type EcoSheet } from "./ecosystem/EcoSheets";
 import GoalsStrip from "./ecosystem/GoalsStrip";
 import { useGoals } from "./ecosystem/useGoals";
@@ -39,9 +41,10 @@ interface Props {
   onSuggestion: (component: Component, decision: "accept" | "dismiss") => void;
   onKate: (message: string, cardKey: string | null, history: KateTurn[]) => Promise<KateReply>;
   onKateAction: (action: KateAction) => Promise<boolean>;
+  onRefresh: () => void;
 }
 
-type SheetKind = "gallery" | "style" | "kate" | null;
+type SheetKind = "gallery" | "style" | "kate" | "profile" | null;
 
 const REVEAL_MS = 8000;
 
@@ -138,6 +141,19 @@ export default function Phone(p: Props) {
       setEcoSheet({ kind: "journey", goalId: id });
       return true;
     }
+    if (action.kind === "open_profile") { setSheet("profile"); return true; }
+    if (action.kind === "open_passport") { setEcoSheet({ kind: "passport" }); return true; }
+    if (action.kind === "revoke_consent") {
+      if (action.grant_id == null) return false;
+      try {
+        await eco.revokeConsent(action.grant_id);
+      } catch (e) {
+        notify(e instanceof Error ? e.message : "That didn't work, please try again");
+        return false;
+      }
+      notify("Access revoked. The partner was told to delete your data.");
+      return true;
+    }
     if (action.kind === "open_card") {
       setSheet(null);
       const key = action.card_key;
@@ -153,7 +169,7 @@ export default function Phone(p: Props) {
       return true;
     }
     return onKateAction(action);
-  }, [onKateAction, startGoal, goals.data, setEcoSheet]);
+  }, [onKateAction, startGoal, goals.data, setEcoSheet, notify]);
 
   const chat = useKateChat(onKate, execKate, home.gallery);
 
@@ -422,7 +438,17 @@ export default function Phone(p: Props) {
                   onClose={() => setSheet(null)}
                 />
               )}
-              {sheet === "style" && <PersonaliseSheet key="style" home={home} onStyle={p.onStyle} onClose={() => setSheet(null)} onPassport={() => setEcoSheet({ kind: "passport" })} />}
+              {sheet === "style" && <PersonaliseSheet key="style" home={home} onStyle={p.onStyle} onClose={() => setSheet(null)} onPassport={() => setEcoSheet({ kind: "passport" })} onProfile={() => setSheet("profile")} />}
+              {sheet === "profile" && (
+                <ProfileSheet
+                  key="profile"
+                  asOf={asOf}
+                  onClose={() => setSheet(null)}
+                  onPassport={() => setEcoSheet({ kind: "passport" })}
+                  onChanged={p.onRefresh}
+                  notify={notify}
+                />
+              )}
               {sheet === "kate" && <KateSheet key="kate" chat={chat} onClose={() => setSheet(null)} />}
               {ecoSheet && !sheet && (
                 <EcoSheets

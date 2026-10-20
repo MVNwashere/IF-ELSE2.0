@@ -29,7 +29,7 @@ def build_home_with_features(customer: Customer, txs: list[Transaction], balance
                              as_of: dt.date, generated_at: dt.datetime | None = None) -> tuple[HomeResponse, Features]:
     """Kate needs the features behind the home screen to answer questions like "how am I doing"."""
     features = compute_features(customer, txs, balance_today, as_of)
-    persona_mix = persona_mod.infer_persona_mix(features, prefs.declared)
+    persona_mix = persona_mod.infer_persona_mix(features, prefs.declared, prefs.facts, prefs.corrections)
     candidates = cards_mod.generate_cards(features, customer, txs, as_of)
     feed = ranker.rank(candidates, persona_mix, prefs, customer, as_of)
     plan = plan_home_layout(features, persona_mix, prefs, customer, txs, as_of, feed.cards)

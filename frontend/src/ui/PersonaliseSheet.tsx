@@ -8,6 +8,7 @@ interface Props {
   onStyle: (style: StylePrefs) => void;
   onClose: () => void;
   onPassport?: () => void;
+  onProfile?: () => void;
 }
 
 export const AUTO_STYLE: StylePrefs = {
@@ -39,7 +40,7 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on
   );
 }
 
-export default function PersonaliseSheet({ home, onStyle, onClose, onPassport }: Props) {
+export default function PersonaliseSheet({ home, onStyle, onClose, onPassport, onProfile }: Props) {
   const style = home.style;
   const theme = home.layout.theme;
   const why = home.layout.explanations["theme"];
@@ -104,10 +105,11 @@ export default function PersonaliseSheet({ home, onStyle, onClose, onPassport }:
         <Toggle label="Hide amounts" hint="Amounts show as € •••• until you tap." on={style.privacy} onChange={(v) => set({ privacy: v })} />
       </div>
 
-      {onPassport && (
+      {(onProfile || onPassport) && (
         <div className="ps-group">
-          <div className="ps-label">Privacy</div>
-          <button type="button" className="btn-ghost block" style={{ marginTop: 0 }} onClick={onPassport}>🔐 Consent passport: who sees my data</button>
+          <div className="ps-label">Your data</div>
+          {onProfile && <button type="button" className="btn-ghost block" style={{ marginTop: 0 }} onClick={onProfile}>👤 My profile: what KBC knows and uses</button>}
+          {onPassport && <button type="button" className="btn-ghost block" style={{ marginTop: 6 }} onClick={onPassport}>🔐 Consent passport: who sees my data</button>}
         </div>
       )}
 

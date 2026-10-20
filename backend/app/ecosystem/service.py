@@ -22,7 +22,8 @@ import time
 from dataclasses import dataclass
 
 from .. import db
-from ..schemas import DeclaredSignalRow
+from ..profile.fields import held_back_playbooks
+from ..schemas import DeclaredSignalRow, Prefs
 from . import outcomes, sources, store
 from .context import CustomerContext, apply_sources, build_context
 from .intent import detect
@@ -352,13 +353,24 @@ def playbook_summaries() -> list[PlaybookSummary]:
                             steps=len(p.steps)) for p in registry().playbooks.values()]
 
 
+def withheld_goals(prefs: Prefs) -> set[str] | None:
+    """Goals KBC may not suggest on its own: None = none at all (the customer switched off life-event detection),
+    otherwise the ones the customer rejected ("not for me") or whose topic they asked not to hear about."""
+    if not prefs.allows("detect_life_events"):
+        return None
+    return held_back_playbooks(prefs.facts) | {c.target for c in prefs.corrections if c.kind == "goal"}
+
+
 def candidates(conn, ctx: CustomerContext, declared: list[DeclaredSignalRow]) -> list[GoalCandidate]:
     reg = registry()
+    withheld = withheld_goals(db.get_prefs(conn, ctx.customer.id))
+    if withheld is None:
+        return []
     taken = {g["playbook_id"] for g in store.goals(conn, ctx.customer.id) + store.shared_goals(conn, ctx.customer.id)
              if g["status"] != "cancelled"}
     out = []
     for playbook_id, (confidence, evidence, why) in detect(ctx, declared):
-        if playbook_id in taken:
+        if playbook_id in taken or playbook_id in withheld:
             continue
         pb = reg.playbooks[playbook_id]
         partners = []

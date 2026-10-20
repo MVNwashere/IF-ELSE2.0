@@ -6,6 +6,7 @@ import { eco } from "./client";
 import type { EcosystemOverview, EventRow, FunnelRow, LearningRow, OutcomeSummary, PartnerRow, RuleRow, SimMode, WinTotals } from "./types";
 import "./eco.css";
 import NudgeStatsPanel from "../nudges/NudgeStatsPanel";
+import AdvisorProfilePanel from "./AdvisorProfilePanel";
 
 interface Props { username: string; onLogout: () => void; onSwitchCustomer: (u: string) => void }
 
@@ -221,6 +222,7 @@ export default function EcosystemConsole({ username, onLogout, onSwitchCustomer 
                 </section>
               )}
               <NudgeStatsPanel />
+              <AdvisorProfilePanel />
               <section className="ec-card">
                 <h2>Partner network · live scorecard</h2>
                 <Partners rows={data.partner_rows} onSim={(pid, mode) => {

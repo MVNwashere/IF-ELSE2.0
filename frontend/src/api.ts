@@ -20,6 +20,12 @@ export type Size = "hero" | "full" | "half";
 export type Appearance = "light" | "dark";
 export type Accent = "blue" | "teal" | "purple" | "amber" | "navy";
 export type DeclaredSignal = "expecting_baby" | "going_freelance" | "retiring" | "studying";
+export type ProfileFactKey =
+  | "partner" | "children" | "cares_for_relative" | "employment" | "housing" | "risk_appetite"
+  | "contact_channel" | "avoid_topics";
+export type FactValue = string | number | boolean | string[];
+export type Purpose = "personalise_offers" | "detect_life_events" | "kate_memory" | "kate_ai" | "advisor_view";
+export type CorrectionKind = "persona" | "goal";
 
 export interface PersonaWeight { persona: Persona; weight: number; evidence: string[] }
 export interface FeedPersona { code: "TEEN" | "STU" | "YPRO" | "PAR" | "HOME" | "SELF" | "INV" | "PRE" | "SEN"; weight: number; evidence: string[] }
@@ -96,7 +102,9 @@ export interface HomeResponse {
 export type KateActionKind =
   | "pin_tile" | "hide_tile" | "add_tile" | "snooze_card" | "dismiss_card"
   | "set_style" | "declare" | "open_card" | "reset_style"
-  | "start_goal" | "open_goal";
+  | "start_goal" | "open_goal"
+  | "update_profile" | "forget_fact" | "forget_kate_facts" | "correct_inference" | "set_permission"
+  | "open_profile" | "open_passport" | "revoke_consent";
 /** A proposal only: the app shows a button; on tap it calls the regular endpoint. */
 export interface KateAction {
   kind: KateActionKind;
@@ -108,9 +116,49 @@ export interface KateAction {
   signal: DeclaredSignal | null;
   playbook_id?: string | null;    // start_goal
   goal_id?: number | null;        // open_goal
+  fact_key?: ProfileFactKey | null;       // update_profile / forget_fact
+  fact_value?: FactValue | null;          // update_profile
+  correction_kind?: CorrectionKind | null; // correct_inference
+  target?: string | null;
+  purpose?: Purpose | null;               // set_permission
+  allowed?: boolean | null;
+  grant_id?: number | null;               // revoke_consent
 }
 export interface KateTurn { role: "user" | "kate"; text: string }
 export interface KateReply { reply: string; actions: KateAction[]; quick_replies: string[]; source: "rules" | "llm" }
+// ---- Profile: what KBC knows and may use ----
+export interface FieldOption { value: string; label: string }
+export interface ProfileField {
+  key: ProfileFactKey;
+  label: string;
+  category: "household" | "work" | "home" | "money" | "contact";
+  kind: "enum" | "int" | "bool" | "set";
+  hint: string;
+  options: FieldOption[];
+  min: number | null;
+  max: number | null;
+  used_for: string[];
+  value: FactValue | null;
+  value_label: string | null;
+  source: "you" | "kate" | null;
+  updated_on: string | null;
+}
+export interface InferredPersona { persona: Persona; label: string; weight_pct: number; evidence: string[]; from_you: boolean }
+export interface InferredGoal { playbook_id: string; title: string; evidence: string[] }
+export interface CorrectionView { kind: CorrectionKind; target: string; label: string; created_on: string }
+export interface PermissionView { purpose: Purpose; label: string; description: string; when_off: string; allowed: boolean }
+export interface ProfileResponse {
+  as_of: string;
+  first_name: string;
+  fields: ProfileField[];
+  declared: { signal: DeclaredSignal; label: string; created_on: string }[];
+  personas: InferredPersona[];
+  goals: InferredGoal[];
+  corrections: CorrectionView[];
+  permissions: PermissionView[];
+  data_access: { partners_with_access: number; fields_shared: number; sources_connected: number };
+}
+
 export interface Milestone { date: string; label: string }
 export interface TimelineResponse { min_date: string; max_date: string; milestones: Milestone[]; today?: string | null }
 export interface LoginResponse { role: "customer" | "advisor"; username: string }
@@ -184,6 +232,18 @@ export const api = {
   kate: (message: string, card_key: string | null, history: KateTurn[], asOf?: string) =>
     call<KateReply>("POST", withAsOf("/api/me/kate", asOf), { message, card_key, history }),
   advisorOverview: () => call<AdvisorOverview>("GET", "/api/advisor/overview"),
+  // ---- profile ----
+  profile: (asOf?: string) => call<ProfileResponse>("GET", withAsOf("/api/me/profile", asOf)),
+  setFact: (key: ProfileFactKey, value: FactValue, via: "you" | "kate", asOf?: string) =>
+    call<ProfileResponse>("PUT", withAsOf(`/api/me/profile/facts/${encodeURIComponent(key)}`, asOf), { value, via }),
+  deleteFact: (key: ProfileFactKey, asOf?: string) =>
+    call<ProfileResponse>("DELETE", withAsOf(`/api/me/profile/facts/${encodeURIComponent(key)}`, asOf)),
+  forgetKate: (asOf?: string) => call<ProfileResponse>("POST", withAsOf("/api/me/profile/forget-kate", asOf)),
+  correction: (kind: CorrectionKind, target: string, state: "set" | "clear", asOf?: string) =>
+    call<ProfileResponse>("POST", withAsOf("/api/me/profile/corrections", asOf), { kind, target, state }),
+  permission: (purpose: Purpose, allowed: boolean, asOf?: string) =>
+    call<ProfileResponse>("PUT", withAsOf(`/api/me/profile/permissions/${encodeURIComponent(purpose)}`, asOf), { allowed }),
+  advisorProfile: (username: string) => call<ProfileResponse>("GET", `/api/advisor/profile/${encodeURIComponent(username)}`),
   // ---- ecosystem engine (types in ecosystem/types.ts) ----
   goals: (asOf?: string) => call<GoalsResponse>("GET", withAsOf("/api/me/goals", asOf)),
   startGoal: (playbook_id: string, asOf?: string) => call<Goal>("POST", withAsOf("/api/me/goals", asOf), { playbook_id }),

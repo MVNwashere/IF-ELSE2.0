@@ -227,3 +227,10 @@
 .eco-invite { display: flex; gap: 8px; margin-top: 6px; }
 .eco-invite input { flex: 1; min-width: 0; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line, #d0d7e2); font: inherit; background: transparent; color: inherit; }
 .eco-stall-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* advisor: one customer's profile, with their permission */
+.ec-profile-pick { display: flex; gap: 6px; margin-bottom: 10px; }
+.ec-profile { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 12px; }
+.ec-profile div { display: flex; flex-direction: column; gap: 3px; }
+.ec-profile b { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--panel-muted); }
+.ec-profile span.off { opacity: .55; }

@@ -3,7 +3,7 @@ import { abortSessionRequests, ApiError, isAbort } from "./api";
 import type { Card, Component, Decision, HomeResponse, KateAction, KateTurn, LayoutPrefState, StylePrefs, TimelineResponse } from "./api";
 import { componentLabel } from "./format";
 import { AUTO_STYLE } from "./ui/PersonaliseSheet";
-import { data, MOCK } from "./data";
+import { data, MOCK, profileData } from "./data";
 import ControlPanel from "./demo/ControlPanel";
 import Login from "./Login";
 import EcosystemConsole from "./ecosystem/EcosystemConsole";
@@ -214,12 +214,46 @@ export default function App() {
         if (!a.signal) return false;
         showToast("Thanks, your home adapts");
         return apply(() => data.declare(a.signal!, "set", at));
+      // profile: the same endpoints as the profile page (via "kate" when the customer confirmed Kate's proposal);
+      // the home depends on the profile, so it is reloaded after each change
+      case "update_profile": {
+        const key = a.fact_key, value = a.fact_value;
+        if (!key || value == null) return false;
+        showToast("Saved to your profile");
+        return apply(async () => { await profileData.setFact(key, value, "kate", at); return data.home(at); });
+      }
+      case "forget_fact": {
+        const key = a.fact_key;
+        if (!key) return false;
+        showToast("Deleted from your profile");
+        return apply(async () => { await profileData.deleteFact(key, at); return data.home(at); });
+      }
+      case "forget_kate_facts":
+        showToast("Kate forgot what you told her");
+        return apply(async () => { await profileData.forgetKate(at); return data.home(at); });
+      case "correct_inference": {
+        const kind = a.correction_kind, target = a.target;
+        if (!kind || !target) return false;
+        showToast("Thanks, your home adapts");
+        return apply(async () => { await profileData.correction(kind, target, "set", at); return data.home(at); });
+      }
+      case "set_permission": {
+        const purpose = a.purpose, allowed = a.allowed;
+        if (!purpose || allowed == null) return false;
+        showToast(allowed ? "Switched on" : "Switched off");
+        return apply(async () => { await profileData.permission(purpose, allowed, at); return data.home(at); });
+      }
       case "open_card":
-      case "start_goal":   // handled in Phone (ecosystem)
+      case "start_goal":   // handled in Phone (ecosystem, sheets)
       case "open_goal":
+      case "open_profile":
+      case "open_passport":
+      case "revoke_consent":
         return true;
     }
   }, [apply, asOf, showToast, label]);
+
+  const onRefresh = useCallback(() => { void apply(() => data.home(asOf ?? undefined)); }, [apply, asOf]);
 
   const onConsent = useCallback((v: boolean) => {
     showToast(v ? "Commercial personalisation on" : "Commercial personalisation off");
@@ -273,6 +307,7 @@ export default function App() {
                 onSuggestion={onSuggestion}
                 onKate={onKate}
                 onKateAction={onKateAction}
+                onRefresh={onRefresh}
               />
             )}
           </PhoneScaler>
