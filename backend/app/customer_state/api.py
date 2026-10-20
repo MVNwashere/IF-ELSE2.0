@@ -13,10 +13,15 @@ router = APIRouter(prefix="/api/me/customer-state", tags=["customer-state"])
 
 
 def load_state(as_of: dt.date | None = None, user: Principal = Depends(auth.require_customer)) -> CustomerState:
-    reference = dt.date.fromisoformat(os.environ.get("DEMO_TODAY", "2026-09-30"))
+    reference = dt.date.fromisoformat(os.environ.get("DEMO_TODAY", "2026-10-20"))
     with db.tx() as conn:
+        # Clamp to [first transaction, reference]: each distinct date persists a snapshot, so the date range
+        # bounds how many a customer can create (storage.save also caps them).
+        rng = db.date_range(conn, user.customer_id)
+        lo = rng[0] if rng else reference
+        effective = min(max(as_of or reference, lo), reference)
         try:
-            return get_state(conn, user.customer_id, min(as_of or reference, reference), balance_reference=reference)
+            return get_state(conn, user.customer_id, effective, balance_reference=reference)
         except LookupError:
             raise HTTPException(status_code=404, detail="Customer not found") from None
 

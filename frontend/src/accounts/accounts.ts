@@ -110,6 +110,10 @@ const EXTRA: Record<Persona, Template[]> = {
     { id: "tax_reserve", kind: "reserve", name: "Tax reserve", lo: 600, hi: 3200 },
     { id: "savings", kind: "savings", name: "Savings account", lo: 1500, hi: 9000 },
   ],
+  investor: [
+    { id: "pension", kind: "savings", name: "Pension savings", lo: 9000, hi: 30000 },
+    { id: "savings", kind: "savings", name: "Savings account", lo: 4000, hi: 15000 },
+  ],
   retiree: [
     { id: "savings", kind: "savings", name: "Savings account", lo: 6000, hi: 28000 },
     { id: "term", kind: "savings", name: "Term account", lo: 5000, hi: 20000 },

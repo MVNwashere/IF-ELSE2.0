@@ -1,3 +1,4 @@
+import { MaskedText } from "../privacy";
 import { arr, str, type SectionProps } from "./types";
 
 export default function KateTile({ props, ctx }: SectionProps) {
@@ -10,13 +11,13 @@ export default function KateTile({ props, ctx }: SectionProps) {
         <span className="kate-avatar" aria-hidden="true">K</span>
         <span className="kate-tile-text">
           <b>Kate</b>
-          <span>{prompt}</span>
+          <span><MaskedText text={prompt} /></span>
         </span>
       </button>
       {chips.length > 0 && (
         <div className="kate-chips">
           {chips.map((q) => (
-            <button key={q} type="button" className="kate-chip" onClick={() => ctx.openKate(cardKey, q)}>{q}</button>
+            <button key={q} type="button" className="kate-chip" onClick={() => ctx.openKate(cardKey, q)}><MaskedText text={q} /></button>
           ))}
         </div>
       )}

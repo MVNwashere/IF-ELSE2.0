@@ -1,4 +1,4 @@
-"""Synthetic data sanity checks (DESIGN.md §6.1)."""
+"""Synthetic data sanity checks (docs/CUSTOMER-APP.md)."""
 from __future__ import annotations
 
 import json
@@ -17,7 +17,7 @@ ALL_SCENARIOS = {"student", "young_family", "freelancer", "retiree", "young_prof
 def conn(tmp_path_factory):
     path = str(tmp_path_factory.mktemp("db") / "kbc_test.db")
     summary = build(path, n=30, seed=7, verbose=False)
-    assert summary["customers"] == 33
+    assert summary["customers"] == 39   # 30 regular + lotte, sara, jan, marc, tom, els, amir, pieter, nina
     c = sqlite3.connect(path)
     c.row_factory = sqlite3.Row
     yield c
@@ -51,14 +51,14 @@ def test_all_dates_end_today(conn):
 
 def test_sara_car_insurance_renews_in_12_days(conn):
     r = rows(conn, "SELECT amount, counterparty FROM transactions WHERE customer_id = 9002 "
-                   "AND category = 'insurance_car' AND date = '2025-10-12'")
+                   "AND category = 'insurance_car' AND date = '2025-11-01'")
     assert r == [{"amount": -612.0, "counterparty": "AG Insurance"}]
 
 
 def test_sara_netflix_price_increase(conn):
     r = rows(conn, "SELECT date, amount FROM transactions WHERE customer_id = 9002 AND counterparty = 'Netflix' "
                    "AND date >= '2026-08-01' ORDER BY date")
-    assert [x["amount"] for x in r] == [-13.99, -17.99]
+    assert [x["amount"] for x in r] == [-13.99, -17.99, -17.99]
 
 
 def test_sara_is_a_blend(conn):
@@ -68,7 +68,7 @@ def test_sara_is_a_blend(conn):
 
 
 def test_jan_duplicate_charge(conn):
-    r = rows(conn, "SELECT COUNT(*) AS n FROM transactions WHERE customer_id = 9003 AND date = '2026-09-27' "
+    r = rows(conn, "SELECT COUNT(*) AS n FROM transactions WHERE customer_id = 9003 AND date = '2026-10-17' "
                    "AND counterparty = 'Colruyt' AND amount = -64.2")
     assert r[0]["n"] == 2
 
@@ -87,11 +87,16 @@ def test_lotte_time_travel(conn):
     assert n("student_income", 2019) > 0 and n("salary", 2019) == 0
     assert n("salary", 2023) == 13 and n("student_income", 2023) == 0   # 12 pay slips + December bonus
     assert n("child_benefit", 2025) == 12 and n("childcare", 2025) == 12
-    assert n("invoice_income", 2026) > 0 and n("salary", 2026) == 0
-    assert n("vat_payment", 2026) == 2
+    # still employed until the end of September 2026 (last pay slip 1 Oct, plus exit pay on 30 Sep)
+    last_salary = rows(conn, "SELECT MAX(date) AS d FROM transactions WHERE customer_id = 9001 "
+                             "AND category = 'salary'")[0]["d"]
+    assert last_salary == "2026-10-01"
+    # freelance from October: one client paid so far, no VAT or social contributions due yet
+    assert n("invoice_income", 2026) == 1
+    assert n("vat_payment", 2026) == 0 and n("social_contribution", 2026) == 0
     first_invoice = rows(conn, "SELECT MIN(date) AS d FROM transactions WHERE customer_id = 9001 "
                                "AND category = 'invoice_income'")[0]["d"]
-    assert first_invoice == "2026-01-15"
+    assert first_invoice == "2026-10-16"
 
 
 def test_demo_customers_have_living_costs_every_month(conn):
@@ -158,7 +163,8 @@ def test_lotte_balance_is_sane_in_every_era(conn):
         "2021-08-15": (300, 4500),    # just started working
         "2022-06-01": (1000, 4500),   # young professional with a mortgage
         "2024-04-01": (2000, 5000),   # young family
-        "2026-09-30": (3000, 8000),   # freelancer
+        "2026-09-30": (3000, 8000),   # last pay slip and exit pay
+        "2026-10-20": (3000, 8000),   # first weeks as a freelancer
     }
     for as_of, (lo, hi) in expectations.items():
         b = _balance_at(conn, 9001, as_of)
@@ -166,9 +172,9 @@ def test_lotte_balance_is_sane_in_every_era(conn):
 
 
 def test_sara_and_jan_balances(conn):
-    assert 3000 <= _balance_at(conn, 9002, "2026-09-30") <= 8000
+    assert 3000 <= _balance_at(conn, 9002, "2026-10-20") <= 8000
     assert 2000 <= _balance_at(conn, 9002, "2020-01-01") <= 9000
-    assert 12500 <= _balance_at(conn, 9003, "2026-09-30") <= 15000
+    assert 12500 <= _balance_at(conn, 9003, "2026-10-20") <= 15500
     assert 12000 <= _balance_at(conn, 9003, "2024-09-30") <= 15500
 
 
@@ -184,13 +190,13 @@ def test_lotte_has_moments_in_every_era(conn):
 
 def test_sara_q3_invoices_and_clients(conn):
     q3 = rows(conn, "SELECT SUM(amount) AS s FROM transactions WHERE customer_id = 9002 "
-                    "AND category = 'invoice_income' AND date >= '2026-07-01'")[0]["s"]
+                    "AND category = 'invoice_income' AND date BETWEEN '2026-07-01' AND '2026-09-30'")[0]["s"]
     assert 8500 <= q3 <= 9500
     clients = rows(conn, "SELECT COUNT(DISTINCT counterparty) AS n FROM transactions WHERE customer_id = 9002 "
                          "AND category = 'invoice_income' AND date >= '2026-04-01'")[0]["n"]
     assert clients >= 5
     monthly = rows(conn, "SELECT SUM(amount) / 6.0 AS s FROM transactions WHERE customer_id = 9002 "
-                         "AND category = 'invoice_income' AND date >= '2026-04-01'")[0]["s"]
+                         "AND category = 'invoice_income' AND date BETWEEN '2026-04-01' AND '2026-09-30'")[0]["s"]
     assert 2800 <= monthly <= 5000
 
 
@@ -215,9 +221,9 @@ def _daily_path(conn, cid: int) -> dict[str, float]:
 def test_lotte_daily_balance_never_negative_and_family_era_in_band(conn):
     path = _daily_path(conn, 9001)
     assert min(path.values()) > 0
-    family = [b for d, b in path.items() if "2024-06-01" <= d <= "2025-12-31"]
+    family = [b for d, b in path.items() if "2024-06-01" <= d <= "2026-09-29"]
     assert min(family) >= 2000 and max(family) <= 8000
-    freelance = [b for d, b in path.items() if "2026-01-01" <= d <= "2026-09-30"]
+    freelance = [b for d, b in path.items() if "2026-09-30" <= d <= "2026-10-20"]
     assert min(freelance) >= 3000
 
 

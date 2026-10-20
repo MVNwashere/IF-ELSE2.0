@@ -9,6 +9,7 @@ MIN_WEIGHT = 0.15                 # weights below this are dropped, then renorma
 STUDENT_MAX_AGE = 26
 YOUNG_PRO_MAX_AGE = 36
 RETIREE_AGE = 67
+INVESTOR_MIN_AGE = 45
 REGULAR_INCOME_CV = 0.25          # coefficient of variation below this = "steady salary"
 FAMILY_SHARE_SCALE = 3.0          # family flows at a third of income already count as "fully family"
 FREELANCER_RAMP_MONTHS = 12       # the invoice-share contribution ramps up over the first year self-employed
@@ -26,6 +27,9 @@ SCORE = {                         # raw-score contributions, capped at 1.0 per p
     "freelancer_base_strong": 0.4, # ≥2 clients or VAT payments
     "freelancer_base_weak": 0.2,   # a single invoice payer
     "freelancer_share": 0.6,       # × invoice share of income over 180 days
+    "investor_age_salary": 0.6,    # 45–66 with a salary
+    "investor_wealth": 0.3,        # a balance of 10+ months of spending
+    "investor_pension": 0.1,       # already saving for the pension
     "retiree_pension": 0.8,
     "retiree_age": 0.5,
     "declared": 0.6,               # the customer told Kate (e.g. "we're expecting"): strong, but not absolute
@@ -65,7 +69,7 @@ def _score_student(f: Features) -> tuple[float, list[str]]:
 
 def _score_young_professional(f: Features) -> tuple[float, list[str]]:
     s, ev = 0.0, []
-    if f.has_salary and not f.has_child_signals:
+    if f.has_salary and not f.has_child_signals and f.age < INVESTOR_MIN_AGE:
         s += SCORE["yp_salary"]
         ev.append(f"Monthly salary, about {fmt_eur(round(f.monthly_income_avg_90d))} per month")
         if f.income_regularity < REGULAR_INCOME_CV:
@@ -129,6 +133,22 @@ def _score_freelancer(f: Features) -> tuple[float, list[str]]:
     return s, ev
 
 
+def _score_investor(f: Features) -> tuple[float, list[str]]:
+    """The mid-career customer whose questions are pension, wealth and the next generation."""
+    s, ev = 0.0, []
+    if INVESTOR_MIN_AGE <= f.age < RETIREE_AGE and f.has_salary and not f.has_pension:
+        s += SCORE["investor_age_salary"]
+        ev.append(f"You're {f.age} with a steady salary")
+        spend = max(f.monthly_spend_avg_90d, 1.0)
+        if f.balance_eur >= 10 * spend:
+            s += SCORE["investor_wealth"]
+            ev.append(f"{fmt_eur(round(f.balance_eur, -2))} available, about {round(f.balance_eur / spend)} months of spending")
+        if any("pensioen" in r.counterparty.lower() for r in f.recurring_payments):
+            s += SCORE["investor_pension"]
+            ev.append("You save for your pension every year")
+    return s, ev
+
+
 def _score_retiree(f: Features) -> tuple[float, list[str]]:
     s, ev = 0.0, []
     if f.has_pension:
@@ -146,6 +166,7 @@ _SCORERS = {
     "young_professional": _score_young_professional,
     "young_family": _score_young_family,
     "freelancer": _score_freelancer,
+    "investor": _score_investor,
     "retiree": _score_retiree,
 }
 

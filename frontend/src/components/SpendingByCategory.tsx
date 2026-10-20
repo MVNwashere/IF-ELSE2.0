@@ -1,11 +1,12 @@
 import { categoryLabel } from "../format";
-import { useEur } from "../privacy";
+import { maskFrac, useEur, useMasked } from "../privacy";
 import { arr, num, str, type SectionProps } from "./types";
 
 interface Cat { category: string; eur: number }
 
 export default function SpendingByCategory({ props }: SectionProps) {
   const eur = useEur();
+  const masked = useMasked();
   const month = str(props.month_label, "This month");
   const total = num(props.total_eur);
   const cats = arr<Cat>(props.categories).slice(0, 6);
@@ -22,7 +23,7 @@ export default function SpendingByCategory({ props }: SectionProps) {
               <span style={{ fontWeight: 700 }}>{eur(c.eur)}</span>
             </div>
             <div style={{ height: 6, borderRadius: 3, background: "var(--border)", overflow: "hidden", marginTop: 2 }}>
-              <div style={{ width: `${(c.eur / max) * 100}%`, height: "100%", background: "var(--primary)", transition: "width .5s ease" }} />
+              <div style={{ width: `${maskFrac(c.eur / max, masked) * 100}%`, height: "100%", background: "var(--primary)", transition: "width .5s ease" }} />
             </div>
           </div>
         ))}

@@ -1,0 +1,78 @@
+{
+ "sources": [
+  {
+   "id": "psd2_other_banks", "name": "Your accounts at other banks", "provider": "PSD2 account information (your other bank)",
+   "kind": "psd2", "catalogue_id": "psd2-account-information-services",
+   "reads": ["Balances of your accounts at other banks", "Their transactions of the last 90 days"],
+   "goals": ["buy_home", "retire_well", "peace_of_mind", "go_freelance"],
+   "sensitivity": "high", "needs_consent": true, "consent_days": 90,
+   "why": "Your full picture: own funds for a home, idle savings elsewhere. PSD2 access ends after 90 days unless you renew it.",
+   "values": ["other_bank_accounts", "other_bank_balance_eur"]
+  },
+  {
+   "id": "ebox", "name": "eBox (government letters)", "provider": "eBox, the federal government's mailbox",
+   "kind": "government", "catalogue_id": "ebox",
+   "reads": ["Letters from the social insurance fund, tax office and pension service", "Amounts and due dates in those letters"],
+   "goals": ["go_freelance", "peace_of_mind", "retire_well"],
+   "sensitivity": "medium", "needs_consent": true, "consent_days": 365,
+   "why": "KBC spots the social contribution regularisation letter the day it arrives and checks your reserve covers it.",
+   "values": ["ebox_letters", "regularisation_eur", "regularisation_due"]
+  },
+  {
+   "id": "billit_invoices", "name": "Your Peppol invoices", "provider": "Billit / Peppol network",
+   "kind": "partner", "catalogue_id": "e-invoicing-billit",
+   "reads": ["Invoices you sent and their status (sent, opened, paid, overdue)"],
+   "goals": ["get_paid", "go_freelance"],
+   "sensitivity": "medium", "needs_consent": true, "consent_days": 180,
+   "why": "Open invoices, not just payments: KBC knows who owes what before it is late.",
+   "values": ["open_invoices_count", "open_invoices_eur", "overdue_invoices_count"]
+  },
+  {
+   "id": "kbo", "name": "Company register (KBO/CBE)", "provider": "Crossroads Bank for Enterprises (public data)",
+   "kind": "public", "catalogue_id": null,
+   "reads": ["Your company number, start date and registered activity"],
+   "goals": ["go_freelance", "get_paid", "first_employee"],
+   "sensitivity": "low", "needs_consent": false, "consent_days": 0,
+   "why": "Public register: no permission needed, shown so you know KBC uses it.",
+   "values": ["company_number", "company_start_date", "company_activity"]
+  },
+  {
+   "id": "mypension", "name": "mypension.be", "provider": "Federal Pension Service",
+   "kind": "government", "catalogue_id": null,
+   "reads": ["Your estimated statutory pension", "Supplementary pension built up with employers", "Your earliest retirement date"],
+   "goals": ["retire_well", "go_freelance"],
+   "sensitivity": "high", "needs_consent": true, "consent_days": 365,
+   "why": "An exact pension gap instead of an estimate from your income.",
+   "values": ["pension_statutory_monthly_eur", "pension_supplementary_eur", "pension_date"]
+  },
+  {
+   "id": "epc_flanders", "name": "Energy label database (EPC)", "provider": "Flemish Energy and Climate Agency (VEKA)",
+   "kind": "government", "catalogue_id": null,
+   "reads": ["The EPC label and score of your home's address"],
+   "goals": ["energy_upgrade", "buy_home"],
+   "sensitivity": "low", "needs_consent": true, "consent_days": 365,
+   "why": "The official label of your house, so the advice and the renovation obligation are exact.",
+   "values": ["epc_label", "epc_kwh_m2"]
+  },
+  {
+   "id": "fluvius_meter", "name": "Digital meter (Fluvius)", "provider": "Fluvius",
+   "kind": "utility", "catalogue_id": null,
+   "reads": ["Your electricity and gas use per month", "Your monthly peak (capacity tariff)"],
+   "goals": ["energy_upgrade"],
+   "sensitivity": "medium", "needs_consent": true, "consent_days": 365,
+   "why": "Real consumption instead of bills: KBC measures the saving after the works in kWh, not only in euros.",
+   "values": ["electricity_kwh_year", "gas_kwh_year", "peak_kw"]
+  }
+ ],
+ "step_hints": [
+  {"playbook": "retire_well", "step": "pension_gap", "source": "mypension", "prompt": "Connect mypension.be for an exact number instead of an estimate"},
+  {"playbook": "energy_upgrade", "step": "energy_check", "source": "fluvius_meter", "prompt": "Connect your digital meter to measure the saving in kWh"},
+  {"playbook": "energy_upgrade", "step": "advice", "source": "epc_flanders", "prompt": "Add your official EPC label so the advice is exact"},
+  {"playbook": "buy_home", "step": "budget", "source": "psd2_other_banks", "prompt": "Add your savings at other banks for your real budget"},
+  {"playbook": "buy_home", "step": "certificates", "source": "epc_flanders", "prompt": "Look up the house's EPC label before you order a new one"},
+  {"playbook": "go_freelance", "step": "tax_reserve", "source": "ebox", "prompt": "Connect eBox so KBC spots the regularisation letter the day it arrives"},
+  {"playbook": "go_freelance", "step": "pension", "source": "mypension", "prompt": "Connect mypension.be to see the pension you built as an employee"},
+  {"playbook": "get_paid", "step": "overview", "source": "billit_invoices", "prompt": "Connect your Peppol invoices to see open invoices, not just payments"},
+  {"playbook": "peace_of_mind", "step": "savings", "source": "psd2_other_banks", "prompt": "Add your other banks so idle money there works too"}
+ ]
+}

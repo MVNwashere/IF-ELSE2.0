@@ -1,0 +1,1605 @@
+[
+ {
+  "id": "home-loan",
+  "ecosystem": "Housing",
+  "name": "Home loan",
+  "service": "Home loan",
+  "partner": null
+ },
+ {
+  "id": "bridging-loan",
+  "ecosystem": "Housing",
+  "name": "Bridging loan",
+  "service": "Bridging loan",
+  "partner": null
+ },
+ {
+  "id": "renovation-loan",
+  "ecosystem": "Housing",
+  "name": "Renovation loan",
+  "service": "Renovation loan",
+  "partner": null
+ },
+ {
+  "id": "home-furnishing-loan",
+  "ecosystem": "Housing",
+  "name": "Home furnishing loan",
+  "service": "Home furnishing loan",
+  "partner": null
+ },
+ {
+  "id": "garden-or-terrace-loan",
+  "ecosystem": "Housing",
+  "name": "Garden or terrace loan",
+  "service": "Garden or terrace loan",
+  "partner": null
+ },
+ {
+  "id": "rental-guarantee",
+  "ecosystem": "Housing",
+  "name": "Rental guarantee",
+  "service": "Rental guarantee",
+  "partner": null
+ },
+ {
+  "id": "home-insurance",
+  "ecosystem": "Housing",
+  "name": "Home insurance",
+  "service": "Home insurance",
+  "partner": null
+ },
+ {
+  "id": "home-assistance-insurance",
+  "ecosystem": "Housing",
+  "name": "Home assistance insurance",
+  "service": "Home assistance insurance",
+  "partner": null
+ },
+ {
+  "id": "outstanding-balance-insurance",
+  "ecosystem": "Housing",
+  "name": "Outstanding balance insurance",
+  "service": "Outstanding balance insurance",
+  "partner": null
+ },
+ {
+  "id": "myhome",
+  "ecosystem": "Housing",
+  "name": "MyHome",
+  "service": "MyHome",
+  "partner": null
+ },
+ {
+  "id": "estimate-renovation-costs-and-grants-setle",
+  "ecosystem": "Housing",
+  "name": "Estimate renovation costs and grants - Setle",
+  "service": "Estimate renovation costs and grants",
+  "partner": "Setle"
+ },
+ {
+  "id": "quote-for-new-windows-impact-us-today",
+  "ecosystem": "Housing",
+  "name": "Quote for new windows - Impact us today",
+  "service": "Quote for new windows",
+  "partner": "Impact us today"
+ },
+ {
+  "id": "certificates-and-inspections-de-immowinkel",
+  "ecosystem": "Housing",
+  "name": "Certificates and inspections - De Immowinkel",
+  "service": "Certificates and inspections",
+  "partner": "De Immowinkel"
+ },
+ {
+  "id": "search-for-a-home-immoscoop",
+  "ecosystem": "Housing",
+  "name": "Search for a home - Immoscoop",
+  "service": "Search for a home",
+  "partner": "Immoscoop"
+ },
+ {
+  "id": "property-valuation-by-an-estate-agent-immoscoop",
+  "ecosystem": "Housing",
+  "name": "Property valuation by an estate agent - Immoscoop",
+  "service": "Property valuation by an estate agent",
+  "partner": "Immoscoop"
+ },
+ {
+  "id": "indicative-online-property-valuation",
+  "ecosystem": "Housing",
+  "name": "Indicative online property valuation",
+  "service": "Indicative online property valuation",
+  "partner": null
+ },
+ {
+  "id": "calculate-housing-budget",
+  "ecosystem": "Housing",
+  "name": "Calculate housing budget",
+  "service": "Calculate housing budget",
+  "partner": null
+ },
+ {
+  "id": "renovation-loan-for-co-owners-associations",
+  "ecosystem": "Housing",
+  "name": "Renovation loan for co-owners' associations",
+  "service": "Renovation loan for co-owners' associations",
+  "partner": null
+ },
+ {
+  "id": "home-insurance-api",
+  "ecosystem": "Housing",
+  "name": "Home Insurance API",
+  "service": "Home Insurance API",
+  "partner": null
+ },
+ {
+  "id": "home-insurance-widget",
+  "ecosystem": "Housing",
+  "name": "Home Insurance Widget",
+  "service": "Home Insurance Widget",
+  "partner": null
+ },
+ {
+  "id": "home-loan-api",
+  "ecosystem": "Housing",
+  "name": "Home Loan API",
+  "service": "Home Loan API",
+  "partner": null
+ },
+ {
+  "id": "home-loan-widget",
+  "ecosystem": "Housing",
+  "name": "Home Loan Widget",
+  "service": "Home Loan Widget",
+  "partner": null
+ },
+ {
+  "id": "home-loans-partner-hub",
+  "ecosystem": "Housing",
+  "name": "Home Loans - Partner Hub",
+  "service": "Home Loans",
+  "partner": "Partner Hub"
+ },
+ {
+  "id": "petrol-or-diesel-car-loan",
+  "ecosystem": "Mobility",
+  "name": "Petrol or diesel car loan",
+  "service": "Petrol or diesel car loan",
+  "partner": null
+ },
+ {
+  "id": "plug-in-hybrid-car-loan",
+  "ecosystem": "Mobility",
+  "name": "Plug-in hybrid car loan",
+  "service": "Plug-in hybrid car loan",
+  "partner": null
+ },
+ {
+  "id": "electric-car-loan",
+  "ecosystem": "Mobility",
+  "name": "Electric car loan",
+  "service": "Electric car loan",
+  "partner": null
+ },
+ {
+  "id": "bicycle-scooter-or-motorcycle-loan",
+  "ecosystem": "Mobility",
+  "name": "Bicycle, scooter or motorcycle loan",
+  "service": "Bicycle, scooter or motorcycle loan",
+  "partner": null
+ },
+ {
+  "id": "camper-caravan-trailer-or-boat-loan",
+  "ecosystem": "Mobility",
+  "name": "Camper, caravan, trailer or boat loan",
+  "service": "Camper, caravan, trailer or boat loan",
+  "partner": null
+ },
+ {
+  "id": "car-loan-plus",
+  "ecosystem": "Mobility",
+  "name": "Car Loan Plus",
+  "service": "Car Loan Plus",
+  "partner": null
+ },
+ {
+  "id": "car-insurance",
+  "ecosystem": "Mobility",
+  "name": "Car insurance",
+  "service": "Car insurance",
+  "partner": null
+ },
+ {
+  "id": "electric-car-insurance",
+  "ecosystem": "Mobility",
+  "name": "Electric car insurance",
+  "service": "Electric car insurance",
+  "partner": null
+ },
+ {
+  "id": "bicycle-insurance",
+  "ecosystem": "Mobility",
+  "name": "Bicycle insurance",
+  "service": "Bicycle insurance",
+  "partner": null
+ },
+ {
+  "id": "moped-insurance",
+  "ecosystem": "Mobility",
+  "name": "Moped insurance",
+  "service": "Moped insurance",
+  "partner": null
+ },
+ {
+  "id": "motorcycle-insurance",
+  "ecosystem": "Mobility",
+  "name": "Motorcycle insurance",
+  "service": "Motorcycle insurance",
+  "partner": null
+ },
+ {
+  "id": "mymobility",
+  "ecosystem": "Mobility",
+  "name": "MyMobility",
+  "service": "MyMobility",
+  "partner": null
+ },
+ {
+  "id": "calculate-monthly-car-costs",
+  "ecosystem": "Mobility",
+  "name": "Calculate monthly car costs",
+  "service": "Calculate monthly car costs",
+  "partner": null
+ },
+ {
+  "id": "vab-vignettes-and-toll-badge",
+  "ecosystem": "Mobility",
+  "name": "VAB vignettes and toll badge",
+  "service": "VAB vignettes and toll badge",
+  "partner": null
+ },
+ {
+  "id": "pay-for-parking-4411",
+  "ecosystem": "Mobility",
+  "name": "Pay for parking - 4411",
+  "service": "Pay for parking",
+  "partner": "4411"
+ },
+ {
+  "id": "parking-with-number-plate-recognition-q-park",
+  "ecosystem": "Mobility",
+  "name": "Parking with number plate recognition - Q-Park",
+  "service": "Parking with number plate recognition",
+  "partner": "Q-Park"
+ },
+ {
+  "id": "car-sharing-cambio",
+  "ecosystem": "Mobility",
+  "name": "Car sharing - Cambio",
+  "service": "Car sharing",
+  "partner": "Cambio"
+ },
+ {
+  "id": "bus-and-tram-tickets-de-lijn",
+  "ecosystem": "Mobility",
+  "name": "Bus and tram tickets - De Lijn",
+  "service": "Bus and tram tickets",
+  "partner": "De Lijn"
+ },
+ {
+  "id": "train-tickets-nmbs",
+  "ecosystem": "Mobility",
+  "name": "Train tickets - NMBS",
+  "service": "Train tickets",
+  "partner": "NMBS"
+ },
+ {
+  "id": "top-up-brupass-10-mivb",
+  "ecosystem": "Mobility",
+  "name": "Top up BRUPASS 10 - MIVB",
+  "service": "Top up BRUPASS 10",
+  "partner": "MIVB"
+ },
+ {
+  "id": "shared-bicycles-mobit",
+  "ecosystem": "Mobility",
+  "name": "Shared bicycles - Mobit",
+  "service": "Shared bicycles",
+  "partner": "Mobit"
+ },
+ {
+  "id": "shared-bicycles-blue-bike",
+  "ecosystem": "Mobility",
+  "name": "Shared bicycles - Blue-bike",
+  "service": "Shared bicycles",
+  "partner": "Blue-bike"
+ },
+ {
+  "id": "shared-bicycles-velo-antwerpen",
+  "ecosystem": "Mobility",
+  "name": "Shared bicycles - Velo Antwerpen",
+  "service": "Shared bicycles",
+  "partner": "Velo Antwerpen"
+ },
+ {
+  "id": "manage-a-leased-vehicle-movesmart-and-vab",
+  "ecosystem": "Mobility",
+  "name": "Manage a leased vehicle - MoveSmart and VAB",
+  "service": "Manage a leased vehicle",
+  "partner": "MoveSmart and VAB"
+ },
+ {
+  "id": "prepare-for-the-driving-test-and-book-driving-lessons",
+  "ecosystem": "Mobility",
+  "name": "Prepare for the driving test and book driving lessons",
+  "service": "Prepare for the driving test and book driving lessons",
+  "partner": null
+ },
+ {
+  "id": "pay-for-fuel-q8",
+  "ecosystem": "Mobility",
+  "name": "Pay for fuel - Q8",
+  "service": "Pay for fuel",
+  "partner": "Q8"
+ },
+ {
+  "id": "manage-business-mobility-costs",
+  "ecosystem": "Mobility",
+  "name": "Manage business mobility costs",
+  "service": "Manage business mobility costs",
+  "partner": null
+ },
+ {
+  "id": "vab-fuel-and-charging-cards",
+  "ecosystem": "Mobility",
+  "name": "VAB fuel and charging cards",
+  "service": "VAB fuel and charging cards",
+  "partner": null
+ },
+ {
+  "id": "kbc-employee-mobility-movesmart-integration",
+  "ecosystem": "Mobility",
+  "name": "KBC Employee Mobility - MoveSmart integration",
+  "service": "KBC Employee Mobility",
+  "partner": "MoveSmart integration"
+ },
+ {
+  "id": "car-insurance-api",
+  "ecosystem": "Mobility",
+  "name": "Car Insurance API",
+  "service": "Car Insurance API",
+  "partner": null
+ },
+ {
+  "id": "car-insurance-widget",
+  "ecosystem": "Mobility",
+  "name": "Car Insurance Widget",
+  "service": "Car Insurance Widget",
+  "partner": null
+ },
+ {
+  "id": "pension-savings-fund",
+  "ecosystem": "Pensions",
+  "name": "Pension savings fund",
+  "service": "Pension savings fund",
+  "partner": null
+ },
+ {
+  "id": "pension-savings-insurance",
+  "ecosystem": "Pensions",
+  "name": "Pension savings insurance",
+  "service": "Pension savings insurance",
+  "partner": null
+ },
+ {
+  "id": "supplementary-pension-for-the-self-employed",
+  "ecosystem": "Pensions",
+  "name": "Supplementary pension for the self-employed",
+  "service": "Supplementary pension for the self-employed",
+  "partner": null
+ },
+ {
+  "id": "social-supplementary-pension-for-the-self-employed",
+  "ecosystem": "Pensions",
+  "name": "Social supplementary pension for the self-employed",
+  "service": "Social supplementary pension for the self-employed",
+  "partner": null
+ },
+ {
+  "id": "individual-pension-commitment",
+  "ecosystem": "Pensions",
+  "name": "Individual pension commitment",
+  "service": "Individual pension commitment",
+  "partner": null
+ },
+ {
+  "id": "pension-agreement-for-the-self-employed",
+  "ecosystem": "Pensions",
+  "name": "Pension agreement for the self-employed",
+  "service": "Pension agreement for the self-employed",
+  "partner": null
+ },
+ {
+  "id": "pension-plans-for-medical-professionals",
+  "ecosystem": "Pensions",
+  "name": "Pension plans for medical professionals",
+  "service": "Pension plans for medical professionals",
+  "partner": null
+ },
+ {
+  "id": "kbc-team-benefit-plan",
+  "ecosystem": "Pensions",
+  "name": "KBC Team Benefit Plan",
+  "service": "KBC Team Benefit Plan",
+  "partner": null
+ },
+ {
+  "id": "kbc-pension-fund-solutions",
+  "ecosystem": "Pensions",
+  "name": "KBC Pension Fund Solutions",
+  "service": "KBC Pension Fund Solutions",
+  "partner": null
+ },
+ {
+  "id": "kbc-investment-plan",
+  "ecosystem": "Investing",
+  "name": "KBC investment plan",
+  "service": "KBC investment plan",
+  "partner": null
+ },
+ {
+  "id": "invest-spare-change",
+  "ecosystem": "Investing",
+  "name": "Invest spare change",
+  "service": "Invest spare change",
+  "partner": null
+ },
+ {
+  "id": "investment-funds",
+  "ecosystem": "Investing",
+  "name": "Investment funds",
+  "service": "Investment funds",
+  "partner": null
+ },
+ {
+  "id": "thematic-investing",
+  "ecosystem": "Investing",
+  "name": "Thematic investing",
+  "service": "Thematic investing",
+  "partner": null
+ },
+ {
+  "id": "responsible-investing",
+  "ecosystem": "Investing",
+  "name": "Responsible investing",
+  "service": "Responsible investing",
+  "partner": null
+ },
+ {
+  "id": "managed-investing",
+  "ecosystem": "Investing",
+  "name": "Managed investing",
+  "service": "Managed investing",
+  "partner": null
+ },
+ {
+  "id": "self-directed-investing-bolero",
+  "ecosystem": "Investing",
+  "name": "Self-directed investing - Bolero",
+  "service": "Self-directed investing",
+  "partner": "Bolero"
+ },
+ {
+  "id": "branch-23-investment-insurance",
+  "ecosystem": "Investing",
+  "name": "Branch 23 investment insurance",
+  "service": "Branch 23 investment insurance",
+  "partner": null
+ },
+ {
+  "id": "portfolio-management",
+  "ecosystem": "Investing",
+  "name": "Portfolio management",
+  "service": "Portfolio management",
+  "partner": null
+ },
+ {
+  "id": "savings-accounts",
+  "ecosystem": "Savings",
+  "name": "Savings accounts",
+  "service": "Savings accounts",
+  "partner": null
+ },
+ {
+  "id": "save-for-someone-else",
+  "ecosystem": "Savings",
+  "name": "Save for someone else",
+  "service": "Save for someone else",
+  "partner": null
+ },
+ {
+  "id": "branch-21-savings-insurance",
+  "ecosystem": "Savings",
+  "name": "Branch 21 savings insurance",
+  "service": "Branch 21 savings insurance",
+  "partner": null
+ },
+ {
+  "id": "business-term-account",
+  "ecosystem": "Savings",
+  "name": "Business term account",
+  "service": "Business term account",
+  "partner": null
+ },
+ {
+  "id": "kbc-term-deposit-pro",
+  "ecosystem": "Savings",
+  "name": "KBC Term Deposit PRO",
+  "service": "KBC Term Deposit PRO",
+  "partner": null
+ },
+ {
+  "id": "kbc-business-pro-account",
+  "ecosystem": "Business",
+  "name": "KBC Business PRO Account",
+  "service": "KBC Business PRO Account",
+  "partner": null
+ },
+ {
+  "id": "kbc-business-debit-card",
+  "ecosystem": "Business",
+  "name": "KBC Business Debit Card",
+  "service": "KBC Business Debit Card",
+  "partner": null
+ },
+ {
+  "id": "kbc-business-credit-card",
+  "ecosystem": "Business",
+  "name": "KBC Business Credit Card",
+  "service": "KBC Business Credit Card",
+  "partner": null
+ },
+ {
+  "id": "kbc-mastercard-business-essential",
+  "ecosystem": "Business",
+  "name": "KBC Mastercard Business Essential",
+  "service": "KBC Mastercard Business Essential",
+  "partner": null
+ },
+ {
+  "id": "kbc-mastercard-business-extra",
+  "ecosystem": "Business",
+  "name": "KBC Mastercard Business Extra",
+  "service": "KBC Mastercard Business Extra",
+  "partner": null
+ },
+ {
+  "id": "kbc-business-prepaid-card",
+  "ecosystem": "Business",
+  "name": "KBC Business Prepaid Card",
+  "service": "KBC Business Prepaid Card",
+  "partner": null
+ },
+ {
+  "id": "business-multi-currency",
+  "ecosystem": "Business",
+  "name": "Business multi-currency",
+  "service": "Business multi-currency",
+  "partner": null
+ },
+ {
+  "id": "e-invoicing-billit",
+  "ecosystem": "Business",
+  "name": "E-invoicing - Billit",
+  "service": "E-invoicing",
+  "partner": "Billit"
+ },
+ {
+  "id": "collect-unpaid-invoices-go-solid",
+  "ecosystem": "Business",
+  "name": "Collect unpaid invoices - Go Solid",
+  "service": "Collect unpaid invoices",
+  "partner": "Go Solid"
+ },
+ {
+  "id": "send-an-expense-claim-to-your-accountant",
+  "ecosystem": "Business",
+  "name": "Send an expense claim to your accountant",
+  "service": "Send an expense claim to your accountant",
+  "partner": null
+ },
+ {
+  "id": "payment-terminals",
+  "ecosystem": "Business",
+  "name": "Payment terminals",
+  "service": "Payment terminals",
+  "partner": null
+ },
+ {
+  "id": "kbc-payment-button",
+  "ecosystem": "Business",
+  "name": "KBC payment button",
+  "service": "KBC payment button",
+  "partner": null
+ },
+ {
+  "id": "kbc-paypage",
+  "ecosystem": "Business",
+  "name": "KBC Paypage",
+  "service": "KBC Paypage",
+  "partner": null
+ },
+ {
+  "id": "electronic-invoicing-soluz-io",
+  "ecosystem": "Business",
+  "name": "Electronic invoicing - Soluz.io",
+  "service": "Electronic invoicing",
+  "partner": "Soluz.io"
+ },
+ {
+  "id": "kbc-invoicing-services",
+  "ecosystem": "Business",
+  "name": "KBC Invoicing Services",
+  "service": "KBC Invoicing Services",
+  "partner": null
+ },
+ {
+  "id": "machine-to-machine-payment-solutions",
+  "ecosystem": "Business",
+  "name": "Machine-to-machine payment solutions",
+  "service": "Machine-to-machine payment solutions",
+  "partner": null
+ },
+ {
+  "id": "cash-pooling",
+  "ecosystem": "Business",
+  "name": "Cash pooling",
+  "service": "Cash pooling",
+  "partner": null
+ },
+ {
+  "id": "business-cash-services",
+  "ecosystem": "Business",
+  "name": "Business cash services",
+  "service": "Business cash services",
+  "partner": null
+ },
+ {
+  "id": "factoring-and-accounts-receivable-management",
+  "ecosystem": "Business",
+  "name": "Factoring and accounts receivable management",
+  "service": "Factoring and accounts receivable management",
+  "partner": null
+ },
+ {
+  "id": "comfin-touch",
+  "ecosystem": "Business",
+  "name": "ComFin Touch",
+  "service": "ComFin Touch",
+  "partner": null
+ },
+ {
+  "id": "investment-loan",
+  "ecosystem": "Business",
+  "name": "Investment loan",
+  "service": "Investment loan",
+  "partner": null
+ },
+ {
+  "id": "business-budget-facility",
+  "ecosystem": "Business",
+  "name": "Business Budget Facility",
+  "service": "Business Budget Facility",
+  "partner": null
+ },
+ {
+  "id": "current-account-advance",
+  "ecosystem": "Business",
+  "name": "Current account advance",
+  "service": "Current account advance",
+  "partner": null
+ },
+ {
+  "id": "straight-loans",
+  "ecosystem": "Business",
+  "name": "Straight Loans",
+  "service": "Straight Loans",
+  "partner": null
+ },
+ {
+  "id": "financing-advance-tax-payments",
+  "ecosystem": "Business",
+  "name": "Financing advance tax payments",
+  "service": "Financing advance tax payments",
+  "partner": null
+ },
+ {
+  "id": "cash-budget-credit-facility",
+  "ecosystem": "Business",
+  "name": "Cash budget credit facility",
+  "service": "Cash budget credit facility",
+  "partner": null
+ },
+ {
+  "id": "roll-over-line-of-credit",
+  "ecosystem": "Business",
+  "name": "Roll-Over Line of Credit",
+  "service": "Roll-Over Line of Credit",
+  "partner": null
+ },
+ {
+  "id": "b2b-asset-financing",
+  "ecosystem": "Business",
+  "name": "B2B Asset Financing",
+  "service": "B2B Asset Financing",
+  "partner": null
+ },
+ {
+  "id": "start-it-kbc",
+  "ecosystem": "Business",
+  "name": "Start it @KBC",
+  "service": "Start it @KBC",
+  "partner": null
+ },
+ {
+  "id": "kbc-innovation-banking",
+  "ecosystem": "Business",
+  "name": "KBC Innovation Banking",
+  "service": "KBC Innovation Banking",
+  "partner": null
+ },
+ {
+  "id": "boostpack",
+  "ecosystem": "Business",
+  "name": "Boostpack",
+  "service": "Boostpack",
+  "partner": null
+ },
+ {
+  "id": "tax-and-legal-advice-for-smes",
+  "ecosystem": "Business",
+  "name": "Tax and legal advice for SMEs",
+  "service": "Tax and legal advice for SMEs",
+  "partner": null
+ },
+ {
+  "id": "business-transfer-advice",
+  "ecosystem": "Business",
+  "name": "Business transfer advice",
+  "service": "Business transfer advice",
+  "partner": null
+ },
+ {
+  "id": "business-valuation-advice",
+  "ecosystem": "Business",
+  "name": "Business valuation advice",
+  "service": "Business valuation advice",
+  "partner": null
+ },
+ {
+  "id": "business-property-advice",
+  "ecosystem": "Business",
+  "name": "Business property advice",
+  "service": "Business property advice",
+  "partner": null
+ },
+ {
+  "id": "acquisition-advice",
+  "ecosystem": "Business",
+  "name": "Acquisition advice",
+  "service": "Acquisition advice",
+  "partner": null
+ },
+ {
+  "id": "strategic-advice-through-a-relationship-manager",
+  "ecosystem": "Business",
+  "name": "Strategic advice through a relationship manager",
+  "service": "Strategic advice through a relationship manager",
+  "partner": null
+ },
+ {
+  "id": "working-capital-forecasts",
+  "ecosystem": "Business",
+  "name": "Working capital forecasts",
+  "service": "Working capital forecasts",
+  "partner": null
+ },
+ {
+  "id": "working-capital-sector-comparison",
+  "ecosystem": "Business",
+  "name": "Working capital sector comparison",
+  "service": "Working capital sector comparison",
+  "partner": null
+ },
+ {
+  "id": "digital-signatures-and-powers-of-attorney",
+  "ecosystem": "Business",
+  "name": "Digital signatures and powers of attorney",
+  "service": "Digital signatures and powers of attorney",
+  "partner": null
+ },
+ {
+  "id": "multi-bank-account-overview",
+  "ecosystem": "Business",
+  "name": "Multi-bank account overview",
+  "service": "Multi-bank account overview",
+  "partner": null
+ },
+ {
+  "id": "b2b-asset-financing-partner-hub",
+  "ecosystem": "Business",
+  "name": "B2B Asset Financing - Partner Hub",
+  "service": "B2B Asset Financing",
+  "partner": "Partner Hub"
+ },
+ {
+  "id": "business-account-partner-hub",
+  "ecosystem": "Business",
+  "name": "Business Account - Partner Hub",
+  "service": "Business Account",
+  "partner": "Partner Hub"
+ },
+ {
+  "id": "bancontact-pro-in-store",
+  "ecosystem": "Business",
+  "name": "Bancontact Pro In Store",
+  "service": "Bancontact Pro In Store",
+  "partner": null
+ },
+ {
+  "id": "bancontact-pro-online",
+  "ecosystem": "Business",
+  "name": "Bancontact Pro Online",
+  "service": "Bancontact Pro Online",
+  "partner": null
+ },
+ {
+  "id": "joyn-for-merchants",
+  "ecosystem": "Business",
+  "name": "Joyn for merchants",
+  "service": "Joyn for merchants",
+  "partner": null
+ },
+ {
+  "id": "airport-fast-lane-and-lounge-pass-brussels-airport",
+  "ecosystem": "Travel",
+  "name": "Airport Fast Lane and Lounge Pass - Brussels Airport",
+  "service": "Airport Fast Lane and Lounge Pass",
+  "partner": "Brussels Airport"
+ },
+ {
+  "id": "travel-esim-firsty",
+  "ecosystem": "Travel",
+  "name": "Travel eSIM - Firsty",
+  "service": "Travel eSIM",
+  "partner": "Firsty"
+ },
+ {
+  "id": "travel-insurance",
+  "ecosystem": "Travel",
+  "name": "Travel insurance",
+  "service": "Travel insurance",
+  "partner": null
+ },
+ {
+  "id": "energy-loan",
+  "ecosystem": "Energy and sustainability",
+  "name": "Energy loan",
+  "service": "Energy loan",
+  "partner": null
+ },
+ {
+  "id": "calculate-solar-panels-and-request-a-quote",
+  "ecosystem": "Energy and sustainability",
+  "name": "Calculate solar panels and request a quote",
+  "service": "Calculate solar panels and request a quote",
+  "partner": null
+ },
+ {
+  "id": "calculate-a-home-battery-and-request-a-quote",
+  "ecosystem": "Energy and sustainability",
+  "name": "Calculate a home battery and request a quote",
+  "service": "Calculate a home battery and request a quote",
+  "partner": null
+ },
+ {
+  "id": "insulation-quote-impact-us-today",
+  "ecosystem": "Energy and sustainability",
+  "name": "Insulation quote - Impact us today",
+  "service": "Insulation quote",
+  "partner": "Impact us today"
+ },
+ {
+  "id": "heating-quote-impact-us-today",
+  "ecosystem": "Energy and sustainability",
+  "name": "Heating quote - Impact us today",
+  "service": "Heating quote",
+  "partner": "Impact us today"
+ },
+ {
+  "id": "air-conditioning-quote-impact-us-today",
+  "ecosystem": "Energy and sustainability",
+  "name": "Air-conditioning quote - Impact us today",
+  "service": "Air-conditioning quote",
+  "partner": "Impact us today"
+ },
+ {
+  "id": "group-purchase-of-electricity-and-gas",
+  "ecosystem": "Energy and sustainability",
+  "name": "Group purchase of electricity and gas",
+  "service": "Group purchase of electricity and gas",
+  "partner": null
+ },
+ {
+  "id": "energy-consumption-and-saving-tips",
+  "ecosystem": "Energy and sustainability",
+  "name": "Energy consumption and saving tips",
+  "service": "Energy consumption and saving tips",
+  "partner": null
+ },
+ {
+  "id": "ecowise",
+  "ecosystem": "Energy and sustainability",
+  "name": "ecoWise",
+  "service": "ecoWise",
+  "partner": null
+ },
+ {
+  "id": "sustainability-advice-encon",
+  "ecosystem": "Energy and sustainability",
+  "name": "Sustainability advice - Encon",
+  "service": "Sustainability advice",
+  "partner": "Encon"
+ },
+ {
+  "id": "water-resilience-sweco",
+  "ecosystem": "Energy and sustainability",
+  "name": "Water resilience - Sweco",
+  "service": "Water resilience",
+  "partner": "Sweco"
+ },
+ {
+  "id": "kube-esg",
+  "ecosystem": "Energy and sustainability",
+  "name": "Kube ESG",
+  "service": "Kube ESG",
+  "partner": null
+ },
+ {
+  "id": "business-co2-insights-and-sector-comparison",
+  "ecosystem": "Energy and sustainability",
+  "name": "Business CO2 insights and sector comparison",
+  "service": "Business CO2 insights and sector comparison",
+  "partner": null
+ },
+ {
+  "id": "kbc-basic-account",
+  "ecosystem": "Everyday banking and payments",
+  "name": "KBC Basic Account",
+  "service": "KBC Basic Account",
+  "partner": null
+ },
+ {
+  "id": "kbc-plus-account",
+  "ecosystem": "Everyday banking and payments",
+  "name": "KBC Plus Account",
+  "service": "KBC Plus Account",
+  "partner": null
+ },
+ {
+  "id": "joint-account",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Joint account",
+  "service": "Joint account",
+  "partner": null
+ },
+ {
+  "id": "kbc-budget-facility",
+  "ecosystem": "Everyday banking and payments",
+  "name": "KBC Budget Facility",
+  "service": "KBC Budget Facility",
+  "partner": null
+ },
+ {
+  "id": "kbc-basic-banking-service",
+  "ecosystem": "Everyday banking and payments",
+  "name": "KBC Basic Banking Service",
+  "service": "KBC Basic Banking Service",
+  "partner": null
+ },
+ {
+  "id": "kbc-universal-banking-service",
+  "ecosystem": "Everyday banking and payments",
+  "name": "KBC Universal Banking Service",
+  "service": "KBC Universal Banking Service",
+  "partner": null
+ },
+ {
+  "id": "debit-cards",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Debit cards",
+  "service": "Debit cards",
+  "partner": null
+ },
+ {
+  "id": "credit-cards",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Credit cards",
+  "service": "Credit cards",
+  "partner": null
+ },
+ {
+  "id": "cash-services",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Cash services",
+  "service": "Cash services",
+  "partner": null
+ },
+ {
+  "id": "instalment-repayment-of-credit-card-balance",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Instalment repayment of credit card balance",
+  "service": "Instalment repayment of credit card balance",
+  "partner": null
+ },
+ {
+  "id": "loans-for-personal-expenses-studies-or-holidays",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Loans for personal expenses, studies or holidays",
+  "service": "Loans for personal expenses, studies or holidays",
+  "partner": null
+ },
+ {
+  "id": "apple-pay",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Apple Pay",
+  "service": "Apple Pay",
+  "partner": null
+ },
+ {
+  "id": "wero",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Wero",
+  "service": "Wero",
+  "partner": null
+ },
+ {
+  "id": "paypal-account-overview",
+  "ecosystem": "Everyday banking and payments",
+  "name": "PayPal account overview",
+  "service": "PayPal account overview",
+  "partner": null
+ },
+ {
+  "id": "split-group-expenses",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Split group expenses",
+  "service": "Split group expenses",
+  "partner": null
+ },
+ {
+  "id": "kate-wallet",
+  "ecosystem": "Everyday banking and payments",
+  "name": "Kate Wallet",
+  "service": "Kate Wallet",
+  "partner": null
+ },
+ {
+  "id": "family-insurance",
+  "ecosystem": "Family and protection",
+  "name": "Family insurance",
+  "service": "Family insurance",
+  "partner": null
+ },
+ {
+  "id": "accident-insurance",
+  "ecosystem": "Family and protection",
+  "name": "Accident insurance",
+  "service": "Accident insurance",
+  "partner": null
+ },
+ {
+  "id": "life-insurance",
+  "ecosystem": "Family and protection",
+  "name": "Life insurance",
+  "service": "Life insurance",
+  "partner": null
+ },
+ {
+  "id": "funeral-insurance",
+  "ecosystem": "Family and protection",
+  "name": "Funeral insurance",
+  "service": "Funeral insurance",
+  "partner": null
+ },
+ {
+  "id": "service-vouchers",
+  "ecosystem": "Family and protection",
+  "name": "Service vouchers",
+  "service": "Service vouchers",
+  "partner": null
+ },
+ {
+  "id": "accident-insurance-for-assisting-family-members",
+  "ecosystem": "Family and protection",
+  "name": "Accident insurance for assisting family members",
+  "service": "Accident insurance for assisting family members",
+  "partner": null
+ },
+ {
+  "id": "hospitalisation-insurance",
+  "ecosystem": "Health and wellbeing",
+  "name": "Hospitalisation insurance",
+  "service": "Hospitalisation insurance",
+  "partner": null
+ },
+ {
+  "id": "view-medical-records-helena",
+  "ecosystem": "Health and wellbeing",
+  "name": "View medical records - Helena",
+  "service": "View medical records",
+  "partner": "Helena"
+ },
+ {
+  "id": "kbc-hospital-care",
+  "ecosystem": "Health and wellbeing",
+  "name": "KBC Hospital Care",
+  "service": "KBC Hospital Care",
+  "partner": null
+ },
+ {
+  "id": "leadlife-plus",
+  "ecosystem": "Health and wellbeing",
+  "name": "Leadlife Plus",
+  "service": "Leadlife Plus",
+  "partner": null
+ },
+ {
+  "id": "private-banker-advice",
+  "ecosystem": "Wealth and estate planning",
+  "name": "Private banker advice",
+  "service": "Private banker advice",
+  "partner": null
+ },
+ {
+  "id": "private-plan",
+  "ecosystem": "Wealth and estate planning",
+  "name": "Private Plan",
+  "service": "Private Plan",
+  "partner": null
+ },
+ {
+  "id": "inheritance-planning-service",
+  "ecosystem": "Wealth and estate planning",
+  "name": "Inheritance Planning Service",
+  "service": "Inheritance Planning Service",
+  "partner": null
+ },
+ {
+  "id": "real-estate-service",
+  "ecosystem": "Wealth and estate planning",
+  "name": "Real Estate Service",
+  "service": "Real Estate Service",
+  "partner": null
+ },
+ {
+  "id": "find-flexible-workers-nowjobs",
+  "ecosystem": "Work and employees",
+  "name": "Find flexible workers - NOWJOBS",
+  "service": "Find flexible workers",
+  "partner": "NOWJOBS"
+ },
+ {
+  "id": "human-capital-solutions",
+  "ecosystem": "Work and employees",
+  "name": "Human Capital Solutions",
+  "service": "Human Capital Solutions",
+  "partner": null
+ },
+ {
+  "id": "kbc-employee-care",
+  "ecosystem": "Work and employees",
+  "name": "KBC Employee Care",
+  "service": "KBC Employee Care",
+  "partner": null
+ },
+ {
+  "id": "kbc-team-protect-plan",
+  "ecosystem": "Work and employees",
+  "name": "KBC Team Protect Plan",
+  "service": "KBC Team Protect Plan",
+  "partner": null
+ },
+ {
+  "id": "occupational-accident-insurance",
+  "ecosystem": "Work and employees",
+  "name": "Occupational accident insurance",
+  "service": "Occupational accident insurance",
+  "partner": null
+ },
+ {
+  "id": "share-option-and-warrant-plans",
+  "ecosystem": "Work and employees",
+  "name": "Share option and warrant plans",
+  "service": "Share option and warrant plans",
+  "partner": null
+ },
+ {
+  "id": "documentary-collection-for-imports",
+  "ecosystem": "International business",
+  "name": "Documentary collection for imports",
+  "service": "Documentary collection for imports",
+  "partner": null
+ },
+ {
+  "id": "documentary-collection-for-exports",
+  "ecosystem": "International business",
+  "name": "Documentary collection for exports",
+  "service": "Documentary collection for exports",
+  "partner": null
+ },
+ {
+  "id": "documentary-credit-for-imports",
+  "ecosystem": "International business",
+  "name": "Documentary credit for imports",
+  "service": "Documentary credit for imports",
+  "partner": null
+ },
+ {
+  "id": "documentary-credit-for-exports",
+  "ecosystem": "International business",
+  "name": "Documentary credit for exports",
+  "service": "Documentary credit for exports",
+  "partner": null
+ },
+ {
+  "id": "international-bank-guarantees",
+  "ecosystem": "International business",
+  "name": "International bank guarantees",
+  "service": "International bank guarantees",
+  "partner": null
+ },
+ {
+  "id": "kbc-flexims",
+  "ecosystem": "International business",
+  "name": "KBC Flexims",
+  "service": "KBC Flexims",
+  "partner": null
+ },
+ {
+  "id": "avalised-bill-of-exchange",
+  "ecosystem": "International business",
+  "name": "Avalised bill of exchange",
+  "service": "Avalised bill of exchange",
+  "partner": null
+ },
+ {
+  "id": "import-forfaiting",
+  "ecosystem": "International business",
+  "name": "Import forfaiting",
+  "service": "Import forfaiting",
+  "partner": null
+ },
+ {
+  "id": "hedge-foreign-exchange-and-interest-rate-risk",
+  "ecosystem": "International business",
+  "name": "Hedge foreign exchange and interest rate risk",
+  "service": "Hedge foreign exchange and interest rate risk",
+  "partner": null
+ },
+ {
+  "id": "go-deal-pro",
+  "ecosystem": "International business",
+  "name": "Go&Deal Pro",
+  "service": "Go&Deal Pro",
+  "partner": null
+ },
+ {
+  "id": "business-liability-insurance",
+  "ecosystem": "Business protection",
+  "name": "Business liability insurance",
+  "service": "Business liability insurance",
+  "partner": null
+ },
+ {
+  "id": "professional-liability-insurance",
+  "ecosystem": "Business protection",
+  "name": "Professional liability insurance",
+  "service": "Professional liability insurance",
+  "partner": null
+ },
+ {
+  "id": "medical-professional-liability-insurance",
+  "ecosystem": "Business protection",
+  "name": "Medical professional liability insurance",
+  "service": "Medical professional liability insurance",
+  "partner": null
+ },
+ {
+  "id": "directors-liability-insurance",
+  "ecosystem": "Business protection",
+  "name": "Directors' liability insurance",
+  "service": "Directors' liability insurance",
+  "partner": null
+ },
+ {
+  "id": "business-legal-assistance-insurance",
+  "ecosystem": "Business protection",
+  "name": "Business legal assistance insurance",
+  "service": "Business legal assistance insurance",
+  "partner": null
+ },
+ {
+  "id": "ten-year-liability-insurance",
+  "ecosystem": "Business protection",
+  "name": "Ten-year liability insurance",
+  "service": "Ten-year liability insurance",
+  "partner": null
+ },
+ {
+  "id": "office-and-building-insurance",
+  "ecosystem": "Business protection",
+  "name": "Office and building insurance",
+  "service": "Office and building insurance",
+  "partner": null
+ },
+ {
+  "id": "industrial-property-insurance",
+  "ecosystem": "Business protection",
+  "name": "Industrial property insurance",
+  "service": "Industrial property insurance",
+  "partner": null
+ },
+ {
+  "id": "guaranteed-income-insurance-for-the-self-employed",
+  "ecosystem": "Business protection",
+  "name": "Guaranteed income insurance for the self-employed",
+  "service": "Guaranteed income insurance for the self-employed",
+  "partner": null
+ },
+ {
+  "id": "outstanding-balance-insurance-for-entrepreneurs",
+  "ecosystem": "Business protection",
+  "name": "Outstanding balance insurance for entrepreneurs",
+  "service": "Outstanding balance insurance for entrepreneurs",
+  "partner": null
+ },
+ {
+  "id": "agroflex-credit",
+  "ecosystem": "Agriculture and horticulture",
+  "name": "Agroflex Credit",
+  "service": "Agroflex Credit",
+  "partner": null
+ },
+ {
+  "id": "agriculture-and-horticulture-insurance",
+  "ecosystem": "Agriculture and horticulture",
+  "name": "Agriculture and horticulture insurance",
+  "service": "Agriculture and horticulture insurance",
+  "partner": null
+ },
+ {
+  "id": "greenhouse-horticulture-insurance",
+  "ecosystem": "Agriculture and horticulture",
+  "name": "Greenhouse horticulture insurance",
+  "service": "Greenhouse horticulture insurance",
+  "partner": null
+ },
+ {
+  "id": "registered-email-ipex",
+  "ecosystem": "Administration and documents",
+  "name": "Registered email - IPEX",
+  "service": "Registered email",
+  "partner": "IPEX"
+ },
+ {
+  "id": "digital-vault",
+  "ecosystem": "Administration and documents",
+  "name": "Digital vault",
+  "service": "Digital vault",
+  "partner": null
+ },
+ {
+  "id": "ebox",
+  "ecosystem": "Administration and documents",
+  "name": "eBox",
+  "service": "eBox",
+  "partner": null
+ },
+ {
+  "id": "cera-share-administration",
+  "ecosystem": "Administration and documents",
+  "name": "Cera share administration",
+  "service": "Cera share administration",
+  "partner": null
+ },
+ {
+  "id": "joyn-loyalty-points",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Joyn loyalty points",
+  "service": "Joyn loyalty points",
+  "partner": null
+ },
+ {
+  "id": "digital-loyalty-cards",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Digital loyalty cards",
+  "service": "Digital loyalty cards",
+  "partner": null
+ },
+ {
+  "id": "top-up-orange-tempo",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Top up Orange Tempo",
+  "service": "Top up Orange Tempo",
+  "partner": null
+ },
+ {
+  "id": "top-up-proximus-pay-go",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Top up Proximus Pay&Go",
+  "service": "Top up Proximus Pay&Go",
+  "partner": null
+ },
+ {
+  "id": "top-up-base",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Top up BASE",
+  "service": "Top up BASE",
+  "partner": null
+ },
+ {
+  "id": "donate-to-kom-op-tegen-kanker",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Donate to Kom op tegen Kanker",
+  "service": "Donate to Kom op tegen Kanker",
+  "partner": null
+ },
+ {
+  "id": "financial-news-de-tijd-vrt-nws-and-kbc",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Financial news - De Tijd, VRT NWS and KBC",
+  "service": "Financial news",
+  "partner": "De Tijd, VRT NWS and KBC"
+ },
+ {
+  "id": "kate-coins",
+  "ecosystem": "Shopping and everyday services",
+  "name": "Kate Coins",
+  "service": "Kate Coins",
+  "partner": null
+ },
+ {
+  "id": "kbc-mobile",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Mobile",
+  "service": "KBC Mobile",
+  "partner": null
+ },
+ {
+  "id": "kbc-touch",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Touch",
+  "service": "KBC Touch",
+  "partner": null
+ },
+ {
+  "id": "kbc-business-dashboard",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Business Dashboard",
+  "service": "KBC Business Dashboard",
+  "partner": null
+ },
+ {
+  "id": "kbc-business-app",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Business app",
+  "service": "KBC Business app",
+  "partner": null
+ },
+ {
+  "id": "kbc-reach",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Reach",
+  "service": "KBC Reach",
+  "partner": null
+ },
+ {
+  "id": "kbc-reach-app",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Reach app",
+  "service": "KBC Reach app",
+  "partner": null
+ },
+ {
+  "id": "kate",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "Kate",
+  "service": "Kate",
+  "partner": null
+ },
+ {
+  "id": "kbc-partner-hub",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Partner Hub",
+  "service": "KBC Partner Hub",
+  "partner": null
+ },
+ {
+  "id": "kbc-developer-portal",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "KBC Developer Portal",
+  "service": "KBC Developer Portal",
+  "partner": null
+ },
+ {
+  "id": "search-for-documents-via-kate",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "Search for documents via Kate",
+  "service": "Search for documents via Kate",
+  "partner": null
+ },
+ {
+  "id": "query-income-and-expenses-via-kate",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "Query income and expenses via Kate",
+  "service": "Query income and expenses via Kate",
+  "partner": null
+ },
+ {
+  "id": "manage-cards-via-kate",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "Manage cards via Kate",
+  "service": "Manage cards via Kate",
+  "partner": null
+ },
+ {
+  "id": "make-transfers-via-kate",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "Make transfers via Kate",
+  "service": "Make transfers via Kate",
+  "partner": null
+ },
+ {
+  "id": "report-a-claim-via-kate",
+  "ecosystem": "Digital platforms and assistance",
+  "name": "Report a claim via Kate",
+  "service": "Report a claim via Kate",
+  "partner": null
+ },
+ {
+  "id": "online-fraud-insurance",
+  "ecosystem": "Security",
+  "name": "Online fraud insurance",
+  "service": "Online fraud insurance",
+  "partner": null
+ },
+ {
+  "id": "instalment-loan-partner-hub",
+  "ecosystem": "General integrations",
+  "name": "Instalment Loan - Partner Hub",
+  "service": "Instalment Loan",
+  "partner": "Partner Hub"
+ },
+ {
+  "id": "psd2-account-information-services",
+  "ecosystem": "General integrations",
+  "name": "PSD2 Account Information Services",
+  "service": "PSD2 Account Information Services",
+  "partner": null
+ },
+ {
+  "id": "psd2-payment-initiation-services",
+  "ecosystem": "General integrations",
+  "name": "PSD2 Payment Initiation Services",
+  "service": "PSD2 Payment Initiation Services",
+  "partner": null
+ },
+ {
+  "id": "application-status-webhooks",
+  "ecosystem": "General integrations",
+  "name": "Application status webhooks",
+  "service": "Application status webhooks",
+  "partner": null
+ }
+]

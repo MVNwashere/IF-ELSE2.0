@@ -1,15 +1,3 @@
----
-title: Component props contract
-type: spec          # context | spec | decision | notes
-status: final          # draft | review | final | outdated
-incorporated: yes      # no | partial | yes | n/a
-code_refs: [backend/app/engine/layout.py, frontend/src/components/]
-owner: team IF-ELSE
-created: 2026-09-30
-updated: 2026-10-20
-source: round 1 repo, github.com/Senne-Meuleman/IF-ELSE
----
-
 # Component props contract
 
 The layout planner (`backend/app/engine/layout.py`) builds these props from `Features`.
@@ -73,5 +61,5 @@ scrollable history. An account may carry its own real bookings; without them the
   ] }
 ```
 
-`category` uses the transaction categories from `docs/DESIGN.md` §6.1 (unknown values still render, with a generic icon).
+`category` uses the transaction categories from `Category` in `backend/app/schemas.py` (unknown values still render, with a generic icon).
 The balance curve is computed backwards from `balance_eur` and the bookings.

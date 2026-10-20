@@ -1,93 +1,56 @@
-# IF-ELSE 2.0: project goal and context
+# IF-ELSE 2.0: guide for working in this repo
 
-Read this first. Everything we build in this repo should serve the goal below. Log decisions in
-[docs/LOG.md](docs/LOG.md).
+Read this first. What the project is and how to run it: [README.md](README.md).
 
-## The event
+## The goal
 
-- **Tectonic Hackathon, final round**, Tuesday 20 October 2026, De Vooruit, Ghent. Team **If/Else** (top 32 of 280).
-- Hacking 09:00–16:00. **Submit by 16:00.** Semi-final pitch 16:15 (Wintercircus), grand final 18:00. Prize €10,000.
-- Details: [docs/finalist-info.md](docs/finalist-info.md).
+**From intent to impact:** a scalable ecosystem that helps bank customers move from an intent ("I'm going
+freelance", "we want to buy a house") to a successful, measured outcome, with KBC as the trusted orchestrator of
+vetted partners. The customer states a goal, or KBC spots it in their own signals, and KBC takes care of the rest
+inside the customer's app.
 
-## The KBC case: "From intent to impact"
+The engine follows five steps:
+1. **Recognise** an emerging need, ambition, opportunity or challenge
+2. **Understand** the context and intent behind it
+3. **Activate** the right KBC services, expertise and partners
+4. **Guide** the customer through decisions and actions
+5. **Deliver** a measurable outcome
 
-> **Design a scalable ecosystem that helps customers move from intent to successful action.**
-> Slide tagline: "Don't choose our ecosystem. Define the next one."
+Every feature should be a **triple win**: the customer reaches the goal more easily, KBC strengthens the relationship
+and earns sustainable value, and partners have a clear reason to take part. Start from the customer's goal, not from
+a banking product. No generic chatbot and no screen for its own sake.
 
-**Build the journey.** Show how KBC can:
-1. Recognise an emerging need, ambition, opportunity or challenge
-2. Understand the context and intent behind it
-3. Activate the right services, expertise and partners
-4. Guide the customer through decisions and actions
-5. Help deliver a measurable outcome
+## Where things are
 
-**Think ecosystem.**
-- Start from the customer's goal, not from a banking product.
-- Use KBC's existing capabilities as building blocks, not boundaries. You can combine existing capabilities in new
-  ways, connect different life and business domains, introduce new ecosystem partners, and invent capabilities KBC
-  doesn't have today.
-- Sustainability and entrepreneurship are sources of inspiration, not limits.
-- Choose the life or business challenge where we believe KBC can create meaningful impact.
+| Area | Code | Docs |
+|---|---|---|
+| Ecosystem engine: intents, goals, journeys, consent, partners, webhooks, nudges, outcomes, console | `backend/app/ecosystem/`, `frontend/src/ecosystem/`, `frontend/src/nudges/` | [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md) |
+| Customer app (KBC Takes Care): features, persona mix, cards, ranker, layout planner, Kate, API, auth | `backend/app/engine/`, `backend/app/main.py`, `frontend/src/` | [docs/CUSTOMER-APP.md](docs/CUSTOMER-APP.md), [docs/COMPONENT-PROPS.md](docs/COMPONENT-PROPS.md) |
+| Customer State and the For You feed | `backend/app/customer_state/`, `backend/app/recommender/` | [docs/CUSTOMER-STATE.md](docs/CUSTOMER-STATE.md) |
+| Synthetic data | `backend/synth/` | |
+| Evaluation and import scripts | `backend/scripts/` | |
+| Source material (KBC catalogue, feed card specs) | | [docs/reference/](docs/reference/) |
 
-**Make it a triple win.**
-- **Customer:** the goal becomes easier, faster or better to achieve.
-- **KBC:** the solution strengthens the customer relationship and creates sustainable business value.
-- **Ecosystem:** partners have a clear reason to participate and to share in the value created.
+## Commands (from `backend/`)
 
-| Don't build | Do build |
-|---|---|
-| Another feature, another screen, a generic chatbot, a small optimisation | A bold vision, a differentiated ecosystem, a believable future customer experience, a **working proof of concept** |
+```bash
+py -3.12 -m pytest                          # all tests
+py -3.12 -m uvicorn app.main:app --reload --port 8000 --env-file ../.env
+py -3.12 -m scripts.evaluate_intents        # intent precision/recall on the synthetic portfolio
+py -3.12 -m scripts.evaluate_holdout        # the same on the blind holdout
+```
 
-## Our vision
+Delete `backend/kbc.db` to rebuild the synthetic database on the next start.
 
-**Peace of mind: KBC takes care of it.** The working customer doesn't want to worry about money matters any more.
-The relationship is built on **trust**: the customer states a goal (or KBC spots it) and KBC handles the rest,
-inside the KBC app.
+## Rules
 
-The ecosystem is a **trusted network** around the customer's goal. KBC is the orchestrator, and the partners are
-vetted: brokers, insurers, investment funds, estate agents, renovation contractors, energy advisors and subsidy
-schemes. The customer never has to look for or check a partner themselves.
-
-Example: *"I want to buy a house."* Instead of only a mortgage, the ecosystem brings in the estate agent, home
-insurance, renovation, energy subsidies and so on, all together around one goal.
-
-Personas who should be able to do **everything in their own app**, for example:
-- the **50-year-old investor** (wealth, pension, estate planning)
-- the earlier ones: student, young professional, young family, freelancer, retiree
-
-## Where we come from: IF-ELSE v1 → 2.0
-
-**In short: we are bringing our previous idea (IF-ELSE) into IF-ELSE2.0, but with a new goal.** v1 is not thrown
-away. It becomes the customer-facing part of a larger ecosystem. The new goal (above: intent → impact, KBC takes
-care of everything through a trusted partner network) determines what we build and what we keep.
-
-- **v1** (`C:\Users\mrano\IF-ELSE`, preliminary round, 30 Sept) was a **front-end step for the user**: *KBC
-  Adaptive Home*. The home screen adapts to a persona mix inferred from transactions, with an explainable "For You"
-  feed, time travel, customisation and the assistant **Kate**. Stack: FastAPI + SQLite (Python 3.12), React + Vite.
-  Synthetic data. Demo customers: `lotte`, `sara`, `jan`.
-- **2.0 (this repo) is the backend step.** We build the **ecosystem engine** behind the app: the system that turns a
-  recognised intent into a completed outcome across KBC and its partners. Reuse v1 code and ideas wherever that
-  helps (persona signals, Customer State, Kate's propose-then-confirm pattern).
-
-## Direction for the backend (not final; record decisions in the log)
-
-Building blocks that follow the 5 journey steps:
-- **Intent detection**: signals (transactions, life events, what the customer says) → a goal ("buy a house",
-  "build up my pension").
-- **Goal / journey model**: a goal becomes a plan of steps, with a status, deadlines and a measurable outcome.
-- **Partner network**: a registry of vetted partners (broker, insurer, fund, agent, contractor…) with their
-  capabilities, and a value-sharing model for each partner.
-- **Orchestration**: KBC routes each step to the right partner or KBC service and tracks progress.
-- **Consent and trust**: the customer approves every step and every piece of data shared with a partner. AI
-  proposes, the customer confirms (as Kate does in v1).
-- **Outcome tracking**: measurable results for the customer, KBC and partners (the triple win made visible).
-
-## Rules for working here
-
-- Test every idea against the **triple win** and the **don't build** list. No generic chatbot, no extra screen for
-  its own sake.
-- With a hard 16:00 deadline: a **working proof of concept** of one strong journey beats a broad half-finished system.
-- **Synthetic data only.** Partners and offers are illustrative, not real KBC products or contracts.
-- Secrets only in `.env` (never commit it). Keep the v1 security habits: the customer comes from the session,
-  inputs are validated, and nothing is done without the customer's confirmation.
-- Record important choices and progress in [docs/LOG.md](docs/LOG.md) (newest at the top).
+- **Synthetic data only.** Partners, offers and amounts are illustrative, not real KBC products or contracts.
+- **AI proposes, the customer confirms.** Nothing happens and no data leaves KBC without the customer's approval;
+  partners only receive the fields they are allowed to see and the customer granted.
+- **Identity comes from the session.** No customer ids in customer URLs; validate every input with a Pydantic model;
+  bound SQL parameters only.
+- **Secrets only in `.env`** (see `.env.example`); never commit it.
+- **Transparent rules over black boxes.** Detectors, persona scores and rankers explain themselves with evidence.
+- **A new goal is a file** in `backend/app/ecosystem/playbooks/`; playbooks and the partner registry are validated
+  at startup.
+- Keep docs describing the code as it is now. When behaviour changes, update the matching doc in the same change.

@@ -146,6 +146,15 @@ function personalTemplates(personas: Persona[], heroProps: Record<string, unknow
       { who: "Proximus", cat: "telecom", amount: -59.99, day: 15 },
     );
   }
+  if (has("investor")) {
+    fixed.push(
+      { who: "Salary", cat: "salary", amount: 4600, day: 1 },
+      { who: "Home loan", cat: "mortgage", amount: -1250, day: 5 },
+      { who: "Engie", cat: "utilities", amount: -142, day: 8, jitter: 0.1 },
+      { who: "Proximus", cat: "telecom", amount: -89, day: 15 },
+      { who: "Student room", cat: "other", amount: -450, day: 3 },
+    );
+  }
   if (has("retiree")) {
     const pension = num(heroProps.pension_eur) > 0 ? num(heroProps.pension_eur) : 1850;
     fixed.push(

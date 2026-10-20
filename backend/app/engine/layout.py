@@ -1,4 +1,4 @@
-"""Component registry + deterministic layout planner (DESIGN.md §6.6).
+"""Component registry + deterministic layout planner (docs/CUSTOMER-APP.md).
 
 `plan_layout(features, persona_mix, prefs, customer, txs, as_of, cards) -> Layout`
 
@@ -45,6 +45,7 @@ THEME_BY_PERSONA: dict[str, dict] = {
     "young_professional": {"density": "comfortable", "tone": "neutral", "contrast": "normal"},
     "young_family": {"density": "comfortable", "tone": "warm", "contrast": "normal"},
     "freelancer": {"density": "compact", "tone": "business", "contrast": "normal"},
+    "investor": {"density": "comfortable", "tone": "formal", "contrast": "normal"},
     "retiree": {"density": "large", "tone": "formal", "contrast": "high"},
 }
 RETIREE_OVERRIDE_WEIGHT = 0.5
@@ -81,22 +82,22 @@ SCAM_HOTLINE = "Card Stop 078 170 170"
 
 # Affinity table: component -> persona -> 0..1
 AFFINITY: dict[str, dict[str, float]] = {
-    "BalanceHero":        {"student": 0.4, "young_professional": 0.9, "young_family": 0.5, "freelancer": 0.4, "retiree": 0.4},
-    "RunwayHero":         {"student": 0.9, "young_professional": 0.3, "young_family": 0.3, "freelancer": 0.3, "retiree": 0.1},
-    "FamilyBudgetHero":   {"student": 0.0, "young_professional": 0.2, "young_family": 0.9, "freelancer": 0.2, "retiree": 0.1},
-    "TaxReserveHero":     {"student": 0.0, "young_professional": 0.1, "young_family": 0.1, "freelancer": 0.9, "retiree": 0.0},
-    "PensionHero":        {"student": 0.0, "young_professional": 0.0, "young_family": 0.0, "freelancer": 0.0, "retiree": 0.9},
-    "ForYouFeed":         {"student": 1.0, "young_professional": 1.0, "young_family": 1.0, "freelancer": 1.0, "retiree": 1.0},
-    "QuickActions":       {"student": 0.7, "young_professional": 0.7, "young_family": 0.7, "freelancer": 0.7, "retiree": 0.6},
-    "UpcomingBills":      {"student": 0.3, "young_professional": 0.4, "young_family": 0.8, "freelancer": 0.4, "retiree": 0.8},
-    "SplitBills":         {"student": 0.8, "young_professional": 0.4, "young_family": 0.1, "freelancer": 0.1, "retiree": 0.0},
-    "InvoiceTracker":     {"student": 0.0, "young_professional": 0.1, "young_family": 0.1, "freelancer": 0.9, "retiree": 0.0},
-    "SavingsGoal":        {"student": 0.3, "young_professional": 0.7, "young_family": 0.7, "freelancer": 0.3, "retiree": 0.2},
-    "ScamShield":         {"student": 0.1, "young_professional": 0.1, "young_family": 0.1, "freelancer": 0.1, "retiree": 0.8},
-    "AdvisorContact":     {"student": 0.2, "young_professional": 0.2, "young_family": 0.3, "freelancer": 0.3, "retiree": 0.7},
-    "SpendingByCategory": {"student": 0.5, "young_professional": 0.8, "young_family": 0.5, "freelancer": 0.4, "retiree": 0.3},
-    "KateTile":           {"student": 0.5, "young_professional": 0.45, "young_family": 0.5, "freelancer": 0.45, "retiree": 0.5},
-    "SubscriptionsTile":  {"student": 0.6, "young_professional": 0.6, "young_family": 0.4, "freelancer": 0.3, "retiree": 0.3},
+    "BalanceHero":        {"student": 0.4, "young_professional": 0.9, "young_family": 0.5, "freelancer": 0.4, "investor": 0.85, "retiree": 0.4},
+    "RunwayHero":         {"student": 0.9, "young_professional": 0.3, "young_family": 0.3, "freelancer": 0.3, "investor": 0.1, "retiree": 0.1},
+    "FamilyBudgetHero":   {"student": 0.0, "young_professional": 0.2, "young_family": 0.9, "freelancer": 0.2, "investor": 0.1, "retiree": 0.1},
+    "TaxReserveHero":     {"student": 0.0, "young_professional": 0.1, "young_family": 0.1, "freelancer": 0.9, "investor": 0.0, "retiree": 0.0},
+    "PensionHero":        {"student": 0.0, "young_professional": 0.0, "young_family": 0.0, "freelancer": 0.0, "investor": 0.6, "retiree": 0.9},
+    "ForYouFeed":         {"student": 1.0, "young_professional": 1.0, "young_family": 1.0, "freelancer": 1.0, "investor": 1.0, "retiree": 1.0},
+    "QuickActions":       {"student": 0.7, "young_professional": 0.7, "young_family": 0.7, "freelancer": 0.7, "investor": 0.6, "retiree": 0.6},
+    "UpcomingBills":      {"student": 0.3, "young_professional": 0.4, "young_family": 0.8, "freelancer": 0.4, "investor": 0.5, "retiree": 0.8},
+    "SplitBills":         {"student": 0.8, "young_professional": 0.4, "young_family": 0.1, "freelancer": 0.1, "investor": 0.1, "retiree": 0.0},
+    "InvoiceTracker":     {"student": 0.0, "young_professional": 0.1, "young_family": 0.1, "freelancer": 0.9, "investor": 0.0, "retiree": 0.0},
+    "SavingsGoal":        {"student": 0.3, "young_professional": 0.7, "young_family": 0.7, "freelancer": 0.3, "investor": 0.7, "retiree": 0.2},
+    "ScamShield":         {"student": 0.1, "young_professional": 0.1, "young_family": 0.1, "freelancer": 0.1, "investor": 0.2, "retiree": 0.8},
+    "AdvisorContact":     {"student": 0.2, "young_professional": 0.2, "young_family": 0.3, "freelancer": 0.3, "investor": 0.6, "retiree": 0.7},
+    "SpendingByCategory": {"student": 0.5, "young_professional": 0.8, "young_family": 0.5, "freelancer": 0.4, "investor": 0.5, "retiree": 0.3},
+    "KateTile":           {"student": 0.5, "young_professional": 0.45, "young_family": 0.5, "freelancer": 0.45, "investor": 0.45, "retiree": 0.5},
+    "SubscriptionsTile":  {"student": 0.6, "young_professional": 0.6, "young_family": 0.4, "freelancer": 0.3, "investor": 0.4, "retiree": 0.3},
 }
 
 SIZE: dict[str, str] = {c: "hero" for c in HERO_COMPONENTS}
@@ -155,6 +156,7 @@ PERSONA_LABEL = {
     "young_professional": "a young professional",
     "young_family": "a young family",
     "freelancer": "self-employed",
+    "investor": "building wealth for later",
     "retiree": "retired",
 }
 
@@ -181,6 +183,12 @@ QUICK_ACTIONS_BY_PERSONA: dict[str, list[dict]] = {
         {"label": "Send invoice", "action": "new_invoice", "icon": "invoice"},
         {"label": "Set aside VAT", "action": "vat_transfer", "icon": "savings"},
         {"label": "Scan receipt", "action": "scan", "icon": "scan"},
+        {"label": "Call advisor", "action": "call_advisor", "icon": "call"},
+    ],
+    "investor": [
+        {"label": "Invest", "action": "open_savings", "icon": "savings"},
+        {"label": "Pension", "action": "open_pension", "icon": "pension"},
+        {"label": "Send money", "action": "transfer", "icon": "transfer"},
         {"label": "Call advisor", "action": "call_advisor", "icon": "call"},
     ],
     "retiree": [
@@ -463,6 +471,7 @@ def _props_advisor_contact(c: Ctx) -> dict:
         dom = _dominant(c["persona_mix"])
         reason = {
             "retiree": "A yearly check-in on your pension and savings",
+            "investor": "Your pension, investments and the children's future in one conversation",
             "freelancer": "A check-in on your quarterly reserves",
             "young_family": "A chat about saving for your family",
         }.get(dom, "Talk to a person whenever you need to")
@@ -784,8 +793,10 @@ def plan_gallery(scores: dict[str, float], reasons: dict[str, str], order: list[
             continue
         state = "shown" if comp in order else "hidden" if comp in hidden else "available"
         label, desc = TILE_LABEL[comp]
+        # a hidden tile's reason can quote the data the customer chose to hide
+        reason = "" if state == "hidden" else _explain(comp, ctx, reasons, False)
         items.append(GalleryItem(component=comp, label=label, description=desc,
-                                 reason=_explain(comp, ctx, reasons, False), score=round(scores[comp], 3),
+                                 reason=reason, score=round(scores[comp], 3),
                                  state=state, is_hero=comp in HERO_COMPONENTS))
     for item in [i for i in items if i.state == "available"][:3]:
         item.suggested = True
@@ -820,8 +831,10 @@ def plan_home_layout(
                    and p.component not in hidden]
     pinned_names = {p.component for p in pinned_rest}
 
-    # 1. hero: the customer's pinned one, else the best-scoring
-    hero = pinned_hero or max(HERO_COMPONENTS, key=lambda h: (scores[h], -HERO_COMPONENTS.index(h)))
+    # 1. hero: the customer's pinned one, else the best-scoring one they haven't hidden
+    #    (there is always a main tile, so if every hero is hidden the best one still shows)
+    heroes = [h for h in HERO_COMPONENTS if h not in hidden] or list(HERO_COMPONENTS)
+    hero = pinned_hero or max(heroes, key=lambda h: (scores[h], -HERO_COMPONENTS.index(h)))
     # 2. feed right after; pinned tiles keep their slots and the best of the rest fills the gaps
     budget = max(DENSITY_BUDGET[theme["density"]], 2 + len(pinned_rest))
     candidates = [

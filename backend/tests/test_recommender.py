@@ -5,8 +5,7 @@ from app import db
 from app.customer_state.service import get_state
 from app.recommender.feed import CATALOGUE, _core_cards, infer_personas, recommend
 from app.schemas import FeedbackRow, Prefs
-from synth.customer_state import IDS, seed
-from synth.generate import TODAY
+from synth.customer_state import IDS, SCENARIO_TODAY as TODAY, seed
 
 
 @pytest.fixture

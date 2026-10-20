@@ -1,18 +1,6 @@
----
-title: KBC ecosystems catalogue summary
-type: context          # context | spec | decision | notes
-status: final          # draft | review | final | outdated
-incorporated: n/a      # no | partial | yes | n/a
-code_refs: []
-owner: Henri Lemahieu
-created: 2026-10-20
-updated: 2026-10-20
-source: docs/KBC_Ecosystems.xlsx
----
-
 # KBC Ecosystems: Summary
 
-`KBC_Ecosystems.xlsx` has one sheet ("Platte lijst") with two columns, *Ecosystem* and *Product or service*. It is the catalogue of KBC offerings and partners to use as building blocks for the KBC challenge (see [finals-guide-summary.md](finals-guide-summary.md)). The challenge's suggested domains are Energy and sustainability, Business (entrepreneurship and growth) and Travel.
+`KBC_Ecosystems.xlsx` has one sheet ("Platte lijst") with two columns, *Ecosystem* and *Product or service*. It is KBC's catalogue of offerings and partners, the building blocks the ecosystem engine composes into journeys. `backend/scripts/import_ecosystems.py` turns it into `backend/app/ecosystem/catalogue.json`; see [../ECOSYSTEM.md](../ECOSYSTEM.md).
 
 ## Ecosystems and what's in them
 
@@ -40,8 +28,8 @@ source: docs/KBC_Ecosystems.xlsx
 | Security | Online fraud insurance |
 | General integrations | Instalment Loan Partner Hub; PSD2 AIS and PIS; application status webhooks |
 
-## Takeaways for the challenge
+## Takeaways
 
 - **Integration points:** the machine-accessible surfaces are the Developer Portal, PSD2 AIS/PIS, application status webhooks, the Home Loan/Home Insurance/Car Insurance APIs and widgets, and Partner Hub. Kate is the conversational entry point.
 - **Cross-ecosystem journeys** are where "before they realise they need help" fits best. Examples: a home purchase touches Housing, Energy, Mobility, Insurance and Administration; starting a business touches Business, Pensions and Business protection.
-- **Partners to name in a pitch** (these are existing KBC partners): Immoscoop, Setle, Impact us today, Cambio, VAB, MoveSmart, Firsty, Billit, Encon, Sweco, Kube ESG, NOWJOBS.
+- **Existing KBC partners**: Immoscoop, Setle, Impact us today, Cambio, VAB, MoveSmart, Firsty, Billit, Encon, Sweco, Kube ESG, NOWJOBS.

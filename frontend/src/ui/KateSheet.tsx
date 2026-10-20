@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GalleryItem, KateAction, KateReply, KateTurn } from "../api";
 import { NAV_ICONS } from "../components/icons";
 import { componentLabel } from "../format";
+import { MaskedText } from "../privacy";
 import Sheet from "./Sheet";
 
 export const KATE_MAX_INPUT = 500;
@@ -41,6 +42,8 @@ export function confirmation(action: KateAction, gallery: GalleryItem[]): string
     case "reset_style": return "Done, everything is back to Auto.";
     case "declare": return "Thanks for telling me. I've adapted your home to it.";
     case "open_card": return null;
+    case "start_goal": return "Done. I've lined up the steps; you approve each one before anything is shared.";
+    case "open_goal": return null;
   }
 }
 
@@ -154,14 +157,14 @@ export default function KateSheet({ chat, onClose }: { chat: KateChat; onClose: 
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <div className={`bubble ${m.role}`}>{m.text}</div>
+              <div className={`bubble ${m.role}`}><MaskedText text={m.text} /></div>
               {m.actions && m.actions.length > 0 && (
                 <div className="kate-actions">
                   {m.actions.map((a, i) => {
                     const done = m.done?.includes(i) ?? false;
                     return (
                       <button key={i} type="button" className="kate-action" disabled={done || pending} onClick={() => void chat.runAction(m.id, i, a)}>
-                        {done ? `✓ ${a.label}` : a.label}
+                        {done ? "✓ " : ""}<MaskedText text={a.label} />
                       </button>
                     );
                   })}
@@ -178,7 +181,7 @@ export default function KateSheet({ chat, onClose }: { chat: KateChat; onClose: 
       </div>
       {quick.length > 0 && (
         <div className="kate-quick">
-          {quick.map((q) => <button key={q} type="button" className="kate-chip" onClick={() => chat.say(q)}>{q}</button>)}
+          {quick.map((q) => <button key={q} type="button" className="kate-chip" onClick={() => chat.say(q)}><MaskedText text={q} /></button>)}
         </div>
       )}
       <form className="kate-input" onSubmit={(e) => { e.preventDefault(); submit(); }}>

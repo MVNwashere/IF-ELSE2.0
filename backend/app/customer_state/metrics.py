@@ -91,8 +91,10 @@ def calculate(raw: Observations, signals: list[Signal], patterns: list[Pattern],
                             discretionary=round(discretionary, 2), essential=round(essential, 2),
                             savings=round(saved, 2), debt_service=round(debt_service, 2),
                             free_cash_flow=round(income-expense, 2), net_current_cash_flow=round(income-expense-saved, 2)))
+        # Restricted (sensitive) transactions count towards cash-flow totals so balances stay correct, but never
+        # towards the category profile, merchant ranking or change detection that feed recommendations.
         for s in items:
-            if s.kind in {"expense", "refund"}:
+            if s.kind in {"expense", "refund"} and s.profile_allowed:
                 categories[s.category][month] = categories[s.category].get(month, 0) - s.amount
     window = monthly[-6:]
     window_months = set(months[-6:])
@@ -179,7 +181,8 @@ def calculate(raw: Observations, signals: list[Signal], patterns: list[Pattern],
                     expected_30_day_balance=projections[29] if projections else None,
                     lowest_projected_balance=lowest, liquidity_pressure=pressure)
     category_metrics = {}
-    total = sum(series("expenses"))
+    # shares of the profiled spend only, so the gap to total expenses doesn't reveal restricted spend
+    total = sum(values.get(m, 0) for values in categories.values() for m in months[-6:])
     for category, values in sorted(categories.items()):
         vals = [round(values.get(m, 0), 2) for m in months[-6:]]
         category_metrics[category] = dict(total=round(sum(vals), 2), monthly_average=average(vals),
@@ -204,7 +207,6 @@ def calculate(raw: Observations, signals: list[Signal], patterns: list[Pattern],
         for category, values in categories.items():
             old = stats.mean(values.get(m, 0) for m in months[i-3:i])
             new = values.get(month, 0)
-            # The coarse sensitive bucket contributes to totals, never generates profile changes.
             category_items = [s for s in period_items if s.category == category and s.profile_allowed]
             if category == "other" or not category_items:
                 continue
@@ -215,7 +217,8 @@ def calculate(raw: Observations, signals: list[Signal], patterns: list[Pattern],
             old = stats.mean(m[key] for m in monthly[i-3:i])
             new = monthly[i][key]
             if abs(new-old) >= max(100, abs(old)*.3):
-                changes.append(change(typ, key, detected, period_items, round(old, 2), new))
+                changes.append(change(typ, key, detected, [s for s in period_items if s.profile_allowed],
+                                      round(old, 2), new))
     # Compare observed liquid balances using the same spending denominator. Do not infer
     # past savings balances by subtracting transfer history from an unknown opening balance.
     liquid_observations = defaultdict(dict)

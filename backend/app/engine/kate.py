@@ -1,4 +1,4 @@
-"""Kate: the conversational side of the engine (DESIGN.md §6.9).
+"""Kate: the conversational side of the engine (docs/CUSTOMER-APP.md).
 
 `reply(home, features, request) -> KateReply`
 
@@ -68,6 +68,47 @@ DECLARE_WORDS: list[tuple[tuple[str, ...], str, str]] = [
      "Nice! Want me to take that into account? I'll focus on how far your money stretches. You can undo it any time."),
 ]
 
+# things a customer says that are really a goal → the playbook KBC can run for them
+GOAL_WORDS: list[tuple[tuple[str, ...], str]] = [
+    # more specific phrases first that would otherwise fall into an older goal
+    (("debt", "can't pay", "cannot pay", "can not pay", "behind on", "bailiff", "deurwaarder", "arrears",
+      "klarna", "pay later", "unpaid bills", "schulden"), "back_on_track"),
+    (("separating", "separation", "divorce", "breaking up", "break up", "split up", "scheiding"), "separation"),
+    (("moving in together", "move in together", "living together", "getting married", "get married", "wedding",
+      "samenwonen", "trouwen"), "together"),
+    (("side business", "side hustle", "side job", "bijberoep", "next to my job", "alongside my job"), "side_job"),
+    (("care home", "nursing home", "home care", "woonzorgcentrum", "mantelzorg", "ageing parent", "aging parent",
+      "elderly parent", "my mother needs", "my father needs"), "care_parent"),
+    (("sell my business", "sell my company", "selling my business", "selling my company", "hand over my business",
+      "successor", "overdracht"), "sell_business"),
+    (("export", "foreign client", "clients abroad", "customers abroad", "sell abroad", "international clients",
+      "international business"),
+     "go_international"),
+    (("my farm", "harvest", "greenhouse", "tractor", "boerderij", "veiling"), "farm_growth"),
+    (("electric car", "electric vehicle", "ev charging", "charging station", "laadpaal", "elektrische auto"),
+     "ev_switch"),
+    (("start investing", "begin investing", "first investment", "beginnen met beleggen", "how do i invest"),
+     "first_investment"),
+    (("buy a house", "buy a home", "buying a house", "buying a home", "buy an apartment", "first home", "huis kopen",
+      "house hunting", "mortgage"), "buy_home"),
+    (("insulat", "solar", "heat pump", "energy bill", "renovat", "energy label", "epc"), "energy_upgrade"),
+    (("expecting", "pregnant", "baby on the way", "having a baby", "zwanger"), "new_baby"),
+    (("going freelance", "become freelance", "becoming freelance", "self-employed", "start my own business",
+      "starting my own business", "zelfstandige", "own company"), "go_freelance"),
+    (("unpaid", "owes me", "late payer", "hasn't paid", "has not paid", "not paying"), "get_paid"),
+    (("retire", "pension gap", "inheritance", "invest my savings", "put my savings to work"), "retire_well"),
+    (("holiday", "travel", "trip", "vacation", "flight"), "travel"),
+    (("protect my savings", "safe banking", "grandchildren", "was it a scam"), "peace_of_mind"),
+    (("moving house", "moving out", "move house", "new flat", "new apartment", "rent a flat", "verhuizen"),
+     "move_house"),
+]
+# goals about a hard moment start with empathy, not with a sales line
+GOAL_LEAD = {
+    "back_on_track": "Thanks for telling me, that takes courage. Let's take it one step at a time",
+    "separation": "I'm sorry to hear that. I can make the money side calmer",
+    "care_parent": "That's a lot to take on. I can carry part of it",
+}
+
 CARD_ADVICE: dict[str, str] = {
     "insurance_renewal": "Compare the coverage, not just the price. You can switch before the renewal date; "
                          "check your current policy's terms first.",
@@ -133,9 +174,48 @@ def _out(reply: str, actions: list[KateAction] | None = None, quick: list[str] |
 # ----------------------------------------------------------------------------------
 
 
-def _opener(home: HomeResponse, card: Card | None) -> KateReply:
+def _goal_action(goals, playbook_id: str) -> KateAction | None:
+    """Open the goal if it's running, otherwise propose to start it. None if the engine doesn't know the goal."""
+    if goals is None:
+        return None
+    active = next((g for g in goals.goals if g.playbook_id == playbook_id and g.status == "active"), None)
+    if active:
+        return KateAction(kind="open_goal", label="Open the plan", playbook_id=playbook_id, goal_id=active.goal_id)
+    known = any(p.playbook_id == playbook_id for p in goals.playbooks)
+    return KateAction(kind="start_goal", label="Let KBC take care of it", playbook_id=playbook_id) if known else None
+
+
+def _goal_intent(goals, text: str) -> KateReply | None:
+    if goals is None:
+        return None
+    for words, playbook_id in GOAL_WORDS:
+        if not _has(text, *words):
+            continue
+        action = _goal_action(goals, playbook_id)
+        if action is None:
+            return None
+        pb = next(p for p in goals.playbooks if p.playbook_id == playbook_id)
+        if action.kind == "open_goal":
+            g = next(g for g in goals.goals if g.goal_id == action.goal_id)
+            return _out(f"We're already on it: {g.title.lower()}, {g.progress.done} of {g.progress.total} steps done.",
+                        [action])
+        cand = next((c for c in goals.candidates if c.playbook_id == playbook_id), None)
+        partners = f" together with {', '.join(cand.partners_preview[:3])}" if cand and cand.partners_preview else ""
+        lead = GOAL_LEAD.get(playbook_id, "I can take care of that")
+        return _out(f"{lead}: '{pb.title}' is a plan of {pb.steps} steps that KBC runs for you"
+                    f"{partners}. You approve every step, and you decide what any partner gets to see.", [action])
+    return None
+
+
+def _opener(home: HomeResponse, card: Card | None, goals=None) -> KateReply:
     name = home.customer.first_name
     hello = GREETING[home.layout.theme.tone].format(name=name)
+    if not card and goals is not None and goals.candidates:
+        c = goals.candidates[0]
+        return _out(f"{hello} I noticed something: {c.evidence[0] if c.evidence else c.tagline}. {c.why_now} "
+                    f"Want KBC to take care of it?",
+                    [KateAction(kind="start_goal", label="Let KBC take care of it", playbook_id=c.playbook_id)],
+                    ["Why do you think so?"] + KATE_GENERAL_REPLIES[:2])
     if card:
         return _out(f"{hello} Let's look at this together: {card.title}. {card.body}",
                     [KateAction(kind="open_card", label="Show me the card", card_key=card.card_key)],
@@ -295,14 +375,57 @@ def _general(home: HomeResponse, f: Features, text: str) -> KateReply | None:
     return None
 
 
-def rules_reply(home: HomeResponse, f: Features, req: KateRequest) -> KateReply:
+def _signals_intent(goals, deadlines, forecasts, text: str) -> KateReply | None:
+    """Deadlines and forecasts: "what's coming up?", "when is my VAT due?", "will I owe social contributions later?"."""
+    if deadlines is None:
+        return None
+    asks_forecast = _has(text, "regularis", "social contribution", "will i owe", "tax surprise")
+    asks_deadline = _has(text, "deadline", "coming up", "is due", "vat due", "vat return", "advance tax", "when do i pay")
+    if not (asks_forecast or asks_deadline):
+        return None
+    if asks_forecast and forecasts:
+        fc = forecasts[0]
+        amount = f" of about {fmt_eur(round(fc.amount_eur, -1))}" if fc.amount_eur and "€" not in fc.title else ""
+        due = f", around {fmt_date(fc.due)}" if fc.due else ""
+        action = _goal_action(goals, fc.playbook_id) if fc.playbook_id else None
+        return _out(f"{fc.title}{amount}{due}. {' '.join(fc.evidence[:2])} This is an estimate from your own "
+                    "transactions, so it can change.", [action] if action else [])
+    items = [d for d in deadlines if not _has(text, "vat") or d.kind == "vat_return"]
+    if not items:
+        return _out("Nothing is due in the coming weeks that I can see from your account.")
+    lines = []
+    for d in items[:3]:
+        amount = f" (about {fmt_eur(round(d.amount_eur))})" if d.amount_eur else ""
+        short = f", {fmt_eur(round(d.shortfall_eur))} short" if d.shortfall_eur else ""
+        when = "" if fmt_date(d.date) in d.title else f" on {fmt_date(d.date)}"
+        lines.append(f"{d.title}{when}{amount}{short}")
+    first = items[0]
+    action = _goal_action(goals, first.playbook_id) if first.playbook_id else None
+    return _out("Coming up: " + "; ".join(lines) + ". I can set money aside automatically so these never surprise you.",
+                [action] if action else [])
+
+
+def rules_reply(home: HomeResponse, f: Features, req: KateRequest, goals=None, deadlines=None,
+                forecasts=None) -> KateReply:
     text = req.message.strip().lower()
     card = _card(home, req.card_key)
     if not text:
-        return _opener(home, card)
-    for intent in (lambda: _style_intent(home, text), lambda: _declare_intent(home, text),
-                   lambda: _tile_intent(home, text)):
-        r = intent()
+        return _opener(home, card, goals)
+    signal_reply = _signals_intent(goals, deadlines, forecasts, text)
+    if signal_reply:
+        return signal_reply
+    if goals is not None and goals.candidates and _has(text, "why do you think", "how do you know"):
+        c = goals.candidates[0]
+        return _out(f"From your own transactions: {'; '.join(c.evidence)}. Nothing has been shared with anyone.",
+                    [KateAction(kind="start_goal", label="Let KBC take care of it", playbook_id=c.playbook_id)])
+    style = _style_intent(home, text)
+    if style:
+        return style
+    declared = _declare_intent(home, text)
+    goal = _goal_intent(goals, text)
+    if declared and goal:   # "we're expecting": adapt the home AND offer the journey
+        return _out(declared.reply + " " + goal.reply, declared.actions + goal.actions)
+    for r in (declared, goal, _tile_intent(home, text)):
         if r:
             return r
     if card:
@@ -403,9 +526,11 @@ def validate_llm_text(text: str, context: dict, draft: str) -> str | None:
     return text
 
 
-def reply(home: HomeResponse, features: Features, req: KateRequest, llm=None) -> KateReply:
-    """Rules decide what Kate says and proposes; the LLM (if on) may only rephrase it."""
-    base = rules_reply(home, features, req)
+def reply(home: HomeResponse, features: Features, req: KateRequest, llm=None, goals=None, deadlines=None,
+          forecasts=None) -> KateReply:
+    """Rules decide what Kate says and proposes; the LLM (if on) may only rephrase it.
+    `goals` (the ecosystem GoalsResponse) lets Kate offer and open goal journeys."""
+    base = rules_reply(home, features, req, goals, deadlines, forecasts)
     if llm is None and not _llm_enabled():
         return base
     context = grounded_context(home, features, req)

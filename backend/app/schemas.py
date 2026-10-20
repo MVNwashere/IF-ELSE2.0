@@ -16,15 +16,15 @@ from pydantic import BaseModel, Field, field_validator
 # Vocabularies
 # ----------------------------------------------------------------------------------
 
-Persona = Literal["student", "young_professional", "young_family", "freelancer", "retiree"]
-PERSONAS: tuple[Persona, ...] = ("student", "young_professional", "young_family", "freelancer", "retiree")
+Persona = Literal["student", "young_professional", "young_family", "freelancer", "investor", "retiree"]
+PERSONAS: tuple[Persona, ...] = ("student", "young_professional", "young_family", "freelancer", "investor", "retiree")
 
 Category = Literal[
     "salary", "invoice_income", "pension", "student_income", "allowance_from_parents",
     "child_benefit", "benefit", "rent", "mortgage", "utilities", "telecom", "subscription",
     "insurance_car", "insurance_home", "insurance_family", "groceries", "leisure", "transport",
     "childcare", "baby", "school", "tuition", "social_contribution", "vat_payment", "tax",
-    "savings_transfer", "furniture", "notary", "healthcare", "other",
+    "savings_transfer", "furniture", "notary", "property", "healthcare", "other",
 ]
 CATEGORIES: tuple[str, ...] = Category.__args__  # type: ignore[attr-defined]
 INCOME_CATEGORIES = frozenset({
@@ -348,6 +348,7 @@ class TimelineResponse(BaseModel):
     min_date: dt.date
     max_date: dt.date
     milestones: list[Milestone]
+    today: dt.date | None = None   # after today the life timeline is simulated
 
 
 # ----------------------------------------------------------------------------------
@@ -397,7 +398,7 @@ class DeclareRequest(BaseModel):
 # ---- Kate (conversational assistant) ------------------------------------------------
 
 KateActionKind = Literal["pin_tile", "hide_tile", "add_tile", "snooze_card", "dismiss_card",
-                         "set_style", "declare", "open_card", "reset_style"]
+                         "set_style", "declare", "open_card", "reset_style", "start_goal", "open_goal"]
 
 
 class KateAction(BaseModel):
@@ -410,6 +411,8 @@ class KateAction(BaseModel):
     card_type: CardType | None = None
     style: StylePrefs | None = None
     signal: DeclaredSignal | None = None
+    playbook_id: str | None = Field(default=None, pattern=r"^[a-z_]{2,40}$")   # start_goal / open_goal
+    goal_id: int | None = Field(default=None, ge=1)                            # open_goal
 
 
 class KateTurn(BaseModel):

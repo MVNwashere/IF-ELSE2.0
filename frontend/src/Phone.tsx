@@ -10,12 +10,19 @@ import { NAV_ICONS } from "./components/icons";
 import { resolve } from "./components/registry";
 import type { SectionCtx } from "./components/types";
 import { FEED_PERSONA_LABEL, longDate, PERSONA_LABEL, pct } from "./format";
-import { PrivacyContext } from "./privacy";
+import { maskText, PrivacyContext } from "./privacy";
 import { greeting, themeVars } from "./theme";
 import GallerySheet from "./ui/GallerySheet";
 import KateSheet, { useKateChat } from "./ui/KateSheet";
 import PersonaliseSheet from "./ui/PersonaliseSheet";
 import SuggestionBanner from "./ui/SuggestionBanner";
+import EcoSheets, { type EcoSheet } from "./ecosystem/EcoSheets";
+import GoalsStrip from "./ecosystem/GoalsStrip";
+import { useGoals } from "./ecosystem/useGoals";
+import "./ecosystem/eco.css";
+import NudgeLayer, { NudgeBell } from "./nudges/NudgeLayer";
+import type { Nudge } from "./nudges/types";
+import { useNudges } from "./nudges/useNudges";
 
 interface Props {
   home: HomeResponse;
@@ -24,7 +31,7 @@ interface Props {
   loading: boolean;
   toast: string | null;
   onFeedback: (card: Card, decision: Decision) => void;
-  onCta: (action: string) => void;
+  onCta: (action: string, card?: Card) => void;
   onLayoutPref: (component: Component, state: LayoutPrefState) => void;
   onPinAt: (component: Component, position: number | null) => void;
   onLayoutReset: () => void;
@@ -72,6 +79,12 @@ export default function Phone(p: Props) {
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [revealed, setRevealed] = useState(false);
   const phoneRef = useRef<HTMLDivElement>(null);
+  // Turning "Hide amounts" off and on again must start masked: a reveal never outlives a privacy change.
+  const [privacyWas, setPrivacyWas] = useState(theme.privacy);
+  if (privacyWas !== theme.privacy) {
+    setPrivacyWas(theme.privacy);
+    setRevealed(false);
+  }
   const masked = theme.privacy && !revealed;
 
   // Reveal masked amounts for a few seconds.
@@ -88,8 +101,43 @@ export default function Phone(p: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [sheet]);
 
+  // ---- ecosystem: goals, journeys, consent ----
+  const [ecoMsg, setEcoMsg] = useState<string | null>(null);
+  const notify = useCallback((msg: string) => {
+    setEcoMsg(msg);
+    window.setTimeout(() => setEcoMsg((m) => (m === msg ? null : m)), 2400);
+  }, []);
+  const goals = useGoals(asOf, home.customer.first_name, notify);
+  const [ecoSheet, setEcoSheetRaw] = useState<EcoSheet | null>(null);
+  const setEcoSheet = useCallback((s: EcoSheet | null) => { if (s) setSheet(null); setEcoSheetRaw(s); }, []);
+  const { start: startGoalRaw } = goals;
+  const startGoal = useCallback(async (playbookId: string): Promise<boolean> => {
+    const g = await startGoalRaw(playbookId);
+    if (!g) return false;
+    notify("KBC takes it from here. You approve every step.");
+    setEcoSheet({ kind: "journey", goalId: g.goal_id });
+    return true;
+  }, [startGoalRaw, notify, setEcoSheet]);
+
+  const { onCta: onCtaRaw } = p;
+  const onCta = useCallback((action: string, card?: Card) => {
+    const pb = card?.details?.playbook_id;
+    if (action === "start_goal" && typeof pb === "string") { void startGoal(pb); return; }
+    onCtaRaw(action, card);
+  }, [onCtaRaw, startGoal]);
+
   const { onKate, onKateAction } = p;
   const execKate = useCallback(async (action: KateAction) => {
+    if (action.kind === "start_goal") {
+      if (!action.playbook_id) return false;
+      return startGoal(action.playbook_id);
+    }
+    if (action.kind === "open_goal") {
+      const id = action.goal_id ?? goals.data?.goals.find((g) => g.playbook_id === action.playbook_id)?.goal_id;
+      if (id == null) return false;
+      setEcoSheet({ kind: "journey", goalId: id });
+      return true;
+    }
     if (action.kind === "open_card") {
       setSheet(null);
       const key = action.card_key;
@@ -105,16 +153,24 @@ export default function Phone(p: Props) {
       return true;
     }
     return onKateAction(action);
-  }, [onKateAction]);
+  }, [onKateAction, startGoal, goals.data, setEcoSheet]);
 
   const chat = useKateChat(onKate, execKate, home.gallery);
 
+  // ---- Kate nudges (proactive): lock-screen banner + inbox; the action runs through the same paths as Kate's ----
+  const nudges = useNudges(asOf, home.customer.first_name);
+  const runNudge = useCallback((n: Nudge) => {
+    if (n.open_view === "passport") { setEcoSheet({ kind: "passport" }); return true; }
+    return execKate(n.action);
+  }, [execKate, setEcoSheet]);
+
   const openKate = useCallback((cardKey?: string | null, message?: string) => {
+    setEcoSheetRaw(null);
     setSheet("kate");
     chat.start(cardKey ?? null, message);
   }, [chat]);
 
-  const ctx: SectionCtx = { home, asOf, explain, onFeedback: p.onFeedback, onCta: p.onCta, openKate };
+  const ctx: SectionCtx = { home, asOf, explain, onFeedback: p.onFeedback, onCta, openKate };
   const mix = home.feed_personas?.length
     ? home.feed_personas.map((w) => `${pct(w.weight)} ${FEED_PERSONA_LABEL[w.code] ?? w.code}`).join(" · ")
     : home.persona_mix.map((w) => `${pct(w.weight)} ${PERSONA_LABEL[w.persona] ?? w.persona}`).join(" · ");
@@ -198,6 +254,7 @@ export default function Phone(p: Props) {
                       {masked ? <NAV_ICONS.eye /> : <NAV_ICONS.eyeOff />}
                     </button>
                   )}
+                  <NudgeBell nudges={nudges} />
                   <button type="button" className={`icon-btn ${editing ? "on" : ""}`} aria-label="Edit home" title="Edit home" onClick={() => setEditing((v) => !v)}>
                     <NAV_ICONS.edit />
                   </button>
@@ -222,7 +279,7 @@ export default function Phone(p: Props) {
                     exit={{ opacity: 0, height: 0 }}
                   >
                     <div><b>Composed for:</b> {mix}</div>
-                    {themeExplain && <div>{themeExplain}</div>}
+                    {themeExplain && <div>{maskText(themeExplain, masked)}</div>}
                     {theme.overrides.length > 0 && <div><b>You chose:</b> {theme.overrides.join(", ").replace(/_/g, " ")}</div>}
                     <div style={{ opacity: .8 }}>theme: {theme.density} · {theme.tone} · {theme.contrast} contrast · {theme.appearance}{theme.accent ? ` · ${theme.accent}` : ""}</div>
                   </motion.div>
@@ -238,6 +295,19 @@ export default function Phone(p: Props) {
                   <SuggestionBanner key={suggestion.component} suggestion={suggestion} onDecide={p.onSuggestion} />
                 )}
               </AnimatePresence>
+              {goals.data && !editing && (
+                <GoalsStrip
+                  data={goals.data}
+                  hidden={goals.hidden}
+                  busy={goals.busy}
+                  onOpenGoal={(id) => setEcoSheet({ kind: "journey", goalId: id })}
+                  onStart={(pb) => void startGoal(pb)}
+                  onHide={(pb) => { goals.hide(pb); notify("Okay, not now"); }}
+                  onPlaybooks={() => setEcoSheet({ kind: "playbooks" })}
+                  onPassport={() => setEcoSheet({ kind: "passport" })}
+                  onAnswerInvite={(id, accept) => void goals.answerInvite(id, accept)}
+                />
+              )}
               <LayoutGroup id="home-sections">
                 <div className={`sections ${editing ? "editing" : ""}`}>
                   <AnimatePresence initial={false} mode="popLayout">
@@ -274,7 +344,7 @@ export default function Phone(p: Props) {
                           {tappable && <span className="hero-chevron" aria-hidden="true"><ChevronRight /></span>}
                           {explain && (
                             <div className="explain-badge">
-                              <span>{why ?? `${s.component}: no explanation provided.`}</span>
+                              <span>{why ? maskText(why, masked) : `${s.component}: no explanation provided.`}</span>
                               {s.component !== "ForYouFeed" && s.size !== "hero" && (
                                 <span className="tools">
                                   <button type="button" title="Pin this section" onClick={() => p.onLayoutPref(s.component, "pinned")}>📌</button>
@@ -326,12 +396,14 @@ export default function Phone(p: Props) {
             </AnimatePresence>
 
             <AnimatePresence>
-              {toast && (
-                <motion.div className="toast" key={toast} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
-                  {toast}
+              {(toast ?? ecoMsg) && (
+                <motion.div className="toast" key={toast ?? ecoMsg} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
+                  {toast ?? ecoMsg}
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <NudgeLayer nudges={nudges} reduceMotion={theme.reduce_motion} onRun={runNudge} />
 
             <nav className="bottom-nav" aria-label="Main navigation">
               <button type="button" className={sheet !== "kate" ? "active" : ""} onClick={() => setSheet(null)}><NAV_ICONS.home />Home</button>
@@ -350,8 +422,19 @@ export default function Phone(p: Props) {
                   onClose={() => setSheet(null)}
                 />
               )}
-              {sheet === "style" && <PersonaliseSheet key="style" home={home} onStyle={p.onStyle} onClose={() => setSheet(null)} />}
+              {sheet === "style" && <PersonaliseSheet key="style" home={home} onStyle={p.onStyle} onClose={() => setSheet(null)} onPassport={() => setEcoSheet({ kind: "passport" })} />}
               {sheet === "kate" && <KateSheet key="kate" chat={chat} onClose={() => setSheet(null)} />}
+              {ecoSheet && !sheet && (
+                <EcoSheets
+                  key={`eco-${ecoSheet.kind}`}
+                  sheet={ecoSheet}
+                  goals={goals}
+                  asOf={asOf}
+                  setSheet={setEcoSheet}
+                  startGoal={(pb) => void startGoal(pb)}
+                  notify={notify}
+                />
+              )}
             </AnimatePresence>
           </div>
         </PrivacyContext.Provider>

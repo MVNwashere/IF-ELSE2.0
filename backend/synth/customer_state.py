@@ -15,11 +15,13 @@ from app.auth import hash_password
 from app.customer_state.models import AccountObservation, TransactionDetails
 from app.customer_state.storage import put_account, put_details
 from app.schemas import Customer
-from .generate import DEMO_PASSWORD, TODAY, TxBuilder, safe_date
+from .generate import DEMO_PASSWORD, TxBuilder, safe_date
 
 SCENARIOS = ("stable", "variable", "salary_increase", "subscriptions", "spending_increase",
              "declining_buffer", "growing_savings", "debt", "low_balance", "foreign")
 IDS = {name: 100001+i for i, name in enumerate(SCENARIOS)}
+# The scenarios cover Jan–Sep 2026 and are measured at the end of September, independent of the demo TODAY.
+SCENARIO_TODAY = dt.date(2026, 9, 30)
 
 
 def seed(conn, *, users: bool = False) -> dict[str, int]:
@@ -29,7 +31,7 @@ def seed(conn, *, users: bool = False) -> dict[str, int]:
     for name, cid in IDS.items():
         if db.get_customer(conn, cid):
             raise ValueError(f"Customer {cid} already exists; use a fresh DB or seed only once")
-        b = TxBuilder(cid, random.Random(cid), dt.date(2026, 1, 1), TODAY)
+        b = TxBuilder(cid, random.Random(cid), dt.date(2026, 1, 1), SCENARIO_TODAY)
         for m in range(1, 10):
             salary = (1800, 4100, 2300, 5000, 1600, 3400, 2400, 4200, 2000)[m-1] if name == "variable" else 3000
             if name == "salary_increase" and m >= 8:

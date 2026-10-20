@@ -2,14 +2,14 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { Card as CardT, Decision } from "../api";
 import { longDate } from "../format";
-import { maskText, useEur, useMasked } from "../privacy";
+import { MASK, maskText, MASK_PCT, useEur, useMasked } from "../privacy";
 import { FAMILY_ICON } from "../components/icons";
 
 interface Props {
   card: CardT;
   asOf: string;
   onFeedback: (card: CardT, decision: Decision) => void;
-  onCta: (action: string) => void;
+  onCta: (action: string, card?: CardT) => void;
   onAskKate: (cardKey: string) => void;
   onOpen: () => void;
 }
@@ -39,6 +39,8 @@ export default function Card({ card, asOf, onFeedback, onCta, onAskKate, onOpen 
   const impactYearly = card.card_type === "insurance_renewal" || card.card_type === "price_increase";
 
   const act = (d: Decision) => { setMenu(false); onFeedback(card, d); };
+  // Comparison cells are prices ("€420/yr", 420): hide any cell with a number while amounts are masked.
+  const cell = (v: unknown) => (masked && /\d/.test(String(v)) ? MASK : String(v ?? ""));
 
   return (
     <div style={{ position: "relative" }} ref={ref} data-card-key={card.card_key}>
@@ -64,13 +66,13 @@ export default function Card({ card, asOf, onFeedback, onCta, onAskKate, onOpen 
         {Array.isArray(card.details?.metrics) && card.details.metrics.length > 1 && card.card_type === "core_money" && (
           <div className="core-breakdown" aria-label="Money by account type">
             {(card.details.metrics as {label: string; value: number}[]).filter((row) => row.value > 0).map((row) =>
-              <span key={row.label} title={`${row.label}: ${eur(row.value)}`} style={{ flex: row.value }} />)}
+              <span key={row.label} title={`${row.label}: ${eur(row.value)}`} style={{ flex: masked ? 1 : row.value }} />)}
           </div>
         )}
         {Array.isArray(card.details?.metrics) && card.card_type.startsWith("core_") && card.card_type !== "core_money" && (
           <div className="core-preview">
             {(card.details.metrics as {label: string; value: number}[]).slice(0, 3).map((row, i) =>
-              <div key={`${row.label}-${i}`}><span>{row.label}</span><b>{card.details.metric_unit === "%" ? `${row.value}%` : eur(row.value)}</b></div>)}
+              <div key={`${row.label}-${i}`}><span>{row.label}</span><b>{card.details.metric_unit === "%" ? (masked ? MASK_PCT : `${row.value}%`) : eur(row.value)}</b></div>)}
           </div>
         )}
         <div className="bottom">
@@ -86,7 +88,7 @@ export default function Card({ card, asOf, onFeedback, onCta, onAskKate, onOpen 
             <span className="kate-dot" aria-hidden="true">K</span>Ask Kate
           </button>
           {card.cta && (
-            <button type="button" className="cta" onClick={() => onCta(card.cta!.action)}>{card.cta.label}</button>
+            <button type="button" className="cta" onClick={() => onCta(card.cta!.action, card)}>{maskText(card.cta.label, masked)}</button>
           )}
         </div>
 
@@ -102,9 +104,9 @@ export default function Card({ card, asOf, onFeedback, onCta, onAskKate, onOpen 
         {drawer && (
           <div className="drawer">
             <h4>Why am I seeing this?</h4>
-            <ul>{card.evidence.map((e, i) => <li key={i}>{e}</li>)}</ul>
+            <ul>{card.evidence.map((e, i) => <li key={i}>{maskText(e, masked)}</li>)}</ul>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <span className="rank">{card.rank_explanation}</span>
+              <span className="rank">{maskText(card.rank_explanation, masked)}</span>
               <span>confidence {Math.round(card.confidence * 100)}%</span>
             </div>
             {comparison.length > 0 && (
@@ -114,7 +116,7 @@ export default function Card({ card, asOf, onFeedback, onCta, onAskKate, onOpen 
                   <thead><tr><th></th><th>Now</th><th>KBC</th></tr></thead>
                   <tbody>
                     {comparison.map((r, i) => (
-                      <tr key={i}><td>{r.item}</td><td>{r.current}</td><td>{r.kbc}</td></tr>
+                      <tr key={i}><td>{maskText(r.item, masked)}</td><td>{cell(r.current)}</td><td>{cell(r.kbc)}</td></tr>
                     ))}
                   </tbody>
                 </table>

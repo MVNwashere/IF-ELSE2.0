@@ -24,19 +24,19 @@ COMMERCIAL_EVERY = 3            # at most 1 commercial card per 3 cards shown
 
 # affinity[card_type][persona] in 0..1
 AFFINITY: dict[str, dict[Persona, float]] = {
-    "insurance_renewal": {"student": 0.6, "young_professional": 0.9, "young_family": 0.9, "freelancer": 0.9, "retiree": 0.8},
-    "vat_reserve":       {"student": 0.1, "young_professional": 0.1, "young_family": 0.2, "freelancer": 1.0, "retiree": 0.1},
-    "price_increase":    {"student": 0.9, "young_professional": 0.8, "young_family": 0.8, "freelancer": 0.7, "retiree": 0.8},
-    "duplicate_charge":  {"student": 0.9, "young_professional": 0.9, "young_family": 0.9, "freelancer": 0.9, "retiree": 1.0},
-    "runway":            {"student": 1.0, "young_professional": 0.7, "young_family": 0.8, "freelancer": 0.8, "retiree": 0.6},
-    "cashflow_squeeze":  {"student": 0.9, "young_professional": 0.8, "young_family": 0.9, "freelancer": 0.8, "retiree": 0.7},
-    "idle_cash":         {"student": 0.2, "young_professional": 0.8, "young_family": 0.7, "freelancer": 0.7, "retiree": 0.9},
-    "life_event":        {"student": 0.9, "young_professional": 0.9, "young_family": 0.9, "freelancer": 0.9, "retiree": 0.9},
-    "scam_awareness":    {"student": 0.2, "young_professional": 0.2, "young_family": 0.3, "freelancer": 0.3, "retiree": 1.0},
-    "pension_savings":   {"student": 0.1, "young_professional": 0.6, "young_family": 0.5, "freelancer": 0.6, "retiree": 0.1},
-    "late_client":       {"student": 0.1, "young_professional": 0.2, "young_family": 0.3, "freelancer": 1.0, "retiree": 0.2},
-    "protection_gap":    {"student": 0.2, "young_professional": 0.4, "young_family": 0.9, "freelancer": 0.5, "retiree": 0.3},
-    "new_payee":         {"student": 0.7, "young_professional": 0.7, "young_family": 0.7, "freelancer": 0.7, "retiree": 1.0},
+    "insurance_renewal": {"student": 0.6, "young_professional": 0.9, "young_family": 0.9, "freelancer": 0.9, "investor": 0.8, "retiree": 0.8},
+    "vat_reserve":       {"student": 0.1, "young_professional": 0.1, "young_family": 0.2, "freelancer": 1.0, "investor": 0.1, "retiree": 0.1},
+    "price_increase":    {"student": 0.9, "young_professional": 0.8, "young_family": 0.8, "freelancer": 0.7, "investor": 0.7, "retiree": 0.8},
+    "duplicate_charge":  {"student": 0.9, "young_professional": 0.9, "young_family": 0.9, "freelancer": 0.9, "investor": 0.9, "retiree": 1.0},
+    "runway":            {"student": 1.0, "young_professional": 0.7, "young_family": 0.8, "freelancer": 0.8, "investor": 0.4, "retiree": 0.6},
+    "cashflow_squeeze":  {"student": 0.9, "young_professional": 0.8, "young_family": 0.9, "freelancer": 0.8, "investor": 0.6, "retiree": 0.7},
+    "idle_cash":         {"student": 0.2, "young_professional": 0.8, "young_family": 0.7, "freelancer": 0.7, "investor": 1.0, "retiree": 0.9},
+    "life_event":        {"student": 0.9, "young_professional": 0.9, "young_family": 0.9, "freelancer": 0.9, "investor": 0.9, "retiree": 0.9},
+    "scam_awareness":    {"student": 0.2, "young_professional": 0.2, "young_family": 0.3, "freelancer": 0.3, "investor": 0.4, "retiree": 1.0},
+    "pension_savings":   {"student": 0.1, "young_professional": 0.6, "young_family": 0.5, "freelancer": 0.6, "investor": 0.9, "retiree": 0.1},
+    "late_client":       {"student": 0.1, "young_professional": 0.2, "young_family": 0.3, "freelancer": 1.0, "investor": 0.2, "retiree": 0.2},
+    "protection_gap":    {"student": 0.2, "young_professional": 0.4, "young_family": 0.9, "freelancer": 0.5, "investor": 0.6, "retiree": 0.3},
+    "new_payee":         {"student": 0.7, "young_professional": 0.7, "young_family": 0.7, "freelancer": 0.7, "investor": 0.8, "retiree": 1.0},
 }
 
 
