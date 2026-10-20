@@ -24,6 +24,7 @@ from .customer_state.api import router as customer_state_router
 from .customer_state.service import get_state
 from .ecosystem import service as ecosystem_service
 from .ecosystem.api import router as ecosystem_router
+from .ecosystem.nudges_api import router as nudges_router
 from .ecosystem.links import enrich_feed
 from .ecosystem.registry import registry
 from .engine import kate, pipeline
@@ -68,6 +69,7 @@ app = FastAPI(title="KBC Adaptive Home", lifespan=lifespan, docs_url=None, redoc
 
 app.include_router(customer_state_router)
 app.include_router(ecosystem_router)
+app.include_router(nudges_router)
 
 
 @app.middleware("http")

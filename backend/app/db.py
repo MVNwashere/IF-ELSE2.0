@@ -112,6 +112,8 @@ def init_schema(conn: sqlite3.Connection) -> None:
     init_customer_state(conn)
     from .ecosystem.store import init_schema as init_ecosystem
     init_ecosystem(conn)
+    from .ecosystem.nudges_api import init_schema as init_nudges
+    init_nudges(conn)
 
 
 def migrate(conn: sqlite3.Connection) -> None:
