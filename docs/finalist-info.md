@@ -1,3 +1,15 @@
+---
+title: Tectonic Hackathon final round info
+type: context          # context | spec | decision | notes
+status: final          # draft | review | final | outdated
+incorporated: n/a      # no | partial | yes | n/a
+code_refs: []          # paths implementing this doc, e.g. [src/api/]
+owner: Henri Lemahieu
+created: 2026-10-20
+updated: 2026-10-20
+source: docs/You made the final. Confirm as soon as possible..msg
+---
+
 # Tectonic Hackathon: Final Round Info
 
 Source: email from Tectonic Hackathon (hackathon@tectonicconf.eu), "You made the final. Confirm as soon as possible."

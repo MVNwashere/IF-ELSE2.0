@@ -1,0 +1,1825 @@
+[
+  {
+    "id": "YS-01",
+    "title": "Pocket Money Countdown",
+    "type": "Insight",
+    "fits": [
+      "TEEN"
+    ],
+    "fit_rule": "TEEN, right after pocket money arrives",
+    "summary": "Helps a teen see how long their pocket money will last.",
+    "feed_design": "A bright card with \"€ 14 left, 6 days until your next pocket money\". A coloured bar shows how fast the money is going (green, then orange, then red). A friendly emoji reacts to the situation.",
+    "detail": "A simple page showing where the pocket money went (snacks, games, transport) as colourful bars, plus a tip such as \"Spend € 2 a day to make it last\".",
+    "related": [
+      "YS-02",
+      "YS-04"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-02",
+    "title": "First Savings Challenge",
+    "type": "Action",
+    "fits": [
+      "TEEN"
+    ],
+    "fit_rule": "TEEN with no savings goal yet",
+    "summary": "A small, fun challenge that starts the saving habit.",
+    "feed_design": "\"Save € 20 in 4 weeks\": four empty circles, one per week, that fill with stamps. A reward badge is shown greyed-out. Button \"Accept challenge\".",
+    "detail": "Explains the challenge in three short steps, lets the teen pick the goal (phone, concert, bike) and shows the badge they will unlock.",
+    "related": [
+      "YS-03",
+      "YS-04"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-03",
+    "title": "Money Quiz of the Week",
+    "type": "Editorial",
+    "fits": [
+      "TEEN",
+      "STU"
+    ],
+    "fit_rule": "TEEN, STU",
+    "summary": "A short weekly quiz that teaches a money basic.",
+    "feed_design": "A card with a question mark icon, the topic (\"What is interest?\") and a streak counter (\"3 weeks in a row 🔥\").",
+    "detail": "Three multiple-choice questions, one at a time, with instant feedback and a short explanation after each. Ends with a score and points.",
+    "related": [
+      "YS-04",
+      "YS-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-04",
+    "title": "Saving for That Thing",
+    "type": "Insight",
+    "fits": [
+      "TEEN"
+    ],
+    "fit_rule": "TEEN with a saving goal",
+    "summary": "A picture-based goal tracker for something the teen wants.",
+    "feed_design": "A picture or emoji of the item, its price, a filling progress bar and the line \"You'll have it by 12 March if you keep going\".",
+    "detail": "A bigger progress view with a \"Add € 5\" quick button, the history of deposits, and a cheer when milestones (25%, 50%, 75%) are reached.",
+    "related": [
+      "YS-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-05",
+    "title": "Ask Parent to Raise Limit",
+    "type": "Action",
+    "fits": [
+      "TEEN"
+    ],
+    "fit_rule": "TEEN who often hits their daily limit",
+    "summary": "A polite way to ask a parent for a higher spending limit.",
+    "feed_design": "\"You hit your limit twice this month. Want to ask your parent for more?\" with a single button \"Send request\".",
+    "detail": "A small form: pick the new limit and write a short reason. After sending, it shows \"Waiting for your parent\" and later the answer. Related card for the parent: Teen's First Bank Card.",
+    "related": [],
+    "related_core": []
+  },
+  {
+    "id": "YS-06",
+    "title": "Student Survival Countdown",
+    "type": "Insight",
+    "fits": [
+      "STU"
+    ],
+    "fit_rule": "STU with low balance and many days until income",
+    "summary": "Turns a low balance into a simple daily budget.",
+    "feed_design": "\"€ 186 left for 11 days = € 17 a day\". A gauge coloured green, orange or red. Two small tip chips: \"Cook at home\", \"Skip takeaway\".",
+    "detail": "A day-by-day view of how the money could be spread, the biggest spending leaks this month, and a few cheap-living tips.",
+    "related": [
+      "YS-07",
+      "YS-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-07",
+    "title": "Student Discount Finder",
+    "type": "Product",
+    "fits": [
+      "STU"
+    ],
+    "fit_rule": "STU with verified student status",
+    "summary": "Shows discounts students can use.",
+    "feed_design": "Three small tiles side by side (transport, software, food), each with a \"% off\" label and an \"Activate\" button.",
+    "detail": "The full list of discounts by category, with how to claim each one.",
+    "related": [
+      "YS-06",
+      "YS-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-08",
+    "title": "Rent Deposit Explained",
+    "type": "Editorial",
+    "fits": [
+      "STU"
+    ],
+    "fit_rule": "STU, right after paying a rent deposit",
+    "summary": "A guide for renting as a student.",
+    "feed_design": "Picture of a key with the title \"Getting your deposit back: 6 things to do at move-out\" and \"4 min read\".",
+    "detail": "The article with six numbered tips and a checklist (photos at move-in, reading the contract, final meter readings).",
+    "related": [
+      "EC-06",
+      "LE-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-09",
+    "title": "Cheaper Phone Plan & Subscriptions",
+    "type": "Insight",
+    "fits": [
+      "STU",
+      "YPRO"
+    ],
+    "fit_rule": "STU, YPRO",
+    "summary": "Shows when the customer pays more than people like them for phone and streaming.",
+    "feed_design": "\"You pay € 47 a month for phone and streaming. People your age pay € 31\". Two suggested cuts underneath with the saving next to each.",
+    "detail": "A list of each subscription with its price and how it compares, plus simple steps to switch or cancel.",
+    "related": [
+      "EC-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "YS-10",
+    "title": "Your First Tax Return",
+    "type": "Editorial",
+    "fits": [
+      "STU",
+      "YPRO"
+    ],
+    "fit_rule": "STU, YPRO with a part-time job, in tax season",
+    "summary": "A friendly intro to taxes for people with their first side job.",
+    "feed_design": "\"Working part-time? You may get money back\". A small checklist preview and an estimated refund range.",
+    "detail": "The full guide: what documents are needed, what can be deducted, and deadlines.",
+    "related": [
+      "EC-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-01",
+    "title": "First Salary Milestone",
+    "type": "Insight",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO, when the first salary arrives",
+    "summary": "A celebration plus a suggestion on how to divide the money.",
+    "feed_design": "Confetti-style header \"Your first salary arrived 🎉\". A bar split in needs, wants and savings (50/30/20) with the amounts filled in.",
+    "detail": "The split explained with examples, and sliders to change it. A button to set up the savings part automatically.",
+    "related": [
+      "SV-01",
+      "EC-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-02",
+    "title": "Payday Auto-Saver",
+    "type": "Product",
+    "fits": [
+      "YPRO",
+      "STU"
+    ],
+    "fit_rule": "YPRO, STU who don't save automatically",
+    "summary": "Offers to move a fixed amount to savings each payday.",
+    "feed_design": "\"Move € 100 to savings on payday\". A slider for the amount and a line with the result after a year (\"€ 1,200 saved\").",
+    "detail": "A short confirmation page showing which accounts are used, the date and how to stop at any time.",
+    "related": [
+      "SV-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-03",
+    "title": "Subscription Audit",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "STU",
+      "PAR"
+    ],
+    "fit_rule": "YPRO, STU, PAR with five or more subscriptions",
+    "summary": "A list of everything the customer pays for every month.",
+    "feed_design": "The total per year in large type (\"€ 684 a year on subscriptions\") and the first three subscriptions with logo and price.",
+    "detail": "Every subscription in a list, with how long it has been running and a \"Cancel\" button per row.",
+    "related": [
+      "EC-04"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-04",
+    "title": "Unused Subscription Alert",
+    "type": "Action",
+    "fits": [
+      "YPRO",
+      "STU",
+      "PAR"
+    ],
+    "fit_rule": "YPRO, STU, PAR",
+    "summary": "Points out a subscription that seems not to be used.",
+    "feed_design": "\"You paid FitClub € 39 for 3 months without visiting\". The merchant logo, the total wasted and a \"Cancel\" button.",
+    "detail": "The subscription's payment history, how to cancel and what cancelling saves per year.",
+    "related": [
+      "EC-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-05",
+    "title": "Home Deposit Tracker",
+    "type": "Tool",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO saving for a first home",
+    "summary": "Shows progress towards a home deposit.",
+    "feed_design": "A ring showing \"20% of your deposit saved\". \"At this pace: 6 years 2 months\". A slider to try saving € 100 more per month.",
+    "detail": "A larger version with a timeline showing when the goal is reached under different saving amounts.",
+    "related": [
+      "HM-01",
+      "EC-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-06",
+    "title": "Renting vs Buying Calculator",
+    "type": "Tool",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO who have rented for over a year",
+    "summary": "Compares the cost of renting with the cost of buying.",
+    "feed_design": "Two columns, \"Rent\" and \"Buy\", with a monthly cost each, and the year where buying becomes cheaper.",
+    "detail": "Adjustable inputs (house price, rent, rate, years staying) and a chart of total cost over time.",
+    "related": [
+      "HM-01",
+      "HM-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-07",
+    "title": "Lifestyle Creep Detector",
+    "type": "Insight",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO whose spending grows as fast as their pay",
+    "summary": "Shows when a raise has been absorbed by higher spending.",
+    "feed_design": "\"Income +12%, spending +16% in six months\". A two-line chart where the lines are close together.",
+    "detail": "A breakdown of which categories grew (dining, shopping, travel) and a suggestion to save half of the raise.",
+    "related": [
+      "SV-01",
+      "EC-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-08",
+    "title": "Starter Investing",
+    "type": "Product",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO with savings and no investments yet",
+    "summary": "A gentle first step into investing.",
+    "feed_design": "\"Start investing from € 25 a month\". Three options with a risk scale (1 to 7) and a three-step mini explainer.",
+    "detail": "A longer explainer of how investing works, risks in plain words, and a comparison of the three options.",
+    "related": [
+      "SV-07",
+      "SV-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-09",
+    "title": "Tax Return Checklist",
+    "type": "Action",
+    "fits": [
+      "YPRO",
+      "SELF",
+      "HOME"
+    ],
+    "fit_rule": "YPRO, SELF, HOME, about six weeks before the deadline",
+    "summary": "Helps the customer prepare their tax return.",
+    "feed_design": "A countdown (\"32 days left\"), a progress bar and a checklist preview with ticks for documents the bank already found.",
+    "detail": "The full checklist with each item explained and pre-filled where possible (income statements, mortgage interest, donations).",
+    "related": [
+      "BZ-05",
+      "YS-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EC-10",
+    "title": "First Pension Check",
+    "type": "Insight",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO aged 25-35 with no private pension",
+    "summary": "A first look at what retirement income may be.",
+    "feed_design": "\"At 67 you may get about € 1,650 a month from the state pension\". A small gauge compared with today's spending.",
+    "detail": "A picture of the gap between expected pension and the lifestyle they want, and simple ways to close it.",
+    "related": [
+      "RT-01",
+      "RT-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-01",
+    "title": "Back-to-School Budget",
+    "type": "Insight",
+    "fits": [
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "PAR, HOME, about six weeks before school starts",
+    "summary": "A heads-up about the costs of a new school year.",
+    "feed_design": "\"Last year you spent € 410 in August and September on school\". A mini checklist (supplies, clothes, sports) with estimated amounts.",
+    "detail": "A full checklist with estimates, and a \"Set aside € 410\" button that starts a goal.",
+    "related": [
+      "FM-02",
+      "FM-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-02",
+    "title": "Kids' Education Fund",
+    "type": "Product",
+    "fits": [
+      "PAR"
+    ],
+    "fit_rule": "PAR with a child under 12 and no child savings",
+    "summary": "A long-term savings plan for a child.",
+    "feed_design": "The child's name and \"Save € 50 a month from now until 18 = about € 14,000\". A slider and a small growth chart.",
+    "detail": "A page comparing saving options with three scenarios and their risk, and a simple setup.",
+    "related": [
+      "SV-04",
+      "FM-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-03",
+    "title": "Child Benefit Usage",
+    "type": "Insight",
+    "fits": [
+      "PAR"
+    ],
+    "fit_rule": "PAR, when child benefit arrives",
+    "summary": "A nudge to put some of the child benefit to good use.",
+    "feed_design": "\"Your child benefit of € 320 comes in on the 3rd\". A suggested split: part for daily costs, part for the child's fund.",
+    "detail": "A page with a slider to choose the split and a button to set it up.",
+    "related": [
+      "FM-02",
+      "FM-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-04",
+    "title": "Family Holiday Planner",
+    "type": "Tool",
+    "fits": [
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "PAR, HOME, in spring or four months before school holidays",
+    "summary": "A budget planner for a family holiday.",
+    "feed_design": "A bar showing estimated cost (flights, stay, activities, food) against the amount saved, and a \"Start a holiday goal\" button.",
+    "detail": "Sliders to change the number of people, days and destination type, with a live total.",
+    "related": [
+      "TR-06",
+      "TR-02",
+      "TR-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-05",
+    "title": "Childcare Cost Overview",
+    "type": "Insight",
+    "fits": [
+      "PAR"
+    ],
+    "fit_rule": "PAR with regular childcare payments",
+    "summary": "Shows what childcare costs over the year.",
+    "feed_design": "Monthly cost, yearly total, and \"That's 14% of your income\". A small note about possible tax deduction.",
+    "detail": "A month-by-month chart, and a short explanation of which costs may be deducted.",
+    "related": [
+      "FM-06",
+      "EC-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-06",
+    "title": "Family Benefits You Might Miss",
+    "type": "Editorial",
+    "fits": [
+      "PAR"
+    ],
+    "fit_rule": "PAR",
+    "summary": "An article about benefits parents often overlook.",
+    "feed_design": "Picture of a family with \"5 family benefits parents often overlook\" and a teaser list of the first two.",
+    "detail": "The full article with short sections and links to where each benefit can be claimed.",
+    "related": [
+      "FM-05",
+      "FM-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-07",
+    "title": "Life Insurance Gap",
+    "type": "Product",
+    "fits": [
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "PAR, HOME with children and a mortgage or rent but no life insurance",
+    "summary": "Shows how long the family could manage if the main earner was gone.",
+    "feed_design": "A gauge: \"Your family's income is protected for 4 months\". A price range for cover and a button \"See options\".",
+    "detail": "A simple illustration of household costs versus available money, and options from partners.",
+    "related": [
+      "LE-02"
+    ],
+    "related_core": [
+      "core_insurance"
+    ]
+  },
+  {
+    "id": "FM-08",
+    "title": "Teen's First Bank Card",
+    "type": "Action",
+    "fits": [
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "PAR, HOME with a child turning 12 to 14",
+    "summary": "Helps a parent give their child a first card.",
+    "feed_design": "\"Emma turns 12. Give her a card you control\". A picture of the card and the limit you can set.",
+    "detail": "Choose limit, what the card can be used for, and notifications for the parent.",
+    "related": [
+      "FM-10",
+      "YS-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-09",
+    "title": "Household Shared Budget",
+    "type": "Product",
+    "fits": [
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "PAR, HOME whose partner is also a customer",
+    "summary": "Invites the partner to a shared view of household costs.",
+    "feed_design": "Two avatars linked with a line, and \"See groceries, bills and kids' costs together\". A note that personal accounts stay private.",
+    "detail": "Explains what is shared and what isn't, then shows an example of the shared dashboard.",
+    "related": [
+      "FM-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "FM-10",
+    "title": "Pocket Money Planner",
+    "type": "Tool",
+    "fits": [
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "PAR, HOME with a child aged 8 to 16",
+    "summary": "Helps decide how much pocket money is fair.",
+    "feed_design": "\"What do other parents give a 10-year-old?\" A sliding scale by age with the typical amount highlighted.",
+    "detail": "A page where the parent chooses an amount and sets an automatic monthly transfer to the child's account.",
+    "related": [
+      "FM-08",
+      "YS-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-01",
+    "title": "Mortgage Readiness",
+    "type": "Tool",
+    "fits": [
+      "YPRO",
+      "PAR"
+    ],
+    "fit_rule": "YPRO, PAR thinking about buying",
+    "summary": "An estimate of how much the customer could borrow.",
+    "feed_design": "\"You could borrow about € 240k\" with three sliders (income, partner's income, other debts).",
+    "detail": "A fuller calculator and an explanation of what lenders look at. A reminder that it is only an estimate.",
+    "related": [
+      "HM-02",
+      "EC-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-02",
+    "title": "First-Time Buyer Guide",
+    "type": "Editorial",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO after interacting with home cards",
+    "summary": "The journey from viewing to keys.",
+    "feed_design": "\"From viewing to keys: the 8 steps\", shown as a small timeline graphic.",
+    "detail": "An article with each step explained and its typical cost.",
+    "related": [
+      "HM-03",
+      "HM-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-03",
+    "title": "Hidden Costs of Buying",
+    "type": "Editorial",
+    "fits": [
+      "YPRO",
+      "PAR"
+    ],
+    "fit_rule": "YPRO, PAR",
+    "summary": "Shows the extra costs on top of a house price.",
+    "feed_design": "A stacked bar \"Budget an extra 10 to 15%\", with labels like notary, tax, valuation, moving.",
+    "detail": "Every cost explained with typical amounts and tips to save.",
+    "related": [
+      "HM-02",
+      "HM-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-04",
+    "title": "Mortgage Rate Reset",
+    "type": "Action",
+    "fits": [
+      "HOME",
+      "PAR"
+    ],
+    "fit_rule": "HOME, PAR when the fixed rate is about to end",
+    "summary": "A warning that the mortgage rate will change, and a chance to choose.",
+    "feed_design": "A countdown (\"Rate ends in 5 months\"), current rate versus today's offers, and the change in monthly payment (\"+ € 162 a month\").",
+    "detail": "A comparison of options (new fixed periods, variable) with monthly cost and total cost.",
+    "related": [
+      "HM-05",
+      "HM-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-05",
+    "title": "Extra Repayment Simulator",
+    "type": "Tool",
+    "fits": [
+      "HOME",
+      "PAR"
+    ],
+    "fit_rule": "HOME, PAR with a mortgage",
+    "summary": "Shows the effect of paying a little extra each month.",
+    "feed_design": "A slider \"+ € 100 a month\" with \"Saves € 11,400 interest and cuts 3 years\".",
+    "detail": "A chart comparing the two paths of the mortgage balance.",
+    "related": [
+      "HM-04",
+      "SV-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-06",
+    "title": "Refinancing Opportunity",
+    "type": "Product",
+    "fits": [
+      "HOME"
+    ],
+    "fit_rule": "HOME whose mortgage rate is well above current offers",
+    "summary": "Points out that a lower rate is available.",
+    "feed_design": "\"A rate of 3.4% could save you € 2,900 a year\", with the break-even point for switching costs.",
+    "detail": "A side-by-side of current and new mortgage, the costs of switching and a booking button for an adviser.",
+    "related": [
+      "HM-04",
+      "HM-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-07",
+    "title": "Energy Bill Spike",
+    "type": "Action",
+    "fits": [
+      "HOME",
+      "PAR",
+      "SEN"
+    ],
+    "fit_rule": "HOME, PAR, SEN when the energy bill rises sharply",
+    "summary": "Explains a jump in the energy bill and what can be done.",
+    "feed_design": "A 12-month bar chart with the last bar highlighted in orange, and \"Up 22% on last year\".",
+    "detail": "Simple tips (thermostat, tariff), a provider comparison and a link to home upgrade ideas.",
+    "related": [
+      "HM-08",
+      "HM-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-08",
+    "title": "Home Energy Upgrade",
+    "type": "Product",
+    "fits": [
+      "HOME"
+    ],
+    "fit_rule": "HOME with an older house or high energy costs",
+    "summary": "Suggests insulation or solar panels and how to pay for them.",
+    "feed_design": "\"Insulation and solar can cut your energy bill by 30%\". A small house illustration with hotspots, cost range and payback time.",
+    "detail": "Each upgrade explained with cost, yearly saving and payback years. A green loan option is shown.",
+    "related": [
+      "HM-07",
+      "HM-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-09",
+    "title": "Maintenance Fund",
+    "type": "Insight",
+    "fits": [
+      "HOME"
+    ],
+    "fit_rule": "HOME who own their house",
+    "summary": "A reminder to keep money aside for repairs.",
+    "feed_design": "\"Set aside 1% of your home's value a year = € 330 a month\". A progress bar for the current buffer.",
+    "detail": "Typical repair costs with years between them (roof, boiler, windows) and a button to start a maintenance pot.",
+    "related": [
+      "HM-08",
+      "SV-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "HM-10",
+    "title": "Car Costs Breakdown",
+    "type": "Insight",
+    "fits": [
+      "HOME",
+      "PAR",
+      "YPRO",
+      "SELF"
+    ],
+    "fit_rule": "HOME, PAR, YPRO, SELF who own a car",
+    "summary": "Shows what the car really costs each year.",
+    "feed_design": "A yearly total with a split (fuel, insurance, tax, maintenance) and \"€ 0.42 per kilometre\".",
+    "detail": "Month-by-month costs, how they compare with similar cars, and ideas to save.",
+    "related": [
+      "HM-07"
+    ],
+    "related_core": [
+      "core_insurance"
+    ]
+  },
+  {
+    "id": "TR-01",
+    "title": "Before You Go on Summer Holiday",
+    "type": "Editorial",
+    "fits": [
+      "STU",
+      "YPRO",
+      "PAR",
+      "HOME",
+      "SELF",
+      "INV",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "All adults, May to July",
+    "summary": "A checklist article for a stress-free holiday.",
+    "feed_design": "A sunny picture and \"10 things to arrange before you leave\", with three teaser items (cards, insurance, limits).",
+    "detail": "The full checklist with tick boxes.",
+    "related": [
+      "TR-02",
+      "TR-03",
+      "TR-04",
+      "TR-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-02",
+    "title": "Travel Insurance Check",
+    "type": "Action",
+    "fits": [
+      "YPRO",
+      "PAR",
+      "HOME",
+      "PRE"
+    ],
+    "fit_rule": "YPRO, PAR, HOME, PRE with a booked trip and no travel cover",
+    "summary": "Warns about travelling without insurance.",
+    "feed_design": "\"Going to Spain on 12 July? You have no travel insurance\". A coverage icon row and a price.",
+    "detail": "A comparison of cover options (medical, cancellation, luggage) with prices.",
+    "related": [
+      "TR-03",
+      "TR-04"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-03",
+    "title": "Card Abroad Settings",
+    "type": "Action",
+    "fits": [
+      "STU",
+      "YPRO",
+      "PAR",
+      "HOME",
+      "SELF",
+      "INV",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "All adults with a trip abroad",
+    "summary": "Quick switches to make cards safe for travel.",
+    "feed_design": "A list of switches: abroad payments, cash withdrawals, contactless, each with a short note about fees.",
+    "detail": "The full card control page with daily limits for abroad.",
+    "related": [
+      "TR-04",
+      "TR-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-04",
+    "title": "Foreign Currency & Fees",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "PAR",
+      "HOME",
+      "INV"
+    ],
+    "fit_rule": "YPRO, PAR, HOME, INV travelling outside the euro zone",
+    "summary": "Explains exchange rates and fees for the destination.",
+    "feed_design": "\"€ 1 = 4.98 zloty today\". A small converter and a comparison: card vs cash vs exchange office.",
+    "detail": "A handy table of typical prices converted to euros, with tips on avoiding bad exchange rates.",
+    "related": [
+      "TR-05",
+      "TR-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-05",
+    "title": "Holiday Spending Tracker",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "YPRO, PAR, HOME while abroad",
+    "summary": "A live view of trip spending.",
+    "feed_design": "Trip total, daily average, and a bar showing budget used.",
+    "detail": "Daily spending chart, categories and a simple \"You can spend € 85 a day for the rest of the trip\".",
+    "related": [
+      "TR-09",
+      "TR-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-06",
+    "title": "Holiday Savings Goal",
+    "type": "Product",
+    "fits": [
+      "YPRO",
+      "PAR"
+    ],
+    "fit_rule": "YPRO, PAR with no holiday goal after looking at travel content",
+    "summary": "A ready-made savings goal for a trip.",
+    "feed_design": "\"Plan your trip: Japan, 14 days ≈ € 3,600\", with a monthly amount and deadline.",
+    "detail": "Adjustable destination, length and travel style, with a button to start saving.",
+    "related": [
+      "FM-04",
+      "TR-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-07",
+    "title": "Travel Scams & Safety Tips",
+    "type": "Editorial",
+    "fits": [
+      "STU",
+      "YPRO",
+      "PAR",
+      "HOME",
+      "SELF",
+      "INV",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "All adults in holiday season",
+    "summary": "Warns about common scams abroad.",
+    "feed_design": "\"5 scams to avoid abroad\" with small icons (fake ATM, QR code, public wifi).",
+    "detail": "Each scam explained in a few lines with what to do.",
+    "related": [
+      "TR-03",
+      "LE-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-08",
+    "title": "Weekend Getaway Ideas",
+    "type": "Editorial",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO",
+    "summary": "City break ideas at a fair price.",
+    "feed_design": "A row of pictures with \"Five city breaks under € 300\" and the estimated total for each.",
+    "detail": "Each destination with a sample budget (travel, stay, food).",
+    "related": [
+      "TR-06",
+      "TR-04"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-09",
+    "title": "Holiday Recap",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "YPRO, PAR, HOME after a trip",
+    "summary": "A summary of what the trip cost.",
+    "feed_design": "\"Your trip cost € 2,430, € 210 under budget\". A donut of categories, best and worst spending day.",
+    "detail": "A story-like scroll through the trip with highlights and the option to save the difference for the next trip.",
+    "related": [
+      "TR-06",
+      "SV-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "TR-10",
+    "title": "Senior Travel Essentials",
+    "type": "Editorial",
+    "fits": [
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "PRE, SEN",
+    "summary": "A calm guide to travelling safely later in life.",
+    "feed_design": "Large text \"Travelling after 65: insurance, medication and getting help abroad\", with the bank's help phone number.",
+    "detail": "A simple article with large headings and a checklist.",
+    "related": [
+      "TR-02",
+      "EL-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-01",
+    "title": "Emergency Fund Builder",
+    "type": "Insight",
+    "fits": [
+      "STU",
+      "YPRO",
+      "PAR",
+      "HOME",
+      "SELF",
+      "INV",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "All adults with less than three months of expenses saved",
+    "summary": "Shows how long savings would last without income.",
+    "feed_design": "A gauge \"You can cover 1.4 months\", with a marker at the 3-month target and a \"Start saving\" button.",
+    "detail": "An explanation of why three to six months matters, a monthly amount suggestion and a setup button.",
+    "related": [
+      "EC-02",
+      "SV-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-02",
+    "title": "Savings Streak",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "STU",
+      "PAR"
+    ],
+    "fit_rule": "YPRO, STU, PAR who saved several months in a row",
+    "summary": "Celebrates saving consistently.",
+    "feed_design": "\"4 months in a row 🔥\" with a calendar of check marks and the total saved.",
+    "detail": "A full calendar history, badges earned and a suggestion to raise the amount slightly.",
+    "related": [
+      "SV-03",
+      "EC-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-03",
+    "title": "Round-Up Saving",
+    "type": "Product",
+    "fits": [
+      "STU",
+      "YPRO",
+      "PAR"
+    ],
+    "fit_rule": "STU, YPRO, PAR without round-up saving",
+    "summary": "Saves the small change from every payment.",
+    "feed_design": "An example: \"€ 3.40 coffee → € 0.60 saved\", plus the yearly result based on the customer's own spending.",
+    "detail": "A short explanation and a switch to turn it on, with a choice of where the money goes.",
+    "related": [
+      "SV-01"
+    ],
+    "related_core": [
+      "core_goals"
+    ]
+  },
+  {
+    "id": "SV-04",
+    "title": "Child Savings Growth",
+    "type": "Tool",
+    "fits": [
+      "PAR"
+    ],
+    "fit_rule": "PAR",
+    "summary": "Shows how money set aside for a child might grow.",
+    "feed_design": "A chart to age 18 with three lines (savings, index fund, mix) and the child's name.",
+    "detail": "Sliders for monthly amount and start age, with risk explained in plain words.",
+    "related": [
+      "FM-02",
+      "SV-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-05",
+    "title": "Idle Cash Warning",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "HOME",
+      "INV"
+    ],
+    "fit_rule": "YPRO, HOME, INV with a lot of money sitting in the current account",
+    "summary": "Points out that money is lying around earning nothing.",
+    "feed_design": "\"€ 9,400 sits idle. At 2.5% it could earn € 235 a year\". Two bars: earning now vs earning possible.",
+    "detail": "Options for savings accounts or investing, with the money needed for daily life kept safe.",
+    "related": [
+      "SV-06",
+      "EC-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-06",
+    "title": "Savings Account Rate Finder",
+    "type": "Product",
+    "fits": [
+      "YPRO",
+      "PAR",
+      "HOME",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "YPRO, PAR, HOME, PRE, SEN whose savings earn a low rate",
+    "summary": "Compares the customer's savings rate with better ones.",
+    "feed_design": "\"You earn 0.5%. A better account pays 2.4%\", with the extra yearly interest in euros.",
+    "detail": "A side-by-side of accounts, notice periods and rates, and a simple \"Move money\" action.",
+    "related": [
+      "SV-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-07",
+    "title": "Index Funds in 2 Minutes",
+    "type": "Editorial",
+    "fits": [
+      "YPRO",
+      "PAR",
+      "HOME"
+    ],
+    "fit_rule": "YPRO, PAR, HOME curious about investing",
+    "summary": "A simple explainer of index funds.",
+    "feed_design": "A colourful illustration of many small pieces becoming one fund, and \"2 min read\".",
+    "detail": "A short illustrated article covering what an index fund is, fees, and how risk changes over time.",
+    "related": [
+      "EC-08",
+      "SV-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-08",
+    "title": "Invest or Repay?",
+    "type": "Tool",
+    "fits": [
+      "HOME",
+      "INV"
+    ],
+    "fit_rule": "HOME, INV with both a mortgage and savings",
+    "summary": "Helps decide between paying off a mortgage and investing.",
+    "feed_design": "Two boxes: \"Repay mortgage: saves 3.8%\" and \"Invest: may earn 5-7% with risk\".",
+    "detail": "Sliders for amount and years with outcomes shown side by side and a note about risk.",
+    "related": [
+      "HM-05",
+      "SV-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "SV-09",
+    "title": "Market Moves for My Holdings",
+    "type": "Editorial",
+    "fits": [
+      "INV",
+      "HOME",
+      "PRE"
+    ],
+    "fit_rule": "INV, HOME, PRE with investments, when holdings move sharply",
+    "summary": "Explains big changes in the customer's holdings in a calm way.",
+    "feed_design": "\"Your tech holdings fell 4.1% today\", with a three-line explanation of why.",
+    "detail": "A short article with the affected holdings, what happened and historical context.",
+    "related": [
+      "SV-10"
+    ],
+    "related_core": [
+      "core_investments"
+    ]
+  },
+  {
+    "id": "SV-10",
+    "title": "Portfolio Rebalance Nudge",
+    "type": "Action",
+    "fits": [
+      "INV"
+    ],
+    "fit_rule": "INV",
+    "summary": "Shows when a portfolio has drifted from its target mix.",
+    "feed_design": "Two bars side by side: target split and current split, with differences highlighted.",
+    "detail": "The suggested changes to get back on target, with a note that this is information only.",
+    "related": [
+      "LE-10",
+      "SV-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "BZ-01",
+    "title": "Income Volatility Forecast",
+    "type": "Insight",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF with irregular income",
+    "summary": "A look at likely income over the next months.",
+    "feed_design": "A line chart with a shaded range: \"Next month could be € 1,200 to € 3,800\".",
+    "detail": "The expected income, expected costs and the safety buffer needed.",
+    "related": [
+      "BZ-02",
+      "SV-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "BZ-02",
+    "title": "Tax Reserve Tracker",
+    "type": "Insight",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF",
+    "summary": "Shows how much should be kept aside for taxes.",
+    "feed_design": "\"Set aside € 3,140 for taxes\". A bar showing how much is already set aside.",
+    "detail": "A breakdown of the estimate by income, VAT and social contributions, with a button to move money to a tax pot.",
+    "related": [
+      "BZ-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "BZ-03",
+    "title": "Open Invoices & Late Payers",
+    "type": "Action",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF waiting for payments",
+    "summary": "A list of invoices that haven't been paid yet.",
+    "feed_design": "A list of clients, amounts and days overdue, with overdue ones in red and a \"Send reminder\" button.",
+    "detail": "Each invoice with history, a ready-written reminder message and payment status.",
+    "related": [
+      "BZ-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "BZ-04",
+    "title": "Business vs Private Split",
+    "type": "Insight",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF mixing private and business spending",
+    "summary": "Finds business costs paid from private accounts.",
+    "feed_design": "\"23% of your private card spend looks like business\", with the top three items.",
+    "detail": "The full list with buttons to mark items as business or private.",
+    "related": [
+      "BZ-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "BZ-05",
+    "title": "VAT & Tax Deadline",
+    "type": "Action",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF, about a month before a deadline",
+    "summary": "Reminds about an upcoming tax or VAT deadline.",
+    "feed_design": "A countdown, estimated amount due, and whether the reserve covers it.",
+    "detail": "A step-by-step of what to submit and pay, and the amounts.",
+    "related": [
+      "BZ-02",
+      "EC-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "BZ-06",
+    "title": "Business Expense Insights",
+    "type": "Insight",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF",
+    "summary": "An overview of business spending.",
+    "feed_design": "Top categories (software, travel, equipment) with change compared with last month.",
+    "detail": "All categories with their payments and a note on which are commonly deductible.",
+    "related": [
+      "BZ-04",
+      "BZ-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "BZ-07",
+    "title": "Income Protection",
+    "type": "Product",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF without disability or sick cover",
+    "summary": "Shows what happens if the customer can't work for a while.",
+    "feed_design": "A simple picture: income line dropping to zero while the cost line keeps going. \"If you can't work for 3 months…\".",
+    "detail": "A simulation of the months they could cope, and cover options.",
+    "related": [
+      "BZ-08"
+    ],
+    "related_core": [
+      "core_insurance"
+    ]
+  },
+  {
+    "id": "BZ-08",
+    "title": "Own Pension Planner",
+    "type": "Product",
+    "fits": [
+      "SELF"
+    ],
+    "fit_rule": "SELF with no pension",
+    "summary": "Helps build a pension without an employer.",
+    "feed_design": "\"No employer pension? Save in good months\". A slider that links the contribution to income.",
+    "detail": "A flexible plan: how much in good months and how much in quiet months, plus the projected result.",
+    "related": [
+      "RT-01",
+      "RT-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-01",
+    "title": "Retirement Projection",
+    "type": "Tool",
+    "fits": [
+      "PRE",
+      "HOME",
+      "YPRO"
+    ],
+    "fit_rule": "PRE, HOME, YPRO",
+    "summary": "Shows the likely monthly income at retirement.",
+    "feed_design": "A chart of expected pension income against current spending, with the percentage covered, and a slider for retirement age.",
+    "detail": "More detail on each income source (state pension, workplace pension, savings) and what happens if retiring earlier or later.",
+    "related": [
+      "RT-02",
+      "RT-03"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-02",
+    "title": "Pension Gap Finder",
+    "type": "Insight",
+    "fits": [
+      "PRE",
+      "HOME",
+      "SELF"
+    ],
+    "fit_rule": "PRE, HOME, SELF",
+    "summary": "Shows the difference between needs and expected pension.",
+    "feed_design": "\"You may be € 640 a month short\". Two bars: what you need vs what you'll get.",
+    "detail": "Three ways to close the gap (save more, work longer, spend less), each with its effect.",
+    "related": [
+      "RT-03",
+      "SV-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-03",
+    "title": "Pension Consolidation",
+    "type": "Product",
+    "fits": [
+      "PRE",
+      "HOME"
+    ],
+    "fit_rule": "PRE, HOME with several pension pots",
+    "summary": "Offers to bring pension pots together.",
+    "feed_design": "A small table of pots with provider and value, and the total at the bottom.",
+    "detail": "A comparison of fees and options and what happens when pots are combined.",
+    "related": [
+      "RT-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-04",
+    "title": "De-risk Before Retirement",
+    "type": "Insight",
+    "fits": [
+      "PRE",
+      "INV"
+    ],
+    "fit_rule": "PRE, INV aged 58 to 67 with mostly risky investments",
+    "summary": "Shows how risk is usually reduced before retirement.",
+    "feed_design": "A line showing the typical share in risky assets by age compared with the customer's current share.",
+    "detail": "An explanation of why, with examples of safer mixes. Information only.",
+    "related": [
+      "RT-01",
+      "LE-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-05",
+    "title": "Mortgage-Free Countdown",
+    "type": "Insight",
+    "fits": [
+      "PRE",
+      "HOME"
+    ],
+    "fit_rule": "PRE, HOME whose mortgage ends within five years",
+    "summary": "A countdown to being mortgage-free.",
+    "feed_design": "\"Mortgage-free in 3 years, 4 months\", and \"€ 1,134 a month will be free\".",
+    "detail": "Ideas for that money (pension, travel, helping family) with an example of each.",
+    "related": [
+      "SV-05",
+      "RT-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-06",
+    "title": "Downsizing Calculator",
+    "type": "Tool",
+    "fits": [
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "PRE, SEN homeowners",
+    "summary": "Shows what moving to a smaller home could release.",
+    "feed_design": "Two house icons, current and smaller, and \"Could release € 140,000\".",
+    "detail": "Inputs for values and moving costs with the effect on monthly income.",
+    "related": [
+      "RT-07",
+      "RT-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-07",
+    "title": "Turning Assets into Income",
+    "type": "Editorial",
+    "fits": [
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "PRE, SEN with larger savings",
+    "summary": "An article on making savings last.",
+    "feed_design": "\"How to make € 200k last 25 years\", with a small chart of withdrawal options.",
+    "detail": "A plain-language article comparing options and their risks.",
+    "related": [
+      "RT-01",
+      "RT-04"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-08",
+    "title": "Retirement Budget Builder",
+    "type": "Tool",
+    "fits": [
+      "PRE"
+    ],
+    "fit_rule": "PRE",
+    "summary": "A budget for life after work.",
+    "feed_design": "Today's budget next to a retirement budget, with arrows showing costs that drop (commuting) and rise (travel, health).",
+    "detail": "Sliders for each category and a total compared to expected pension.",
+    "related": [
+      "RT-01",
+      "RT-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-09",
+    "title": "Helping Adult Children",
+    "type": "Editorial",
+    "fits": [
+      "PRE",
+      "HOME"
+    ],
+    "fit_rule": "PRE, HOME who regularly send money to adult children",
+    "summary": "Guidance on supporting children without harming your own future.",
+    "feed_design": "\"How to support your kids without hurting your retirement\".",
+    "detail": "An article on gifts vs loans and allowances.",
+    "related": [
+      "LE-07",
+      "SV-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "RT-10",
+    "title": "Healthcare Costs in Retirement",
+    "type": "Editorial",
+    "fits": [
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "PRE, SEN",
+    "summary": "What care and health typically cost later in life.",
+    "feed_design": "A simple stacked bar of yearly costs by age and \"What care really costs\".",
+    "detail": "Explanations of typical costs, insurance options and subsidies.",
+    "related": [
+      "EL-04",
+      "LE-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-01",
+    "title": "Pension Has Arrived",
+    "type": "Insight",
+    "fits": [
+      "SEN",
+      "PRE"
+    ],
+    "fit_rule": "SEN, PRE",
+    "summary": "A calm confirmation that the pension came in.",
+    "feed_design": "A big green tick, \"Your pension of € 1,640 arrived today\", and a short list of what leaves this week.",
+    "detail": "The list of payments coming up in simple words.",
+    "related": [
+      "EL-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-02",
+    "title": "Scam Alert of the Month",
+    "type": "Editorial",
+    "fits": [
+      "SEN",
+      "PRE"
+    ],
+    "fit_rule": "SEN, PRE (all adults in a lighter version)",
+    "summary": "A monthly warning about a common scam.",
+    "feed_design": "A red banner \"Someone phoning as your bank? Hang up.\" with three large rules.",
+    "detail": "A short explanation with a real-sounding example, and the number to call the bank.",
+    "related": [
+      "EL-03",
+      "LE-05"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-03",
+    "title": "Trusted Contact",
+    "type": "Product",
+    "fits": [
+      "SEN"
+    ],
+    "fit_rule": "SEN",
+    "summary": "Lets someone trusted receive alerts about large payments.",
+    "feed_design": "A drawing of two people and \"Add someone you trust to get alerts about big payments. They can't touch your money.\"",
+    "detail": "A plain explanation of what the person sees, and a simple way to choose them.",
+    "related": [
+      "EL-05",
+      "EL-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-04",
+    "title": "Pharmacy & Health Costs",
+    "type": "Insight",
+    "fits": [
+      "SEN",
+      "PRE"
+    ],
+    "fit_rule": "SEN, PRE",
+    "summary": "An overview of yearly health spending.",
+    "feed_design": "\"Health costs this year: € 530\" with a simple bar per month.",
+    "detail": "A list of payments and tips about reimbursement.",
+    "related": [
+      "RT-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-05",
+    "title": "Large Payment Safety Check",
+    "type": "Action",
+    "fits": [
+      "SEN"
+    ],
+    "fit_rule": "SEN, when an unusually large transfer is started",
+    "summary": "A pause to check a large payment is really wanted.",
+    "feed_design": "A full-width card \"Are you sure? Has someone asked you to do this?\" and two large buttons: \"Yes, I know them\" and \"Call the bank\".",
+    "detail": "Questions to check safety (did you meet this person? were you told to hurry?), and a call button.",
+    "related": [
+      "EL-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-06",
+    "title": "Simple Bill Calendar",
+    "type": "Insight",
+    "fits": [
+      "SEN"
+    ],
+    "fit_rule": "SEN",
+    "summary": "A weekly view of regular bills.",
+    "feed_design": "Seven days across with large icons (electricity Monday, water Wednesday) and amounts.",
+    "detail": "The month view with each bill explained in simple words.",
+    "related": [
+      "EL-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-07",
+    "title": "Help at a Branch or by Phone",
+    "type": "Product",
+    "fits": [
+      "SEN"
+    ],
+    "fit_rule": "SEN who use the app rarely or often visit a branch",
+    "summary": "Offers personal help.",
+    "feed_design": "\"Need help with the app? Book a 20-minute session\", with the nearest branch and a phone button.",
+    "detail": "Choose a day and time or call right away.",
+    "related": [
+      "EL-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-08",
+    "title": "Gifts for Grandchildren",
+    "type": "Tool",
+    "fits": [
+      "SEN",
+      "PRE"
+    ],
+    "fit_rule": "SEN, PRE",
+    "summary": "A quick way to send a gift with a message.",
+    "feed_design": "Photo-style tiles of amounts (€10, €25, €50) and \"Send a birthday gift\".",
+    "detail": "Choose the child, amount and a ready-made message. A note about tax-free gift allowances.",
+    "related": [
+      "FM-03",
+      "LE-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-09",
+    "title": "Learn Mobile Banking Basics",
+    "type": "Editorial",
+    "fits": [
+      "SEN"
+    ],
+    "fit_rule": "SEN new to the app",
+    "summary": "A step-by-step guide to using the app.",
+    "feed_design": "A big illustrated picture and \"Check your balance in 3 steps\".",
+    "detail": "Large screenshots with one instruction per screen (how to pay a bill, how to stay safe).",
+    "related": [
+      "EL-07",
+      "EL-02"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "EL-10",
+    "title": "Home Help Services",
+    "type": "Product",
+    "fits": [
+      "SEN"
+    ],
+    "fit_rule": "SEN aged 75 and over, or with care-related payments",
+    "summary": "Services to stay at home longer.",
+    "feed_design": "Icons for cleaning, meals and an alarm button, with \"Services that help you stay at home\".",
+    "detail": "Each service explained with estimated costs and possible subsidies.",
+    "related": [
+      "RT-10",
+      "EL-04"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-01",
+    "title": "Moving House Checklist",
+    "type": "Action",
+    "fits": [
+      "YPRO",
+      "PAR",
+      "HOME",
+      "STU"
+    ],
+    "fit_rule": "YPRO, PAR, HOME, STU who are moving",
+    "summary": "A checklist of who to tell about a new address.",
+    "feed_design": "A moving-box icon, a progress bar and the first three to-dos (bank, insurance, energy).",
+    "detail": "The full checklist with buttons to update each item.",
+    "related": [
+      "HM-07"
+    ],
+    "related_core": [
+      "core_insurance"
+    ]
+  },
+  {
+    "id": "LE-02",
+    "title": "Having a Baby",
+    "type": "Editorial",
+    "fits": [
+      "YPRO",
+      "PAR"
+    ],
+    "fit_rule": "YPRO, PAR expecting a child",
+    "summary": "A financial guide for new parents.",
+    "feed_design": "A soft picture and \"Expecting? What to arrange financially\", with a timeline.",
+    "detail": "An article on leave pay, benefits, insurance and savings.",
+    "related": [
+      "FM-02",
+      "FM-06",
+      "FM-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-03",
+    "title": "New Job Transition",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "HOME"
+    ],
+    "fit_rule": "YPRO, HOME who change employer",
+    "summary": "Things to check after a job change.",
+    "feed_design": "\"New employer? Check your pension, tax and commute costs\".",
+    "detail": "A short checklist explained in plain words.",
+    "related": [
+      "EC-10",
+      "EC-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-04",
+    "title": "Getting Married or Moving In Together",
+    "type": "Editorial",
+    "fits": [
+      "YPRO"
+    ],
+    "fit_rule": "YPRO",
+    "summary": "How to share finances as a couple.",
+    "feed_design": "Two rings or keys picture with \"Share finances the smart way\".",
+    "detail": "Joint vs separate accounts and what to merge.",
+    "related": [
+      "FM-09",
+      "HM-01"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-05",
+    "title": "Phishing Watch",
+    "type": "Editorial",
+    "fits": [
+      "TEEN",
+      "STU",
+      "YPRO",
+      "PAR",
+      "HOME",
+      "SELF",
+      "INV",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "All customers",
+    "summary": "Shows a fake message currently going around.",
+    "feed_design": "A picture of a fake text with three red circles, title \"This fake bank message is going around\".",
+    "detail": "The three warning signs, what to do if you clicked, and a button to report.",
+    "related": [
+      "EL-02",
+      "TR-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-06",
+    "title": "Inflation & Your Basket",
+    "type": "Insight",
+    "fits": [
+      "STU",
+      "YPRO",
+      "PAR",
+      "HOME",
+      "SELF",
+      "INV",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "All adults",
+    "summary": "Shows how prices have changed for the customer's own spending.",
+    "feed_design": "\"Your groceries cost 6.8% more than a year ago\" and a small bar against the national average.",
+    "detail": "A category-by-category list of price changes and ways to save.",
+    "related": [
+      "SV-01",
+      "YS-06"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-07",
+    "title": "Gifts & Inheritance Basics",
+    "type": "Editorial",
+    "fits": [
+      "PRE",
+      "SEN",
+      "HOME"
+    ],
+    "fit_rule": "PRE, SEN, HOME",
+    "summary": "A simple guide to gifting and inheriting.",
+    "feed_design": "\"Gifts, wills and inheritance: the basics\".",
+    "detail": "Plain-language key facts and allowances.",
+    "related": [
+      "LE-09",
+      "RT-09"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-08",
+    "title": "Losing a Partner: Financial Steps",
+    "type": "Editorial",
+    "fits": [
+      "SEN",
+      "PRE"
+    ],
+    "fit_rule": "SEN, PRE, shown only when the customer has said so",
+    "summary": "A gentle guide for the financial steps after a loss.",
+    "feed_design": "A quiet, plain card with a short, kind title and no bright colours.",
+    "detail": "A short list of what to do with accounts, pension and insurance, and a button to talk to a specialist.",
+    "related": [
+      "EL-07",
+      "LE-07"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-09",
+    "title": "Write or Update Your Will",
+    "type": "Product",
+    "fits": [
+      "HOME",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "HOME, PRE, SEN aged 45+ with no will registered",
+    "summary": "Encourages making a will.",
+    "feed_design": "A document icon with \"A will keeps your wishes clear\" and a short checklist.",
+    "detail": "What to include, who can help, and partner services.",
+    "related": [
+      "LE-07",
+      "LE-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-10",
+    "title": "Book a Financial Advisor Chat",
+    "type": "Product",
+    "fits": [
+      "INV",
+      "HOME",
+      "PRE"
+    ],
+    "fit_rule": "INV, HOME, PRE with complex finances",
+    "summary": "Offers a personal conversation with an adviser.",
+    "feed_design": "A friendly photo-style avatar and \"Talk to an adviser about your plans\", with topic chips (pension, investing, mortgage).",
+    "detail": "Pick a topic and a time slot for a free 30-minute chat.",
+    "related": [
+      "RT-01",
+      "SV-10"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-11",
+    "title": "Green Spending Footprint",
+    "type": "Insight",
+    "fits": [
+      "YPRO",
+      "STU",
+      "HOME"
+    ],
+    "fit_rule": "YPRO, STU, HOME who opted in",
+    "summary": "An estimate of the climate impact of spending.",
+    "feed_design": "A leaf icon with \"Your spending ≈ 4.2 tonnes CO₂ a year\", and a split by category.",
+    "detail": "Top categories with two lower-carbon swaps each.",
+    "related": [
+      "HM-08",
+      "TR-08"
+    ],
+    "related_core": []
+  },
+  {
+    "id": "LE-12",
+    "title": "Year in Review",
+    "type": "Insight",
+    "fits": [
+      "TEEN",
+      "STU",
+      "YPRO",
+      "PAR",
+      "HOME",
+      "SELF",
+      "INV",
+      "PRE",
+      "SEN"
+    ],
+    "fit_rule": "All customers, in December or January",
+    "summary": "A story-style summary of the year.",
+    "feed_design": "A bold cover with \"Your year in money\" and the first highlight.",
+    "detail": "A swipeable story: total spent, top category, best saving month, biggest surprise and one goal for next year.",
+    "related": [
+      "SV-01",
+      "EC-01",
+      "RT-01"
+    ],
+    "related_core": []
+  }
+]
