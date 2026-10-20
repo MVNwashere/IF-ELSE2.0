@@ -4,7 +4,7 @@ import { longDate } from "../format";
 import { useEur } from "../privacy";
 import Sheet from "../ui/Sheet";
 import { hours, KindBadge, ProductChips, ProgressRing, StatusPill } from "./bits";
-import type { Goal, Step, WinTotals } from "./types";
+import type { Goal, MeasuredOutcome, Step, WinTotals } from "./types";
 
 interface Props {
   goal: Goal;
@@ -14,6 +14,39 @@ interface Props {
   onPassport: () => void;
   onCancel: () => void;
   onClose: () => void;
+  onConnectSource?: (sourceId: string) => void;
+  onStartNext?: (playbookId: string) => void;
+}
+
+/** Journey step 5: what KBC verified in your own transactions, next to what was estimated. */
+function Measured({ items }: { items: MeasuredOutcome[] }) {
+  const eur = useEur();
+  if (!items.length) return null;
+  const verified = items.filter((m) => m.status === "verified");
+  const verifiedEur = verified.reduce((n, m) => n + (m.unit.startsWith("€") ? m.measured_eur ?? 0 : 0), 0);
+  const estimatedEur = items.reduce((n, m) => n + (m.estimate_eur ?? 0), 0);
+  return (
+    <div className="eco-measured" aria-label="Measured outcome">
+      <div className="eco-measured-h">
+        {verified.length > 0
+          ? <><span className="eco-pill done">✓ Verified</span>{verifiedEur > 0 ? <b>{eur(verifiedEur)} saved or received</b> : <b>Outcome confirmed</b>}</>
+          : <><span className="eco-pill proposed">Estimated</span><b>{estimatedEur > 0 ? `${eur(estimatedEur)} expected` : "Waiting for your data"}</b></>}
+        {verified.length > 0 && estimatedEur > 0 && <small> · estimated {eur(estimatedEur)}</small>}
+      </div>
+      <ul>
+        {items.map((m) => (
+          <li key={m.metric} className={`eco-measured-row ${m.status}`}>
+            <span className={`eco-pill ${m.status === "verified" ? "done" : m.status === "pending" ? "proposed" : "blocked"}`}>
+              {m.status === "verified" ? "verified" : m.status === "pending" ? "pending" : "not met"}
+            </span>
+            <span><b>{m.label}.</b> {m.summary}{m.check_on && m.status === "pending" ? ` (${longDate(m.check_on)})` : ""}</span>
+            {m.evidence.length > 0 && <small className="muted-note">{m.evidence.join(" · ")}</small>}
+          </li>
+        ))}
+      </ul>
+      <div className="eco-assume">Measured from your own transactions after the steps were done. Synthetic data.</div>
+    </div>
+  );
 }
 
 function TripleWin({ outcome, potential }: { outcome: WinTotals; potential: WinTotals }) {
@@ -38,7 +71,7 @@ function TripleWin({ outcome, potential }: { outcome: WinTotals; potential: WinT
   );
 }
 
-function StepRow({ step, busy, onReview, onReset }: { step: Step; busy: boolean; onReview: () => void; onReset: () => void }) {
+function StepRow({ step, busy, onReview, onReset, onConnect }: { step: Step; busy: boolean; onReview: () => void; onReset: () => void; onConnect?: (id: string) => void }) {
   const eur = useEur();
   const held = step.already_held;
   const win = [step.estimates.customer_eur > 0 ? `${eur(step.estimates.customer_eur)} for you` : "", step.estimates.hours_saved > 0 ? hours(step.estimates.hours_saved) + " saved" : ""].filter(Boolean).join(" · ");
@@ -67,9 +100,20 @@ function StepRow({ step, busy, onReview, onReset }: { step: Step; busy: boolean;
           </motion.div>
         )}
         {step.status === "blocked" && <p className="eco-blocked">You revoked access. Approve again to continue.</p>}
+        {step.source_hint && !held && (
+          step.source_hint.connected
+            ? <div className="eco-source-hint ok">🔌 Using {step.source_hint.name} (connected with your OK)</div>
+            : (
+              <button type="button" className="eco-source-hint" disabled={busy || !onConnect} onClick={() => onConnect?.(step.source_hint!.source_id)}>
+                🔌 {step.source_hint.prompt}
+              </button>
+            )
+        )}
         <div className="eco-step-actions">
           {(step.status === "proposed" || step.status === "blocked") && (
-            <button type="button" className="btn-primary small" disabled={busy} onClick={onReview}>Review &amp; approve</button>
+            <button type="button" className="btn-primary small" disabled={busy} onClick={onReview}>
+              {step.provider.kind === "advisor" ? "Book a meeting" : step.alternatives && step.alternatives.length > 1 ? "Compare & approve" : "Review & approve"}
+            </button>
           )}
           {step.status === "declined" && (
             <button type="button" className="btn-ghost small" disabled={busy} onClick={onReset}>Reconsider</button>
@@ -80,8 +124,9 @@ function StepRow({ step, busy, onReview, onReset }: { step: Step; busy: boolean;
   );
 }
 
-export default function JourneySheet({ goal, busy, onReview, onReset, onPassport, onCancel, onClose }: Props) {
+export default function JourneySheet({ goal, busy, onReview, onReset, onPassport, onCancel, onClose, onConnectSource, onStartNext }: Props) {
   const steps = [...goal.steps].sort((a, b) => a.order - b.order);
+  const measured = goal.measured ?? [];
   return (
     <Sheet full title={<span className="eco-sheet-title"><span aria-hidden="true">{goal.icon}</span>{goal.title}</span>} onClose={onClose}>
       <div className="eco-journey-head">
@@ -94,10 +139,17 @@ export default function JourneySheet({ goal, busy, onReview, onReset, onPassport
           </p>
         </div>
       </div>
+      {goal.status === "completed" && goal.next_goal && onStartNext && (
+        <div className="eco-next-goal">
+          <span>🎉 Goal reached. <b>Next: {goal.next_goal_title ?? goal.next_goal}</b></span>
+          <button type="button" className="btn-primary small" disabled={busy} onClick={() => onStartNext(goal.next_goal!)}>Start</button>
+        </div>
+      )}
+      <Measured items={measured} />
       <TripleWin outcome={goal.outcome} potential={goal.potential} />
       <ol className="eco-steps">
         {steps.map((s) => (
-          <StepRow key={s.step_id} step={s} busy={busy} onReview={() => onReview(s)} onReset={() => onReset(s)} />
+          <StepRow key={s.step_id} step={s} busy={busy} onReview={() => onReview(s)} onReset={() => onReset(s)} onConnect={onConnectSource} />
         ))}
       </ol>
       {goal.evidence.length > 0 && (

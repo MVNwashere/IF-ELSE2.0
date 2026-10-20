@@ -88,3 +88,23 @@ def simulate_partner(partner_id: str, ref: str, result: str,
         timer = threading.Timer(delay, run)
         timer.daemon = True
         timer.start()
+
+
+def simulate_deletion(partner_id: str, ref: str, deliver: Callable[[str, bytes, dict[str, str]], None]) -> None:
+    """After a revoke or expiry, the mock partner erases the data and confirms with a signed 'deleted' webhook."""
+    delay = float(os.environ.get("PARTNER_SIM_DELAY", "4"))
+
+    def run() -> None:
+        body, headers = signed_request(partner_id, {"event_id": f"{ref}.deleted", "ref": ref, "status": "deleted",
+                                                    "result": "Customer data deleted after the consent ended"})
+        try:
+            deliver(partner_id, body, headers)
+        except Exception:  # noqa: BLE001 - a simulated partner must never crash the server thread
+            pass
+
+    if delay <= 0:
+        run()
+    else:
+        timer = threading.Timer(delay * 0.75, run)
+        timer.daemon = True
+        timer.start()

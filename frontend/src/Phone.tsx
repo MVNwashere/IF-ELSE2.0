@@ -20,6 +20,9 @@ import EcoSheets, { type EcoSheet } from "./ecosystem/EcoSheets";
 import GoalsStrip from "./ecosystem/GoalsStrip";
 import { useGoals } from "./ecosystem/useGoals";
 import "./ecosystem/eco.css";
+import NudgeLayer, { NudgeBell } from "./nudges/NudgeLayer";
+import type { Nudge } from "./nudges/types";
+import { useNudges } from "./nudges/useNudges";
 
 interface Props {
   home: HomeResponse;
@@ -148,6 +151,13 @@ export default function Phone(p: Props) {
 
   const chat = useKateChat(onKate, execKate, home.gallery);
 
+  // ---- Kate nudges (proactive): lock-screen banner + inbox; the action runs through the same paths as Kate's ----
+  const nudges = useNudges(asOf, home.customer.first_name);
+  const runNudge = useCallback((n: Nudge) => {
+    if (n.open_view === "passport") { setEcoSheet({ kind: "passport" }); return true; }
+    return execKate(n.action);
+  }, [execKate, setEcoSheet]);
+
   const openKate = useCallback((cardKey?: string | null, message?: string) => {
     setEcoSheetRaw(null);
     setSheet("kate");
@@ -238,6 +248,7 @@ export default function Phone(p: Props) {
                       {masked ? <NAV_ICONS.eye /> : <NAV_ICONS.eyeOff />}
                     </button>
                   )}
+                  <NudgeBell nudges={nudges} />
                   <button type="button" className={`icon-btn ${editing ? "on" : ""}`} aria-label="Edit home" title="Edit home" onClick={() => setEditing((v) => !v)}>
                     <NAV_ICONS.edit />
                   </button>
@@ -384,6 +395,8 @@ export default function Phone(p: Props) {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <NudgeLayer nudges={nudges} reduceMotion={theme.reduce_motion} onRun={runNudge} />
 
             <nav className="bottom-nav" aria-label="Main navigation">
               <button type="button" className={sheet !== "kate" ? "active" : ""} onClick={() => setSheet(null)}><NAV_ICONS.home />Home</button>

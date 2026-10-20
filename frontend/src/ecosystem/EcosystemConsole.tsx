@@ -3,8 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { eur } from "../format";
 import { eco } from "./client";
-import type { EcosystemOverview, EventRow, FunnelRow, PartnerRow, WinTotals } from "./types";
+import type { EcosystemOverview, EventRow, FunnelRow, LearningRow, OutcomeSummary, PartnerRow, RuleRow, WinTotals } from "./types";
 import "./eco.css";
+import NudgeStatsPanel from "../nudges/NudgeStatsPanel";
 
 interface Props { username: string; onLogout: () => void; onSwitchCustomer: (u: string) => void }
 
@@ -51,6 +52,55 @@ function Funnel({ rows }: { rows: FunnelRow[] }) {
         })}
       </tbody>
     </table>
+  );
+}
+
+const rate = (x: number | null | undefined) => (x == null ? "—" : `${Math.round(x * 100)}%`);
+
+function Learning({ rows, rules }: { rows: LearningRow[]; rules: RuleRow[] }) {
+  return (
+    <>
+      <table className="ec-table">
+        <thead><tr><th>Goal</th><th>Rule hit rate</th><th>Avg. confidence</th><th>Shown</th><th>Started</th><th>Completed</th><th>Shown → started</th><th>Started → completed</th></tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.playbook_id}>
+              <td className="ec-goal"><span aria-hidden="true">{r.icon}</span> {r.title}</td>
+              <td>{rate(r.hit_rate)} <span className="ec-sub">({nf.format(r.detected)})</span></td>
+              <td>{rate(r.avg_confidence)}</td>
+              <td>{nf.format(r.shown)}</td>
+              <td>{nf.format(r.started)}</td>
+              <td>{nf.format(r.completed)}</td>
+              <td><b>{rate(r.start_rate)}</b></td>
+              <td><b>{rate(r.completion_rate)}</b></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {rules.length > 0 && (
+        <details className="ec-rules">
+          <summary>Detection rules: how often each signal fires</summary>
+          <table className="ec-table">
+            <thead><tr><th>Goal</th><th>Signal (evidence pattern)</th><th>Hits</th><th>Hit rate</th></tr></thead>
+            <tbody>
+              {rules.map((r, i) => (
+                <tr key={`${r.playbook_id}-${i}`}><td className="ec-sub">{r.playbook_id.replace(/_/g, " ")}</td><td>{r.rule}</td><td>{nf.format(r.hits)}</td><td>{rate(r.hit_rate)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      )}
+    </>
+  );
+}
+
+function Outcomes({ o }: { o: OutcomeSummary }) {
+  return (
+    <div className="ec-triple">
+      <div><span>Verified outcomes</span><b>{nf.format(o.verified)}</b><small>{eur(o.verified_eur)} measured vs {eur(o.estimated_eur_for_verified)} estimated</small></div>
+      <div><span>Pending checks</span><b>{nf.format(o.pending)}</b><small>KBC looks again on the date set</small></div>
+      <div><span>Not met</span><b>{nf.format(o.not_met)}</b><small>advisor follows up</small></div>
+    </div>
   );
 }
 
@@ -153,6 +203,13 @@ export default function EcosystemConsole({ username, onLogout, onSwitchCustomer 
                 <h2>Goal funnel</h2>
                 <Funnel rows={data.funnel} />
               </section>
+              {data.learning && data.learning.length > 0 && (
+                <section className="ec-card">
+                  <h2>Learning loop</h2>
+                  <Learning rows={data.learning} rules={data.rules ?? []} />
+                </section>
+              )}
+              <NudgeStatsPanel />
               <section className="ec-card">
                 <h2>Partner network</h2>
                 <Partners rows={data.partner_rows} />
@@ -160,6 +217,12 @@ export default function EcosystemConsole({ username, onLogout, onSwitchCustomer 
               <section className="ec-card">
                 <h2>Triple win · realised so far</h2>
                 <Triple realised={data.realised} />
+                {data.outcomes && (
+                  <>
+                    <h2 className="ec-h2-gap">Measured outcomes · realised vs estimated</h2>
+                    <Outcomes o={data.outcomes} />
+                  </>
+                )}
                 <h2 className="ec-h2-gap">Projected to 2.3M customers</h2>
                 <div className="ec-proj-row">
                   {Object.entries(data.projection).map(([k, v]) => (

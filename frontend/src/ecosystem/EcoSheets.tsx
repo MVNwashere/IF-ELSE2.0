@@ -36,6 +36,10 @@ export default function EcoSheets({ sheet, goals, asOf, setSheet, startGoal, not
           onPassport={() => setSheet({ kind: "passport", back: goal.goal_id })}
           onCancel={() => { void goals.cancel(goal.goal_id).then((r) => { if (r) { notify("Goal stopped"); close(); } }); }}
           onClose={close}
+          onConnectSource={(sourceId) => {
+            void goals.connectSource(sourceId, goal.playbook_id).then((r) => { if (r) notify("Connected with your OK. Revoke it any time in your passport."); });
+          }}
+          onStartNext={(pid) => startGoal(pid)}
         />
       );
     }
@@ -44,22 +48,27 @@ export default function EcoSheets({ sheet, goals, asOf, setSheet, startGoal, not
       const step = goal?.steps.find((s) => s.step_id === sheet.stepId);
       if (!goal || !step) return null;
       const back = () => setSheet({ kind: "journey", goalId: goal.goal_id });
-      const decide = (d: "approve" | "decline") => {
-        void goals.decide(goal.goal_id, step.step_id, d).then((r) => {
+      const decide = (d: "approve" | "decline", partnerId?: string) => {
+        void goals.decide(goal.goal_id, step.step_id, d, partnerId).then((r) => {
           if (!r) return;
-          notify(d === "decline" ? "Declined. Nothing was shared." : step.provider.kind === "kbc" ? "Done by KBC" : `Approved. ${step.provider.name} is on it.`);
+          const name = step.alternatives?.find((o) => o.provider.id === partnerId)?.provider.name ?? step.provider.name;
+          notify(d === "decline" ? "Declined. Nothing was shared."
+            : step.provider.kind === "advisor" ? "Meeting booked. Your advisor has your file."
+            : step.provider.kind === "kbc" ? "Done by KBC" : `Approved. ${name} is on it.`);
           back();
         });
       };
       return (
         <ConsentSheet key="eco-consent" step={step} asOf={asOf} busy={goals.busy}
-          onApprove={() => decide("approve")} onDecline={() => decide("decline")} onClose={back} />
+          onApprove={(pid) => decide("approve", pid)} onDecline={() => decide("decline")} onClose={back} />
       );
     }
     case "passport":
       return (
         <PassportSheet
           key="eco-passport"
+          asOf={asOf}
+          playbookIds={(goals.data?.goals ?? []).filter((g) => g.status !== "cancelled").map((g) => g.playbook_id)}
           onClose={() => setSheet(sheet.back ? { kind: "journey", goalId: sheet.back } : null)}
           onChanged={() => { notify("Access revoked"); void goals.load(); }}
           onError={notify}

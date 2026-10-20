@@ -61,11 +61,15 @@ partner ─► HMAC-signed webhook ─► step done ─► triple-win ledger ─
 |---|---|---|
 | KBC building blocks | `backend/app/ecosystem/catalogue.json` | All 229 items of `docs/KBC_Ecosystems.xlsx` (21 ecosystems). Rebuild: `py -3.12 -m scripts.import_ecosystems` |
 | Partner registry | `partners.json` | 11 vetted partners (Immoscoop, Setle, De Immowinkel, Impact us today, Encon, Billit, Go Solid, Firsty, Brussels Airport, Helena, Bolero): allowed data fields, value-share model, vetting checks, integration surface |
-| Goals | `playbooks/*.json` | 8 goals: buy a home, energy upgrade, new baby, go freelance, get paid, retire well, travel, safe banking. A new goal is a file; all are validated at startup |
+| Goals | `playbooks/*.json` | 13 goals: buy a home, energy upgrade, new baby, go freelance, get paid, retire well, travel, safe banking, mobility, first employee, inheritance, study start, job change. A new goal is a file; all are validated at startup |
 | Intent | `intent.py` | Transparent rules with evidence and confidence (e.g. Lotte's property search alert, inspection and purchase deposit, months before the deed) |
 | Journey + consent | `service.py`, `store.py` | Step state machine; consent passport with expiry and revoke; only granted fields that the partner is allowed to receive leave KBC; never asks for what the customer already holds |
 | Partner webhooks | `webhooks.py` | `POST /api/partners/{id}/webhook`, HMAC-SHA256 over timestamp + body, 5-minute window, idempotent event ids, strict schema. Partners are simulated through this same path; `scripts/partner_webhook.py` plays a partner over HTTP |
 | Feed + Kate | `links.py`, `engine/kate.py` | Feed cards link to the matching journey and products; Kate offers ("we want to buy a house") and opens journeys |
+| Kate nudges | `nudges.py`, `GET /api/me/nudges` | Proactive pushes with an attention budget (2/week, quiet hours, once per topic, mute); urgent scam/overdraft alerts bypass it. "Play nudges" in the demo panel replays them |
+| Deadlines + forecasts | `signals.py` | VAT, advance tax, social contributions, renewals, trips; the regularisation gap a starter doesn't see coming |
+| Measured outcomes | `outcomes.py` | Verifies results from later transactions instead of trusting estimates |
+| Data sources | `sources.py`, `GET /api/me/sources` | PSD2, eBox, Billit, KBO, mypension.be, EPC, Fluvius: purpose-bound, expiring consent; connected values replace estimates |
 | Console | `GET /api/ecosystem/overview` | Advisor login: goal funnel over the portfolio, partner network, live verified events, triple win and a 2.3M projection with its assumptions |
 
 Demo logins (password `demo`): `lotte`, `sara`, `jan`, **`marc`** (new: the 52-year-old investor persona) and

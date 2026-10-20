@@ -95,7 +95,10 @@ def _lotte() -> tuple[str, Customer, list[Transaction], float]:
     # she registers her business at the enterprise counter, then her first client pays four days before TODAY.
     # Nothing else yet: the first VAT return (Jan 2027) and social contributions (Dec 2026) lie in the future.
     b.add(D(2026, 10, 2), 105.50, "other", "Ondernemingsloket Xerius (inschrijving KBO)")
-    b.add(D(2026, 10, 16), 1850, "invoice_income", "Bright Agency")
+    # a work laptop bought on the private account a week after registering (a business expense on the wrong account)
+    b.add(D(2026, 10, 9), 1499, "furniture", "Coolblue (laptop)")
+    # first invoice: 8 consultancy days at €475 excl. VAT = €3,800 + 21% VAT
+    b.add(D(2026, 10, 16), 4598, "invoice_income", "Bright Agency")
 
     # ---- balance path per era; some student month-ends deliberately low so the runway card fires
     # salary lands on the 1st, so the month-end balance is the monthly minimum: bands are daily bands
@@ -123,6 +126,7 @@ def _lotte() -> tuple[str, Customer, list[Transaction], float]:
                 {"type": "baby", "date": baby.isoformat()},
                 {"type": "price_increase", "date": "2025-02-20", "counterparty": "Basic-Fit", "from": 24.99, "to": 29.99},
                 {"type": "first_invoice", "date": "2026-10-16"},
+                {"type": "goal:go_freelance", "date": "2026-10-16"},
             ],
         },
     )
@@ -187,6 +191,7 @@ def _sara() -> tuple[str, Customer, list[Transaction], float]:
                 {"type": "insurance_renewal", "date": "2026-11-01", "counterparty": "AG Insurance", "amount": 612},
                 {"type": "price_increase", "date": "2026-09-14", "counterparty": "Netflix", "from": 13.99, "to": 17.99},
                 {"type": "late_client", "date": "2026-06-24", "counterparty": "Brouwerij Het Anker", "amount": 650},
+                {"type": "goal:get_paid", "date": "2026-08-24"},
             ],
         },
     )
@@ -234,6 +239,7 @@ def _jan() -> tuple[str, Customer, list[Transaction], float]:
                 {"type": "duplicate_charge", "date": "2026-10-17", "counterparty": "Colruyt", "amount": 64.20},
                 {"type": "new_payee", "date": "2026-10-18", "counterparty": "Tech Support Services BV", "amount": 1250},
                 {"type": "idle_cash", "date": TODAY.isoformat(), "balance": balance_today},
+                {"type": "goal:peace_of_mind", "date": "2026-10-18"},
             ],
         },
     )
@@ -282,7 +288,8 @@ def _marc() -> tuple[str, Customer, list[Transaction], float]:
         consent_personalization=True,
         ground_truth={
             "personas": ["young_professional"],
-            "events": [{"type": "idle_cash", "date": TODAY.isoformat(), "balance": balance_today}],
+            "events": [{"type": "idle_cash", "date": TODAY.isoformat(), "balance": balance_today},
+                       {"type": "goal:retire_well", "date": "2026-01-01"}],
         },
     )
     return "marc", customer, b.txs, balance_today

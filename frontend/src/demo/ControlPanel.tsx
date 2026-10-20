@@ -3,6 +3,8 @@ import type { HomeResponse, TimelineResponse } from "../api";
 import { eco } from "../ecosystem/client";
 import { ECO_RESET_EVENT } from "../ecosystem/useGoals";
 import { addDays, daysBetween, longDate, PERSONA_LABEL, pct } from "../format";
+import { nudgeApi } from "../nudges/client";
+import { NUDGE_REPLAY_EVENT, NUDGE_RESET_EVENT } from "../nudges/types";
 
 interface Props {
   username: string | null;
@@ -177,6 +179,8 @@ export default function ControlPanel(p: Props) {
         <div className="row" style={{ marginTop: 6 }}>
           <button className="pbtn small" disabled={p.busy || !p.home} onClick={p.onResetFeedback}>Reset feedback</button>
           <button className="pbtn small" disabled={p.busy || !p.home} title="Delete this customer's goals and consent grants" onClick={() => { void eco.goalsReset().then(() => window.dispatchEvent(new Event(ECO_RESET_EVENT))).catch(() => undefined); }}>Reset goals</button>
+          <button className="pbtn small" disabled={p.busy || !p.home} title="Replay the Kate nudges of the last 10 days on the phone" onClick={() => window.dispatchEvent(new CustomEvent(NUDGE_REPLAY_EVENT, { detail: { days: 10 } }))}>Play nudges</button>
+          <button className="pbtn small" disabled={p.busy || !p.home} title="Forget this customer's nudge opens, dismissals and mutes" onClick={() => { void nudgeApi.reset().then(() => window.dispatchEvent(new Event(NUDGE_RESET_EVENT))).catch(() => undefined); }}>Reset nudges</button>
         </div>
         {p.error && <div className="err" style={{ marginTop: 8 }}>{p.error}</div>}
       </section>

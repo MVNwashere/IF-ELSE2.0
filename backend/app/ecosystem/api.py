@@ -8,10 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 
 from .. import auth, db
 from ..auth import Principal
-from . import service, store
+from . import service, sources, store
 from .models import (
-    PARTNER_ID_PATTERN, STEP_ID_PATTERN, ConsentsResponse, EcosystemOverview, Goal, GoalsResponse, StartGoalRequest,
-    StepDecisionRequest,
+    PARTNER_ID_PATTERN, SOURCE_ID_PATTERN, STEP_ID_PATTERN, ConsentsResponse, EcosystemOverview, Goal, GoalsResponse,
+    ManifestResult, PartnerManifest, SourceConnectRequest, SourcesResponse, StartGoalRequest, StepDecisionRequest,
 )
 from .webhooks import MAX_BODY_BYTES, WebhookError
 
@@ -27,7 +27,7 @@ def _as_of(conn, customer_id: int, as_of: dt.date | None) -> dt.date:
     return hi if as_of is None else min(max(as_of, lo), hi)
 
 
-def _raise(e: service.EcosystemError | WebhookError):
+def _raise(e: service.EcosystemError | WebhookError | sources.SourceError):
     raise HTTPException(status_code=e.status, detail=e.detail) from None
 
 
@@ -64,14 +64,16 @@ def me_step_decision(body: StepDecisionRequest, goal_id: int = Path(ge=1),
     with db.tx() as conn:
         at = _as_of(conn, user.customer_id, as_of)
         try:
-            goal, pending = service.decide_step(conn, user.customer_id, goal_id, step_id, body.decision, at)
+            goal, pending = service.decide_step(conn, user.customer_id, goal_id, step_id, body.decision, at,
+                                                body.partner_id)
         except service.EcosystemError as e:
             _raise(e)
-        db.audit(conn, user.user_id, f"step.{body.decision}", f"{goal_id}/{step_id}")
+        target = f"{goal_id}/{step_id}" + (f" partner={body.partner_id}" if body.partner_id else "")
+        db.audit(conn, user.user_id, f"step.{body.decision}", target)
     service.run_simulations(pending)   # after commit: the simulated partner answers through the webhook path
     if pending:
         with db.tx() as conn:          # with a zero delay the partner has already answered
-            goal = service.goal_model(conn, store.goal(conn, user.customer_id, goal_id))
+            goal = service.goal_model(conn, store.goal(conn, user.customer_id, goal_id), at)
     return goal
 
 
@@ -81,10 +83,11 @@ def me_cancel_goal(goal_id: int = Path(ge=1), as_of: dt.date | None = Query(defa
     with db.tx() as conn:
         at = _as_of(conn, user.customer_id, as_of)
         try:
-            service.cancel_goal(conn, user.customer_id, goal_id, at)
+            pending = service.cancel_goal(conn, user.customer_id, goal_id, at) or []
         except service.EcosystemError as e:
             _raise(e)
         db.audit(conn, user.user_id, "goal.cancel", str(goal_id))
+    service.run_simulations(pending)   # partners confirm deletion through the signed webhook path
     return {"ok": True}
 
 
@@ -109,10 +112,12 @@ def me_revoke(grant_id: int = Path(ge=1), as_of: dt.date | None = Query(default=
     with db.tx() as conn:
         at = _as_of(conn, user.customer_id, as_of)
         try:
-            service.revoke(conn, user.customer_id, grant_id, at)
+            pending = service.revoke(conn, user.customer_id, grant_id, at) or []
         except service.EcosystemError as e:
             _raise(e)
         db.audit(conn, user.user_id, "consent.revoke", str(grant_id))
+    service.run_simulations(pending)   # the partner deletes the data and confirms with a signed webhook
+    with db.tx() as conn:
         return service.consents(conn, user.customer_id, at)
 
 
@@ -132,3 +137,59 @@ def ecosystem_overview(user: Principal = Depends(auth.require_advisor)) -> Ecosy
     with db.tx() as conn:
         db.audit(conn, user.user_id, "ecosystem.overview", "portfolio")
         return service.overview(conn)
+
+
+# ---- inbound data sources (data KBC reads, with the customer's OK) -------------------------------------------------
+
+
+@router.get("/api/me/sources", response_model=SourcesResponse)
+def me_sources(as_of: dt.date | None = Query(default=None),
+               user: Principal = Depends(auth.require_customer)) -> SourcesResponse:
+    with db.tx() as conn:
+        try:
+            return sources.sources_response(conn, user.customer_id, _as_of(conn, user.customer_id, as_of))
+        except sources.SourceError as e:
+            _raise(e)
+
+
+@router.post("/api/me/sources/{source_id}/connect", response_model=SourcesResponse)
+def me_source_connect(body: SourceConnectRequest, source_id: str = Path(pattern=SOURCE_ID_PATTERN),
+                      as_of: dt.date | None = Query(default=None),
+                      user: Principal = Depends(auth.require_customer)) -> SourcesResponse:
+    with db.tx() as conn:
+        at = _as_of(conn, user.customer_id, as_of)
+        try:
+            sources.connect(conn, user.customer_id, source_id, body.playbook_id, body.purpose, at)
+        except sources.SourceError as e:
+            _raise(e)
+        db.audit(conn, user.user_id, "source.connect", f"{source_id} for {body.playbook_id}")
+        return sources.sources_response(conn, user.customer_id, at)
+
+
+@router.post("/api/me/sources/{source_id}/disconnect", response_model=SourcesResponse)
+def me_source_disconnect(source_id: str = Path(pattern=SOURCE_ID_PATTERN), as_of: dt.date | None = Query(default=None),
+                         user: Principal = Depends(auth.require_customer)) -> SourcesResponse:
+    with db.tx() as conn:
+        at = _as_of(conn, user.customer_id, as_of)
+        try:
+            sources.disconnect(conn, user.customer_id, source_id, at)
+        except sources.SourceError as e:
+            _raise(e)
+        db.audit(conn, user.user_id, "source.disconnect", source_id)
+        return sources.sources_response(conn, user.customer_id, at)
+
+
+# ---- partner onboarding (KBC staff only) ----------------------------------------------------------------------------
+
+
+@router.post("/api/ecosystem/partners/manifest", response_model=ManifestResult)
+def partner_manifest(body: PartnerManifest, user: Principal = Depends(auth.require_advisor)) -> ManifestResult:
+    result = service.validate_manifest(body)
+    with db.tx() as conn:
+        db.audit(conn, user.user_id, "partner.manifest", f"{body.id} valid={result.valid}")
+    return result
+
+
+@router.get("/api/ecosystem/partners/onboarding", response_model=list[PartnerManifest])
+def partner_onboarding(user: Principal = Depends(auth.require_advisor)) -> list[PartnerManifest]:
+    return service.onboarded()

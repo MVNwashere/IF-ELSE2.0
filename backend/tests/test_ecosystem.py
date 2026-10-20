@@ -40,7 +40,7 @@ def _goals(demo, username: str, as_of: dt.date) -> dict:
 
 def test_registry_uses_real_catalogue_items():
     reg = registry()
-    assert len(reg.catalogue) == 229 and len(reg.playbooks) == 8
+    assert len(reg.catalogue) == 229 and len(reg.playbooks) >= 13
     assert reg.used_building_blocks() <= set(reg.catalogue)
 
 

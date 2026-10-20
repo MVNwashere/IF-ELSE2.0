@@ -27,6 +27,7 @@ from .ecosystem.api import router as ecosystem_router
 from .ecosystem.nudges_api import router as nudges_router
 from .ecosystem.links import enrich_feed
 from .ecosystem.registry import registry
+from .ecosystem.signals import forecasts, upcoming_deadlines
 from .engine import kate, pipeline
 from .engine.persona import dominant
 from .recommender.feed import recommend
@@ -271,7 +272,9 @@ def me_kate(body: KateRequest, as_of: dt.date | None = Depends(_as_of_param),
     home, features = _load_and_build(user.customer_id, as_of, touch=False)
     with db.tx() as conn:
         goals = ecosystem_service.goals_response(conn, user.customer_id, features.as_of, home.declared)
-    return kate.reply(home, features, body, goals=goals)
+        ctx = ecosystem_service.context_for(conn, user.customer_id, features.as_of)
+    return kate.reply(home, features, body, goals=goals, deadlines=upcoming_deadlines(ctx, 100),
+                      forecasts=forecasts(ctx))
 
 
 @app.post("/api/me/consent", response_model=HomeResponse)

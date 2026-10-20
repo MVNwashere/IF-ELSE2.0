@@ -52,14 +52,16 @@ export function useGoals(asOf: string, customerKey: string, onError: (msg: strin
   }, [load, onError]);
 
   const start = useCallback((playbookId: string) => run(() => eco.startGoal(playbookId, asOf)), [run, asOf]);
-  const decide = useCallback((goalId: number, stepId: string, d: StepDecision) => run(() => eco.stepDecision(goalId, stepId, d, asOf)), [run, asOf]);
+  const decide = useCallback((goalId: number, stepId: string, d: StepDecision, partnerId?: string) =>
+    run(() => eco.stepDecision(goalId, stepId, d, asOf, partnerId)), [run, asOf]);
+  const connectSource = useCallback((sourceId: string, playbookId: string) => run(() => eco.connectSource(sourceId, playbookId, asOf)), [run, asOf]);
   const cancel = useCallback((goalId: number) => run(() => eco.cancelGoal(goalId)), [run]);
   const reset = useCallback(() => run(() => eco.goalsReset()), [run]);
   const hide = useCallback((playbookId: string) => setHidden((h) => new Set(h).add(playbookId)), []);
 
   const goal = useCallback((id: number): Goal | undefined => data?.goals.find((g) => g.goal_id === id), [data]);
 
-  return { data, busy, hidden, load, start, decide, cancel, reset, hide, goal };
+  return { data, busy, hidden, load, start, decide, cancel, reset, hide, goal, connectSource, asOf };
 }
 
 export type GoalsState = ReturnType<typeof useGoals>;

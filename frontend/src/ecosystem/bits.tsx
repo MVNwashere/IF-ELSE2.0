@@ -20,6 +20,7 @@ export function ProgressRing({ done, total, size = 44 }: { done: number; total: 
 }
 
 export function KindBadge({ provider }: { provider: Pick<ProviderPublic, "kind"> }) {
+  if (provider.kind === "advisor") return <span className="eco-kind advisor">KBC advisor</span>;
   return provider.kind === "kbc"
     ? <span className="eco-kind kbc">KBC</span>
     : <span className="eco-kind partner">✓ Vetted partner</span>;

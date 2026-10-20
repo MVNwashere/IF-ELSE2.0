@@ -1,0 +1,165 @@
+{
+ "id": "mobility",
+ "title": "Replace the car, smartly",
+ "icon": "🚗",
+ "tagline": "Compare keeping, replacing, electric, leasing or sharing, with financing and insurance in one go.",
+ "ecosystems": [
+  "Mobility",
+  "Energy and sustainability"
+ ],
+ "target_days": 45,
+ "next_goal": null,
+ "trigger": "Garage bills on an ageing car keep rising, or a car lease is ending.",
+ "steps": [
+  {
+   "id": "car_costs",
+   "title": "What your car really costs",
+   "provider": "kbc",
+   "description": "Fuel, repairs, insurance and depreciation from your own payments, compared with an electric car, a lease and car sharing.",
+   "why": "KBC already sees your fuel, garage and insurance payments.",
+   "products": [
+    "calculate-monthly-car-costs",
+    "mymobility"
+   ],
+   "fields": [],
+   "win": {
+    "customer": "One honest comparison",
+    "kbc": "Mobility relationship"
+   },
+   "estimates": {
+    "hours_saved": 3
+   },
+   "result": "Your car costs about €{car_monthly} a month, including €{car_repairs_total} in garage bills over the last year."
+  },
+  {
+   "id": "ev_loan",
+   "title": "Finance an electric car",
+   "provider": "kbc",
+   "description": "An electric car loan, approved in the app.",
+   "why": "Based on your own income and spending; no extra documents.",
+   "products": [
+    "electric-car-loan"
+   ],
+   "fields": [],
+   "kbc_products": [
+    "electric-car-loan"
+   ],
+   "win": {
+    "customer": "A cheaper car to run",
+    "kbc": "Car loan"
+   },
+   "estimates": {
+    "customer_eur": 600,
+    "hours_saved": 2,
+    "kbc_revenue_eur": 350
+   },
+   "result": "Electric car loan pre-approved, ready when you pick the car."
+  },
+  {
+   "id": "leasing",
+   "title": "Or lease instead of buying",
+   "provider": "movesmart",
+   "description": "A lease with maintenance and tyres included, managed with MoveSmart and VAB.",
+   "why": "MoveSmart sees your current car and commute, not your income or balances.",
+   "products": [
+    "manage-a-leased-vehicle-movesmart-and-vab"
+   ],
+   "fields": [
+    "first_name",
+    "email",
+    "region",
+    "vehicle",
+    "commute"
+   ],
+   "win": {
+    "customer": "No more repair bills",
+    "partner": "A lease contract"
+   },
+   "estimates": {
+    "hours_saved": 2,
+    "partner_fee_eur": 40
+   },
+   "result": "Lease offer ready to compare with buying.",
+   "consent_days": 60
+  },
+  {
+   "id": "insurance",
+   "title": "Insure the new car",
+   "provider": "kbc",
+   "description": "Car insurance (electric car cover where relevant), switched over on the day of delivery.",
+   "why": "We already know your renewal date.",
+   "products": [
+    "car-insurance",
+    "electric-car-insurance"
+   ],
+   "fields": [],
+   "kbc_products": [
+    "car-insurance"
+   ],
+   "win": {
+    "customer": "Covered from the first kilometre",
+    "kbc": "Car insurance"
+   },
+   "estimates": {
+    "hours_saved": 1,
+    "kbc_revenue_eur": 160
+   },
+   "result": "Car insurance ready to start on the delivery date."
+  },
+  {
+   "id": "charging",
+   "title": "Charging, tolls and breakdown help",
+   "provider": "vab",
+   "description": "VAB fuel and charging cards and vignettes, paid from your KBC account.",
+   "why": "VAB only needs your name and the car; payments run over your KBC account.",
+   "products": [
+    "vab-fuel-and-charging-cards",
+    "vab-vignettes-and-toll-badge"
+   ],
+   "fields": [
+    "first_name",
+    "email",
+    "vehicle"
+   ],
+   "win": {
+    "customer": "Charging sorted before the car arrives",
+    "partner": "A new member"
+   },
+   "estimates": {
+    "hours_saved": 1,
+    "partner_fee_eur": 10
+   },
+   "result": "Charging card ordered and linked to your account.",
+   "consent_days": 365
+  },
+  {
+   "id": "car_sharing",
+   "title": "Or share instead of owning",
+   "provider": "cambio",
+   "description": "Cambio car sharing for the days you really need a car, combined with train and bus tickets.",
+   "why": "Cambio only needs your region and how you travel.",
+   "products": [
+    "car-sharing-cambio",
+    "train-tickets-nmbs",
+    "bus-and-tram-tickets-de-lijn"
+   ],
+   "fields": [
+    "first_name",
+    "email",
+    "region",
+    "commute"
+   ],
+   "win": {
+    "customer": "Pay per trip, not per year",
+    "partner": "A new subscriber"
+   },
+   "estimates": {
+    "customer_eur": 900,
+    "hours_saved": 1,
+    "partner_fee_eur": 15
+   },
+   "result": "Cambio subscription ready to activate, with a comparison of what you would save.",
+   "consent_days": 60
+  }
+ ]
+}

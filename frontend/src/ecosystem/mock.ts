@@ -1,7 +1,7 @@
 // In-memory ecosystem engine for ?mock=1: same shapes as the backend, partners "call back" after 2 s.
 import type {
   ConsentGrant, ConsentsResponse, DataField, EcosystemOverview, EventRow, Goal, GoalCandidate, GoalsResponse,
-  PlaybookSummary, ProductRef, ProviderPublic, Step, StepDecision, WinTotals,
+  PlaybookSummary, ProductRef, ProviderPublic, SourcesResponse, SourceView, Step, StepDecision, WinTotals,
 } from "./types";
 
 const VET_PARTNER = ["Licensed and registered with the FSMA", "GDPR data-processing agreement signed with KBC", "Security review passed (ISO 27001)", "Customer satisfaction ≥ 4.3/5 over the last 12 months"];
@@ -227,6 +227,11 @@ function findGoal(id: number): Goal {
 
 const addDays = (iso: string, d: number) => { const t = new Date(iso + "T00:00:00"); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
 
+const mockSources: SourceView[] = [
+  { source_id: "mypension", name: "mypension.be", provider: "Federal Pension Service", kind: "government", reads: ["Your estimated statutory pension"], goals: ["retire_well"], sensitivity: "high", needs_consent: true, consent_days: 365, why: "An exact pension gap instead of an estimate.", status: "available", connected_on: null, expires_on: null, purpose: "", playbook_id: null, values: {}, simulated: true },
+  { source_id: "kbo", name: "Company register (KBO/CBE)", provider: "Crossroads Bank for Enterprises", kind: "public", reads: ["Your company number and start date"], goals: ["go_freelance"], sensitivity: "low", needs_consent: false, consent_days: 0, why: "Public register: no permission needed.", status: "public", connected_on: null, expires_on: null, purpose: "", playbook_id: null, values: {}, simulated: true },
+];
+
 export const mockEco = {
   goals(asOf?: string): Promise<GoalsResponse> {
     const active = new Set(goals.filter((g) => g.status !== "cancelled").map((g) => g.playbook_id));
@@ -308,6 +313,19 @@ export const mockEco = {
       pushEvent(grant.partner_id, "revoked", `Customer revoked ${grant.partner_name}'s access`);
     }
     return mockEco.consents();
+  },
+  sources(): Promise<SourcesResponse> {
+    return delay({ sources: mockSources, connected: mockSources.filter((x) => x.status === "connected").length, note: "Simulated values." });
+  },
+  connectSource(sourceId: string, playbookId: string): Promise<SourcesResponse> {
+    const src = mockSources.find((x) => x.source_id === sourceId);
+    if (src && src.needs_consent) Object.assign(src, { status: "connected", connected_on: "2026-10-20", expires_on: addDays("2026-10-20", src.consent_days), playbook_id: playbookId, purpose: `${src.name} for your goal`, values: { simulated_value: 1 } });
+    return mockEco.sources();
+  },
+  disconnectSource(sourceId: string): Promise<SourcesResponse> {
+    const src = mockSources.find((x) => x.source_id === sourceId);
+    if (src && src.needs_consent) Object.assign(src, { status: "available", connected_on: null, expires_on: null, values: {} });
+    return mockEco.sources();
   },
   goalsReset(): Promise<{ ok: boolean }> { initial(); goals = []; grants = []; return delay({ ok: true }); },
   hideCandidate(id: string): void { hiddenCandidates.add(id); },

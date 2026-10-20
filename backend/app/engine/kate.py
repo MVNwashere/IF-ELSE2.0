@@ -347,11 +347,45 @@ def _general(home: HomeResponse, f: Features, text: str) -> KateReply | None:
     return None
 
 
-def rules_reply(home: HomeResponse, f: Features, req: KateRequest, goals=None) -> KateReply:
+def _signals_intent(goals, deadlines, forecasts, text: str) -> KateReply | None:
+    """Round 2: "what's coming up?", "when is my VAT due?", "will I owe social contributions later?"."""
+    if deadlines is None:
+        return None
+    asks_forecast = _has(text, "regularis", "social contribution", "will i owe", "tax surprise")
+    asks_deadline = _has(text, "deadline", "coming up", "is due", "vat due", "vat return", "advance tax", "when do i pay")
+    if not (asks_forecast or asks_deadline):
+        return None
+    if asks_forecast and forecasts:
+        fc = forecasts[0]
+        amount = f" of about {fmt_eur(round(fc.amount_eur, -1))}" if fc.amount_eur and "€" not in fc.title else ""
+        due = f", around {fmt_date(fc.due)}" if fc.due else ""
+        action = _goal_action(goals, fc.playbook_id) if fc.playbook_id else None
+        return _out(f"{fc.title}{amount}{due}. {' '.join(fc.evidence[:2])} This is an estimate from your own "
+                    "transactions, so it can change.", [action] if action else [])
+    items = [d for d in deadlines if not _has(text, "vat") or d.kind == "vat_return"]
+    if not items:
+        return _out("Nothing is due in the coming weeks that I can see from your account.")
+    lines = []
+    for d in items[:3]:
+        amount = f" (about {fmt_eur(round(d.amount_eur))})" if d.amount_eur else ""
+        short = f", {fmt_eur(round(d.shortfall_eur))} short" if d.shortfall_eur else ""
+        when = "" if fmt_date(d.date) in d.title else f" on {fmt_date(d.date)}"
+        lines.append(f"{d.title}{when}{amount}{short}")
+    first = items[0]
+    action = _goal_action(goals, first.playbook_id) if first.playbook_id else None
+    return _out("Coming up: " + "; ".join(lines) + ". I can set money aside automatically so these never surprise you.",
+                [action] if action else [])
+
+
+def rules_reply(home: HomeResponse, f: Features, req: KateRequest, goals=None, deadlines=None,
+                forecasts=None) -> KateReply:
     text = req.message.strip().lower()
     card = _card(home, req.card_key)
     if not text:
         return _opener(home, card, goals)
+    signal_reply = _signals_intent(goals, deadlines, forecasts, text)
+    if signal_reply:
+        return signal_reply
     if goals is not None and goals.candidates and _has(text, "why do you think", "how do you know"):
         c = goals.candidates[0]
         return _out(f"From your own transactions: {'; '.join(c.evidence)}. Nothing has been shared with anyone.",
@@ -464,10 +498,11 @@ def validate_llm_text(text: str, context: dict, draft: str) -> str | None:
     return text
 
 
-def reply(home: HomeResponse, features: Features, req: KateRequest, llm=None, goals=None) -> KateReply:
+def reply(home: HomeResponse, features: Features, req: KateRequest, llm=None, goals=None, deadlines=None,
+          forecasts=None) -> KateReply:
     """Rules decide what Kate says and proposes; the LLM (if on) may only rephrase it.
     `goals` (the ecosystem GoalsResponse) lets Kate offer and open goal journeys."""
-    base = rules_reply(home, features, req, goals)
+    base = rules_reply(home, features, req, goals, deadlines, forecasts)
     if llm is None and not _llm_enabled():
         return base
     context = grounded_context(home, features, req)

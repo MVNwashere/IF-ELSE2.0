@@ -74,7 +74,37 @@ CREATE TABLE IF NOT EXISTS eco_ledger (
   label TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS ix_eco_ledger_goal ON eco_ledger(goal_id);
+CREATE TABLE IF NOT EXISTS eco_sources (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  source_id TEXT NOT NULL,
+  playbook_id TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  connected_on TEXT NOT NULL,
+  expires_on TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active','disconnected')),
+  disconnected_on TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_eco_sources_customer ON eco_sources(customer_id);
+CREATE TABLE IF NOT EXISTS eco_shown (
+  customer_id INTEGER NOT NULL,
+  playbook_id TEXT NOT NULL,
+  first_shown TEXT NOT NULL,
+  PRIMARY KEY (customer_id, playbook_id)
+);
 """
+
+# columns added after the first release: (table, column, type). Fixed identifiers, never user input.
+_MIGRATIONS = (
+    ("eco_steps", "partner_id", "TEXT"),      # the partner the customer picked among the step's alternatives
+    ("eco_steps", "done_on", "TEXT"),         # simulated completion date (time travel aware)
+    ("eco_grants", "deleted_at", "TEXT"),     # partner confirmed deletion after revoke/expiry (signed webhook)
+)
+_ALTER = {
+    ("eco_steps", "partner_id"): "ALTER TABLE eco_steps ADD COLUMN partner_id TEXT",
+    ("eco_steps", "done_on"): "ALTER TABLE eco_steps ADD COLUMN done_on TEXT",
+    ("eco_grants", "deleted_at"): "ALTER TABLE eco_grants ADD COLUMN deleted_at TEXT",
+}
 
 
 def now() -> str:
@@ -83,6 +113,13 @@ def now() -> str:
 
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    cols = {
+        "eco_steps": {r[1] for r in conn.execute("PRAGMA table_info(eco_steps)")},
+        "eco_grants": {r[1] for r in conn.execute("PRAGMA table_info(eco_grants)")},
+    }
+    for table, column, _ in _MIGRATIONS:
+        if column not in cols[table]:
+            conn.execute(_ALTER[(table, column)])
 
 
 # ---- goals and steps ---------------------------------------------------------------------------------------------
@@ -125,14 +162,21 @@ def steps(conn, goal_id: int) -> dict[str, sqlite3.Row]:
 
 
 def update_step(conn, goal_id: int, step_id: str, *, status: str | None = None, ref: str | None = None,
-                result: str | None = None, grant_id: int | None = None, started_at: str | None = None) -> None:
+                result: str | None = None, grant_id: int | None = None, started_at: str | None = None,
+                partner_id: str | None = None, done_on: dt.date | None = None) -> None:
     """Only the given values change (None keeps the current value). One fixed statement, all values bound."""
     conn.execute(
         "UPDATE eco_steps SET status = COALESCE(?, status), ref = COALESCE(?, ref), result = COALESCE(?, result), "
-        "grant_id = COALESCE(?, grant_id), started_at = COALESCE(?, started_at), updated_at = ? "
-        "WHERE goal_id = ? AND step_id = ?",
-        (status, ref, result, grant_id, started_at, now(), goal_id, step_id),
+        "grant_id = COALESCE(?, grant_id), started_at = COALESCE(?, started_at), partner_id = COALESCE(?, partner_id), "
+        "done_on = COALESCE(?, done_on), updated_at = ? WHERE goal_id = ? AND step_id = ?",
+        (status, ref, result, grant_id, started_at, partner_id, done_on.isoformat() if done_on else None, now(),
+         goal_id, step_id),
     )
+
+
+def set_step_done_on(conn, goal_id: int, step_id: str, done_on: dt.date) -> None:
+    conn.execute("UPDATE eco_steps SET done_on = ? WHERE goal_id = ? AND step_id = ?",
+                 (done_on.isoformat(), goal_id, step_id))
 
 
 def step_by_ref(conn, ref: str) -> sqlite3.Row | None:
@@ -146,6 +190,7 @@ def delete_customer_goals(conn, customer_id: int) -> None:
     conn.executemany("DELETE FROM eco_steps WHERE goal_id = ?", [(i,) for i in ids])
     conn.executemany("DELETE FROM eco_ledger WHERE goal_id = ?", [(i,) for i in ids])
     conn.execute("DELETE FROM eco_grants WHERE customer_id = ?", (customer_id,))
+    conn.execute("DELETE FROM eco_sources WHERE customer_id = ?", (customer_id,))
     conn.execute("DELETE FROM eco_events WHERE customer_id = ?", (customer_id,))
     conn.execute("DELETE FROM eco_goals WHERE customer_id = ?", (customer_id,))
 
@@ -219,3 +264,57 @@ def ledger(conn, goal_id: int | None = None) -> list[sqlite3.Row]:
 def all_steps_with_goals(conn) -> list[sqlite3.Row]:
     return conn.execute("SELECT s.*, g.playbook_id, g.status AS goal_status, g.customer_id FROM eco_steps s "
                         "JOIN eco_goals g ON g.id = s.goal_id").fetchall()
+
+
+def confirm_deletion(conn, customer_id: int, goal_id: int, step_id: str, partner_id: str) -> int:
+    """A partner confirmed it deleted the data of every revoked grant for this step."""
+    cur = conn.execute(
+        "UPDATE eco_grants SET deleted_at = ? WHERE customer_id = ? AND goal_id = ? AND step_id = ? AND partner_id = ? "
+        "AND deleted_at IS NULL AND status = 'revoked'",
+        (now(), customer_id, goal_id, step_id, partner_id),
+    )
+    return cur.rowcount
+
+
+# ---- inbound data sources ----------------------------------------------------------------------------------------
+
+
+def insert_source(conn, customer_id: int, source_id: str, playbook_id: str, purpose: str, connected_on: dt.date,
+                  expires_on: dt.date) -> int:
+    conn.execute("UPDATE eco_sources SET status = 'disconnected', disconnected_on = ? "
+                 "WHERE customer_id = ? AND source_id = ? AND status = 'active'",
+                 (connected_on.isoformat(), customer_id, source_id))
+    cur = conn.execute(
+        "INSERT INTO eco_sources (customer_id, source_id, playbook_id, purpose, connected_on, expires_on, status) "
+        "VALUES (?, ?, ?, ?, ?, ?, 'active')",
+        (customer_id, source_id, playbook_id, purpose, connected_on.isoformat(), expires_on.isoformat()),
+    )
+    return int(cur.lastrowid)
+
+
+def sources(conn, customer_id: int) -> list[sqlite3.Row]:
+    """The latest connection per source for this customer."""
+    return conn.execute(
+        "SELECT * FROM eco_sources WHERE customer_id = ? AND id IN "
+        "(SELECT MAX(id) FROM eco_sources WHERE customer_id = ? GROUP BY source_id)",
+        (customer_id, customer_id)).fetchall()
+
+
+def disconnect_source(conn, customer_id: int, source_id: str, on: dt.date) -> int:
+    cur = conn.execute("UPDATE eco_sources SET status = 'disconnected', disconnected_on = ? "
+                       "WHERE customer_id = ? AND source_id = ? AND status = 'active'",
+                       (on.isoformat(), customer_id, source_id))
+    return cur.rowcount
+
+
+# ---- learning loop -----------------------------------------------------------------------------------------------
+
+
+def mark_shown(conn, customer_id: int, playbook_ids: list[str]) -> None:
+    conn.executemany("INSERT OR IGNORE INTO eco_shown (customer_id, playbook_id, first_shown) VALUES (?, ?, ?)",
+                     [(customer_id, p, now()) for p in playbook_ids])
+
+
+def shown_counts(conn) -> dict[str, int]:
+    return {r["playbook_id"]: r["n"] for r in
+            conn.execute("SELECT playbook_id, COUNT(*) AS n FROM eco_shown GROUP BY playbook_id")}

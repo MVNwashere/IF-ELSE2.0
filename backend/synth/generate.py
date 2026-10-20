@@ -346,6 +346,136 @@ def pick_weighted(rng: random.Random, options: list[tuple[str, float]]) -> str:
     return options[-1][0]
 
 
+# ----------------------------------------------------------------------------------
+# Round 2: goal scenarios (ground truth "goal:<playbook_id>") for the intent evaluation
+# ----------------------------------------------------------------------------------
+# A separate RNG decides and shapes them, so customers without a goal scenario are generated exactly as before.
+
+GARAGE_NAMES = ["Garage Vermeersch", "Garage De Smet", "Autoservice Claes", "Garage Lambert", "Carrosserie Mertens"]
+UNIVERSITIES = ["KU Leuven", "UGent", "UAntwerpen", "VUB", "UCLouvain", "ULiège", "Hogeschool PXL", "Odisee"]
+NOTARIES = ["Notaris Van den Broeck", "Notaris Wouters", "Notaire Dubois", "Notaris Claes", "Notaire Lemaire"]
+SUBCONTRACTOR_NAMES = ["Onderaanneming Maes BV", "Onderaanneming Pixelwerk", "Freelance Studio Noord", "Onderaannemer Jacobs"]
+
+
+def pick_goal_scenario(g: random.Random, primary: str, personas: list[str], products: list[str], age: int,
+                       first_job: bool, event_types: list[str]) -> str | None:
+    """At most one goal scenario per customer, so each playbook is detectable for a few % of the portfolio."""
+    if primary == "student" or {"idle_cash", "cashflow_squeeze"} & set(event_types):
+        return None
+    r, r2, r3 = g.random(), g.random(), g.random()
+    if primary == "young_professional" and not first_job and "young_family" not in personas:
+        if r < 0.11:
+            return "go_freelance"
+        if r < 0.22:
+            return "job_change"
+    if primary == "freelancer" and "young_family" not in personas:
+        if r < 0.13:
+            return "first_employee"
+        if r < 0.29:
+            return "retire_well"
+        if r < 0.42:
+            return "study_start"
+    if "mortgage" in products and r2 < 0.09:
+        return "energy_upgrade"
+    if age < 70 and r3 < 0.04:
+        return "mobility"
+    if age >= 30 and 0.04 <= r3 < 0.065:
+        return "inheritance"
+    return None
+
+
+def inject_goal_before_balance(g: random.Random, b: TxBuilder, goal: str, events: list[dict],
+                               personas: list[str]) -> None:
+    """Scenarios that reshape income: applied before the balance calibration."""
+    if goal == "go_freelance":
+        stop = TODAY - dt.timedelta(days=g.randint(45, 200))
+        b.txs = [t for t in b.txs if not (t.category == "salary" and t.date > stop)]
+        first = min(TODAY - dt.timedelta(days=3), stop + dt.timedelta(days=g.randint(12, 40)))
+        b.add(stop + dt.timedelta(days=2), 105.50, "other", "Ondernemingsloket Xerius (inschrijving KBO)")
+        clients = g.sample(CLIENTS, g.randint(1, 3))
+        d = first
+        while d <= TODAY:
+            b.add(d, g.uniform(2500, 6000), "invoice_income", g.choice(clients))
+            d += dt.timedelta(days=g.randint(26, 34))
+        if "freelancer" not in personas:
+            personas.append("freelancer")
+        events.append({"type": "goal:go_freelance", "date": first.isoformat()})
+    elif goal == "job_change":
+        sal = sorted((t for t in b.txs if t.category == "salary"), key=lambda t: t.date)
+        if not sal:
+            return
+        stop = TODAY - dt.timedelta(days=g.randint(60, 160))
+        template = sal[-1]
+        b.txs = [t for t in b.txs if not (t.category == "salary" and t.date > stop)]
+        if g.random() < 0.5:
+            new_employer = g.choice([e for e in EMPLOYERS if e != template.counterparty])
+            start = stop + dt.timedelta(days=g.randint(20, 45))
+            b.monthly(start, TODAY, 27, abs(template.amount) * g.uniform(1.0, 1.15), "salary", new_employer)
+            first_new = min((t.date for t in b.txs if t.counterparty == new_employer), default=start)
+            events.append({"type": "goal:job_change", "date": first_new.isoformat(), "kind": "new_employer"})
+        else:
+            # Belgian severance pay (opzegvergoeding) with the last pay slip, then unemployment benefit
+            b.add(stop, abs(template.amount) * g.uniform(2, 3), "salary", template.counterparty + " (opzegvergoeding)")
+            b.monthly(stop + dt.timedelta(days=35), TODAY, 15, g.uniform(1200, 1700), "benefit",
+                      "HVW (werkloosheidsuitkering)")
+            events.append({"type": "goal:job_change", "date": (stop + dt.timedelta(days=40)).isoformat(),
+                           "kind": "job_loss"})
+    elif goal == "first_employee":
+        since = TODAY - dt.timedelta(days=120)
+        for t in b.txs:
+            if t.category == "invoice_income" and t.date > since:
+                t.amount = round(t.amount * 2.4, 2)
+        for _ in range(g.randint(3, 5)):
+            b.add(TODAY - dt.timedelta(days=g.randint(10, 110)), g.uniform(800, 2200), "other",
+                  g.choice(SUBCONTRACTOR_NAMES))
+        events.append({"type": "goal:first_employee", "date": (TODAY - dt.timedelta(days=100)).isoformat()})
+
+
+def inject_goal_after_balance(g: random.Random, b: TxBuilder, goal: str, events: list[dict], products: list[str],
+                              age: int) -> float:
+    """One-off scenarios added after calibration. Returns the net amount added (to shift balance_today)."""
+    before = len(b.txs)
+    if goal == "retire_well":
+        window = b.between(TODAY - dt.timedelta(days=90), TODAY)
+        spend = max(500.0, -sum(t.amount for t in window if t.amount < 0 and t.category != "savings_transfer") / 3)
+        d = TODAY - dt.timedelta(days=g.randint(100, 200))
+        b.add_signed(d, round(spend * g.uniform(11, 14) + 5000, 2), "savings_transfer", "KBC Termijnrekening (vervaldag)")
+        events.append({"type": "goal:retire_well", "date": d.isoformat()})
+        if "savings" not in products:
+            events.append({"type": "idle_cash", "date": TODAY.isoformat()})
+    elif goal == "energy_upgrade":
+        util = sorted(-t.amount for t in b.txs if t.category == "utilities" and t.amount < 0) or [150.0]
+        d = TODAY - dt.timedelta(days=g.randint(15, 120))
+        b.add(d, max(util[len(util) // 2] * g.uniform(3.5, 5), 480), "utilities",
+              g.choice(UTILITIES) + " (jaarafrekening)")
+        events.append({"type": "goal:energy_upgrade", "date": d.isoformat()})
+    elif goal == "mobility":
+        garage = g.choice(GARAGE_NAMES)
+        dates = [TODAY - dt.timedelta(days=g.randint(220, 320)), TODAY - dt.timedelta(days=g.randint(110, 190)),
+                 TODAY - dt.timedelta(days=g.randint(32, 80))]
+        for d, (lo, hi) in zip(dates, [(350, 600), (600, 1000), (950, 1700)]):
+            b.add(d, g.uniform(lo, hi), "transport", garage)
+        events.append({"type": "goal:mobility", "date": dates[-1].isoformat()})
+    elif goal == "inheritance":
+        d = TODAY - dt.timedelta(days=g.randint(10, 150))
+        b.add_signed(d, round(g.uniform(25000, 150000), -2), "other", g.choice(NOTARIES) + " (nalatenschap)")
+        events.append({"type": "goal:inheritance", "date": d.isoformat()})
+    elif goal == "study_start":
+        d = TODAY - dt.timedelta(days=g.randint(10, 100))
+        b.add(d, g.choice([1092.10, 1153.80, 979.60]), "tuition", g.choice(UNIVERSITIES) + " (inschrijvingsgeld)")
+        events.append({"type": "goal:study_start", "date": d.isoformat()})
+    return round(sum(t.amount for t in b.txs[before:]), 2)
+
+
+def top_up_if_overdrawn(g: random.Random, b: TxBuilder, balance: float, since: dt.date) -> float:
+    """A goal scenario must not leave the account overdrawn: a summer tax refund covers the gap."""
+    if balance >= 300:
+        return balance
+    amount = round(300 - balance + g.uniform(200, 900), 2)
+    b.add_signed(max(b.start, since - dt.timedelta(days=3)), amount, "tax", TAX_OFFICE + " (terugbetaling)")
+    return round(balance + amount, 2)
+
+
 def make_regular(cid: int, seed: int) -> tuple[Customer, list[Transaction], float]:
     rng = random.Random(seed * 100003 + cid)
     end = TODAY
@@ -521,6 +651,18 @@ def make_regular(cid: int, seed: int) -> tuple[Customer, list[Transaction], floa
                   rng.choice(["Brico", "Garage Vermeersch", "Tandarts De Wilde", "Zalando"]))
         events.append({"type": "cashflow_squeeze", "date": since.isoformat()})
 
+    # --- round 2 goal scenarios (own RNG: everyone else is generated exactly as before)
+    g = random.Random(seed * 7919 + cid * 31 + 1)
+    goal = pick_goal_scenario(g, primary, personas, products, age, pre_salary_living is not None, event_types)
+    if goal == "retire_well":
+        age = g.randint(50, 62)
+        birth_year = TODAY.year - age
+    elif goal == "study_start":
+        age = g.randint(45, 56)
+        birth_year = TODAY.year - age
+    if goal:
+        inject_goal_before_balance(g, b, goal, events, personas)
+
     # --- balance path: keep the running balance in a sane band so time travel never shows absurd balances
     spend_90 = -sum(t.amount for t in b.between(TODAY - dt.timedelta(days=90), TODAY) if t.amount < 0)
     income_90 = sum(t.amount for t in b.between(TODAY - dt.timedelta(days=90), TODAY) if t.amount > 0)
@@ -571,6 +713,18 @@ def make_regular(cid: int, seed: int) -> tuple[Customer, list[Transaction], floa
             b.add_signed(TODAY - dt.timedelta(days=120), shortfall, "savings_transfer", "KBC Termijnrekening (vervaldag)")
             balance = round(balance + shortfall, 2)
         events.append({"type": "idle_cash", "date": TODAY.isoformat(), "balance": round(balance, 2)})
+    if goal:
+        balance = round(balance + inject_goal_after_balance(g, b, goal, events, products, age), 2)
+        goal_dates = [dt.date.fromisoformat(e["date"]) for e in events if e["type"].startswith("goal:")]
+        balance = top_up_if_overdrawn(g, b, balance, min(goal_dates) - dt.timedelta(days=200))
+        if goal == "inheritance":
+            # a big inflow can make other goals legitimately visible too: label them, so they don't count as noise
+            if 50 <= age <= 64:
+                events.append({"type": "goal:retire_well", "date": events[-1]["date"]})
+            if age >= 65 and "savings" not in products:
+                events.append({"type": "goal:peace_of_mind", "date": events[-1]["date"]})
+            if "savings" not in products:
+                events.append({"type": "idle_cash", "date": TODAY.isoformat()})
 
     customer = Customer(
         id=cid, first_name=first, last_name=last, birth_year=birth_year, city=city,

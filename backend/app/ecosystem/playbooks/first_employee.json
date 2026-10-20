@@ -1,0 +1,130 @@
+{
+ "id": "first_employee",
+ "title": "Hire your first help",
+ "icon": "🤝",
+ "tagline": "Flexible workers or a first employee, insured and paid correctly, without the paperwork.",
+ "ecosystems": [
+  "Work and employees",
+  "Business protection",
+  "Pensions",
+  "Business"
+ ],
+ "target_days": 45,
+ "next_goal": null,
+ "trigger": "Invoice income keeps growing, more clients than one person can serve, or paying subcontractors.",
+ "steps": [
+  {
+   "id": "capacity",
+   "title": "Can the business carry a salary?",
+   "provider": "kbc",
+   "description": "A cash-flow forecast with and without a hire, from your own invoice history.",
+   "why": "Based on the invoices paid into your account. Nothing is shared.",
+   "products": [
+    "working-capital-forecasts"
+   ],
+   "fields": [],
+   "win": {
+    "customer": "Hire on numbers, not on gut feeling",
+    "kbc": "A growing business client"
+   },
+   "estimates": {
+    "hours_saved": 4,
+    "kbc_revenue_eur": 20
+   },
+   "result": "Forecast ready: invoice income grew {invoice_growth_pct}% to about €{invoice_monthly} a month. A part-time hire fits within your cash flow (illustrative)."
+  },
+  {
+   "id": "flex_workers",
+   "title": "Start with flexible workers",
+   "provider": "nowjobs",
+   "description": "Find and pay flexi-jobbers or students for peak weeks through NOWJOBS, contracts and declarations included.",
+   "why": "NOWJOBS only receives your company name and what help you need, never your bank data.",
+   "products": [
+    "find-flexible-workers-nowjobs"
+   ],
+   "fields": [
+    "first_name",
+    "email",
+    "company_name",
+    "staffing_need"
+   ],
+   "win": {
+    "customer": "Help next week, no long commitment",
+    "partner": "A new employer on the platform"
+   },
+   "estimates": {
+    "hours_saved": 6,
+    "partner_fee_eur": 25
+   },
+   "result": "NOWJOBS account ready: your first shift is posted and the contract is generated.",
+   "consent_days": 90
+  },
+  {
+   "id": "hr_admin",
+   "title": "Payroll and HR admin",
+   "provider": "kbc",
+   "description": "Human Capital Solutions: payroll, the first-employee declarations and a social secretariat in one flow.",
+   "why": "The first hire comes with registrations you only do once; we guide you through them.",
+   "products": [
+    "human-capital-solutions"
+   ],
+   "fields": [],
+   "win": {
+    "customer": "First hire done right",
+    "kbc": "HR services"
+   },
+   "estimates": {
+    "hours_saved": 10,
+    "kbc_revenue_eur": 120
+   },
+   "result": "Payroll set up. The declarations for your first employee are prepared for your signature."
+  },
+  {
+   "id": "accident_insurance",
+   "title": "Occupational accident insurance",
+   "provider": "kbc",
+   "description": "Compulsory for employers in Belgium: it covers accidents at work and on the way to work.",
+   "why": "Must be in place before the first working day.",
+   "products": [
+    "occupational-accident-insurance"
+   ],
+   "fields": [],
+   "kbc_products": [
+    "occupational-accident-insurance"
+   ],
+   "win": {
+    "customer": "Legally covered from day one",
+    "kbc": "Business insurance"
+   },
+   "estimates": {
+    "hours_saved": 2,
+    "kbc_revenue_eur": 180
+   },
+   "result": "Occupational accident insurance active from the first working day."
+  },
+  {
+   "id": "team_protection",
+   "title": "Protect and reward your team",
+   "provider": "kbc",
+   "description": "The Team Protect Plan and a group pension (Team Benefit Plan) to attract and keep good people.",
+   "why": "Small employers compete with large ones on benefits.",
+   "products": [
+    "kbc-team-protect-plan",
+    "kbc-team-benefit-plan"
+   ],
+   "fields": [],
+   "kbc_products": [
+    "kbc-team-protect-plan"
+   ],
+   "win": {
+    "customer": "An attractive offer to a first employee",
+    "kbc": "Group insurance"
+   },
+   "estimates": {
+    "hours_saved": 3,
+    "kbc_revenue_eur": 300
+   },
+   "result": "Team Protect Plan ready to start with your first employee."
+  }
+ ]
+}
