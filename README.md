@@ -67,6 +67,10 @@ freelancer; Lotte's fixture under her name), Sara, Jan or Marc instead of loggin
 the home). Each phone keeps its own state; Restart wipes it. Try it locally with `npm run dev:jury` (port 5176, also
 reachable from a phone on the same Wi-Fi), or add `?jury=1` to any URL.
 
+Deploying it on Render: [render.yaml](render.yaml) is a Blueprint for this static site (root `frontend/`, build
+`npm ci && npm run build:jury`, publish `dist-jury`, Node 22). In Render choose New > Blueprint, pick this repo and
+the `deploy` branch. Vite 8 needs Node 20.19+ or 22.12+.
+
 To rebuild the synthetic data explicitly: `py -3.12 -m synth.generate --n 1000 --seed 42` (or delete
 `backend/kbc.db`).
 
