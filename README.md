@@ -1,6 +1,5 @@
-﻿# IF-ELSE 2.0
-
-Fresh start for IF-ELSE.
+﻿# IF-ELSE2.0
+Hackaton Project 20/10
 
 ## Structure
 
