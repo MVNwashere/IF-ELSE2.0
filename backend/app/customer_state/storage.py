@@ -5,6 +5,8 @@ import sqlite3
 
 from .models import AccountObservation, CustomerState, TransactionDetails
 
+MAX_SNAPSHOTS_PER_CUSTOMER = 64  # most recently written are kept; older ones are recalculated on demand
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS customer_state_transaction_details (
   transaction_id INTEGER PRIMARY KEY REFERENCES transactions(id) ON DELETE CASCADE,
@@ -64,4 +66,9 @@ def save(conn, state: CustomerState, version: str, source_hash: str) -> None:
         "ON CONFLICT(customer_id, as_of, algorithm_version) DO UPDATE SET "
         "source_hash=excluded.source_hash, data=excluded.data",
         (state.customer_id, state.as_of.isoformat(), version, source_hash, state.model_dump_json()),
+    )
+    conn.execute(
+        "DELETE FROM customer_state_snapshots WHERE customer_id=? AND rowid NOT IN "
+        "(SELECT rowid FROM customer_state_snapshots WHERE customer_id=? ORDER BY rowid DESC LIMIT ?)",
+        (state.customer_id, state.customer_id, MAX_SNAPSHOTS_PER_CUSTOMER),
     )

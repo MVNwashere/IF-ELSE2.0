@@ -1,4 +1,5 @@
 import type { Component, GalleryItem } from "../api";
+import { MaskedText } from "../privacy";
 import Sheet from "./Sheet";
 
 interface Props {
@@ -12,8 +13,8 @@ function Row({ item, onAdd }: { item: GalleryItem; onAdd: (c: Component) => void
     <div className={`gallery-row ${item.state}`}>
       <div className="gallery-text">
         <b>{item.label}{item.is_hero && <span className="tag">main tile</span>}</b>
-        <span>{item.description}</span>
-        {item.reason && <span className="reason">{item.reason}</span>}
+        <span><MaskedText text={item.description} /></span>
+        {item.reason && <span className="reason"><MaskedText text={item.reason} /></span>}
       </div>
       {item.state === "shown" ? (
         <span className="gallery-state">✓ shown</span>

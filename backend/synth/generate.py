@@ -116,7 +116,8 @@ class TxBuilder:
     def add(self, d: dt.date, amount: float, category: str, counterparty: str) -> None:
         if d < self.start or d > self.end:
             return
-        assert category in CATEGORIES, category
+        if category not in CATEGORIES:
+            raise ValueError(f"Unknown category: {category!r}")
         signed = abs(amount) if category in INCOME_CATEGORIES else -abs(amount)
         self.txs.append(Transaction(id=0, customer_id=self.cid, date=d, amount=round(signed, 2),
                                     category=category, counterparty=counterparty[:80]))
@@ -125,7 +126,8 @@ class TxBuilder:
         """Bypass the category sign rule (e.g. a transfer *from* savings into the current account)."""
         if d < self.start or d > self.end:
             return
-        assert category in CATEGORIES, category
+        if category not in CATEGORIES:
+            raise ValueError(f"Unknown category: {category!r}")
         self.txs.append(Transaction(id=0, customer_id=self.cid, date=d, amount=round(signed_amount, 2),
                                     category=category, counterparty=counterparty[:80]))
 
@@ -1200,7 +1202,7 @@ def build(db_path: str, n: int = 1000, seed: int = 42, verbose: bool = True) -> 
         print("  scenarios:")
         for k, v in summary["scenarios"].items():
             print(f"    {k:20s} {v}")
-        print(f"  logins: lotte / sara / jan / marc / tom / els / amir / pieter / nina / c1..c{n} / advisor  (password: {DEMO_PASSWORD!r})")
+        print(f"  logins: lotte / sara / jan / marc / tom / els / amir / pieter / nina / c1..c{n} / advisor  (password: see DEMO_PASSWORD)")
     return summary
 
 

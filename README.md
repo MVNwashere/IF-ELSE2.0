@@ -120,6 +120,8 @@ numbers are optimistic because the rules and that data were written together.
 - Kate can't change anything herself: she returns proposed actions that run through the same validated endpoints
   after the customer taps. The optional LLM layer only rephrases, and every number must appear in the grounded
   context.
+- Host header allow-list (`ALLOWED_HOSTS`; add your LAN address to demo from another device); login limits keyed
+  on IP and username; the demo password is never printed.
 - Secrets only via `.env`; ground truth is never returned to customers.
 
 ## Limitations

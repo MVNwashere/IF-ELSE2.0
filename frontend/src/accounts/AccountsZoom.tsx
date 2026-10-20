@@ -171,7 +171,8 @@ export default function AccountsZoom({ origin, view, home, hero, tile, onClose, 
       role="dialog"
       aria-label="Your accounts"
       onClickCapture={(e) => {
-        if (masked && !(e.target as HTMLElement).closest("button, a, input")) onReveal();
+        // Tapping the scrim closes the screen; it must not also reveal the amounts on the home behind it.
+        if (masked && !(e.target as HTMLElement).closest("button, a, input, .zb-scrim")) onReveal();
       }}
     >
       <motion.div

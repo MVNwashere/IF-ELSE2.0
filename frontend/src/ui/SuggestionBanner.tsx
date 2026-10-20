@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { Component, TileSuggestion } from "../api";
+import { MaskedText } from "../privacy";
 
 interface Props {
   suggestion: TileSuggestion;
@@ -18,8 +19,8 @@ export default function SuggestionBanner({ suggestion, onDecide }: Props) {
     >
       <div className="suggestion-inner">
         <div className="suggestion-text">
-          <b>💡 {suggestion.title}</b>
-          <span>{suggestion.reason}</span>
+          <b>💡 <MaskedText text={suggestion.title} /></b>
+          <span><MaskedText text={suggestion.reason} /></span>
         </div>
         <div className="suggestion-actions">
           <button type="button" className="btn-primary small" onClick={() => onDecide(suggestion.component, "accept")}>

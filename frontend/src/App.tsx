@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError } from "./api";
+import { abortSessionRequests, ApiError, isAbort } from "./api";
 import type { Card, Component, Decision, HomeResponse, KateAction, KateTurn, LayoutPrefState, StylePrefs, TimelineResponse } from "./api";
 import { componentLabel } from "./format";
 import { AUTO_STYLE } from "./ui/PersonaliseSheet";
@@ -14,6 +14,12 @@ interface Session { role: "customer" | "advisor"; username: string }
 
 const DEMO_PASSWORD = "demo";
 
+/** Per-user browser storage must not survive a customer change. The app owns this origin, so clear it all. */
+function clearClientStorage(): void {
+  try { window.sessionStorage.clear(); } catch { /* storage blocked */ }
+  try { window.localStorage.clear(); } catch { /* storage blocked */ }
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [checked, setChecked] = useState(false);
@@ -25,74 +31,99 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const reqSeq = useRef(0);
+  // Session generation: bumped whenever the signed-in customer changes or goes away. A response that resolves for an
+  // older generation is dropped, so the previous customer's data can never render for the next one.
+  const gen = useRef(0);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast((t) => (t === msg ? null : t)), 2200);
   }, []);
 
+  /** Forget everything that belongs to the current customer: in-flight requests, client state and browser storage. */
+  const resetClient = useCallback(() => {
+    gen.current++;
+    reqSeq.current++;
+    abortSessionRequests();
+    setHome(null); setTimeline(null); setAsOf(null); setError(null); setToast(null); setBusy(false);
+    clearClientStorage();
+  }, []);
+
   const fail = useCallback((e: unknown) => {
+    if (isAbort(e)) return;
     if (e instanceof ApiError && e.status === 401) {
-      setSession(null); setHome(null); setTimeline(null);
+      resetClient();
+      setSession(null);
       return;
     }
     setError(e instanceof Error ? e.message : String(e));
-  }, []);
+  }, [resetClient]);
 
   const loadHome = useCallback(async (date: string | null) => {
+    const g = gen.current;
     const seq = ++reqSeq.current;
     setBusy(true); setError(null);
     try {
       const h = await data.home(date ?? undefined);
-      if (seq === reqSeq.current) setHome(h);
-    } catch (e) { fail(e); } finally { if (seq === reqSeq.current) setBusy(false); }
+      if (g === gen.current && seq === reqSeq.current) setHome(h);
+    } catch (e) { if (g === gen.current) fail(e); } finally { if (g === gen.current && seq === reqSeq.current) setBusy(false); }
   }, [fail]);
 
   const loadAll = useCallback(async (date: string | null) => {
+    const g = gen.current;
+    const seq = ++reqSeq.current;
     setBusy(true); setError(null);
     try {
       const [h, t] = await Promise.all([data.home(date ?? undefined), data.timeline()]);
-      reqSeq.current++;
-      setHome(h); setTimeline(t);
-    } catch (e) { fail(e); } finally { setBusy(false); }
+      if (g === gen.current && seq === reqSeq.current) { setHome(h); setTimeline(t); }
+    } catch (e) { if (g === gen.current) fail(e); } finally { if (g === gen.current && seq === reqSeq.current) setBusy(false); }
   }, [fail]);
 
   // Initial: is there a session?
   useEffect(() => {
+    const g = gen.current;
     (async () => {
       try {
         const s = await data.session();
+        if (g !== gen.current) return;
         setSession(s);
         if (s.role !== "advisor") await loadAll(null);
       } catch (e) {
-        if (!(e instanceof ApiError && e.status === 401)) fail(e);
+        if (g === gen.current && !(e instanceof ApiError && e.status === 401)) fail(e);
       } finally { setChecked(true); }
     })();
   }, [fail, loadAll]);
 
   const login = useCallback(async (username: string, password: string) => {
-    setError(null);
+    resetClient();
+    const g = gen.current;
     try {
       const s = await data.login(username, password);
-      setSession(s); setAsOf(null);
+      if (g !== gen.current) return;
+      setSession(s);
       if (s.role !== "advisor") await loadAll(null);
-    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
-  }, [loadAll]);
+    } catch (e) { if (g === gen.current && !isAbort(e)) setError(e instanceof Error ? e.message : String(e)); }
+  }, [loadAll, resetClient]);
 
   const switchCustomer = useCallback(async (username: string) => {
-    setBusy(true); setError(null);
+    resetClient();
+    setSession(null);
+    const g = gen.current;
+    setBusy(true);
     try {
       if (session) await data.logout().catch(() => undefined);
       const s = await data.login(username, DEMO_PASSWORD);
-      setSession(s); setAsOf(null); setHome(null); setTimeline(null);
+      if (g !== gen.current) return;
+      setSession(s);
       if (s.role !== "advisor") await loadAll(null);
-    } catch (e) { fail(e); } finally { setBusy(false); }
-  }, [session, loadAll, fail]);
+    } catch (e) { if (g === gen.current) fail(e); } finally { if (g === gen.current) setBusy(false); }
+  }, [session, loadAll, fail, resetClient]);
 
   const logout = useCallback(async () => {
+    resetClient();
+    setSession(null);
     await data.logout().catch(() => undefined);
-    setSession(null); setHome(null); setTimeline(null); setAsOf(null);
-  }, []);
+  }, [resetClient]);
 
   const onAsOf = useCallback((date: string | null) => {
     setAsOf(date);
@@ -101,13 +132,15 @@ export default function App() {
 
   /** Run a mutation that returns a fresh home. Resolves true on success. */
   const apply = useCallback(async (fn: () => Promise<HomeResponse>): Promise<boolean> => {
+    const g = gen.current;
     const seq = ++reqSeq.current;
     setBusy(true); setError(null);
     try {
       const h = await fn();
+      if (g !== gen.current) return false;
       if (seq === reqSeq.current) setHome(h);
       return true;
-    } catch (e) { fail(e); return false; } finally { if (seq === reqSeq.current) setBusy(false); }
+    } catch (e) { if (g === gen.current) fail(e); return false; } finally { if (g === gen.current && seq === reqSeq.current) setBusy(false); }
   }, [fail]);
 
   const onFeedback = useCallback((card: Card, decision: Decision) => {
@@ -196,7 +229,7 @@ export default function App() {
   const onCta = useCallback((action: string) => showToast(`Simulated: ${action.replace(/_/g, " ")}`), [showToast]);
 
   if (checked && session?.role === "advisor") {
-    return <EcosystemConsole username={session.username} onLogout={() => void logout()} onSwitchCustomer={(u) => void switchCustomer(u)} />;
+    return <EcosystemConsole key={session.username} username={session.username} onLogout={() => void logout()} onSwitchCustomer={(u) => void switchCustomer(u)} />;
   }
 
   return (
@@ -225,6 +258,7 @@ export default function App() {
               <Login onLogin={login} error={error} />
             ) : (
               <Phone
+                key={session.username}
                 home={home}
                 asOf={asOf ?? home.as_of}
                 explain={explain}

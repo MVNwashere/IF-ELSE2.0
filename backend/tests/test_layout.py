@@ -192,13 +192,22 @@ def test_hidden_pref_removes_component():
     assert "UpcomingBills" not in _components(plan(f, m, prefs))
 
 
-def test_hidden_cannot_remove_feed_or_hero():
+def test_hidden_cannot_remove_feed_but_hides_hero():
     f = features(age=34, has_child_signals=True)
     m = mix(young_family=0.7, young_professional=0.3)
+    assert _components(plan(f, m))[0] == "FamilyBudgetHero"
     prefs = Prefs(layout_prefs=[LayoutPrefRow(component="ForYouFeed", state="hidden"),
                                 LayoutPrefRow(component="FamilyBudgetHero", state="hidden")])
     comps = _components(plan(f, m, prefs))
-    assert comps[0] == "FamilyBudgetHero" and comps[1] == "ForYouFeed"
+    assert comps[0] in HERO_COMPONENTS and comps[0] != "FamilyBudgetHero" and comps[1] == "ForYouFeed"
+    assert "FamilyBudgetHero" not in comps
+
+
+def test_all_heroes_hidden_still_has_a_main_tile():
+    f = features(age=34, has_child_signals=True)
+    m = mix(young_family=0.7, young_professional=0.3)
+    prefs = Prefs(layout_prefs=[LayoutPrefRow(component=h, state="hidden") for h in HERO_COMPONENTS])
+    assert _components(plan(f, m, prefs))[0] in HERO_COMPONENTS
 
 
 def test_pinned_pref_includes_component_first():

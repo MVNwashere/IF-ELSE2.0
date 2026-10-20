@@ -1,7 +1,7 @@
 // One goal as a checklist: every step shows who does it, why them, what it wins, and what came back.
 import { motion } from "framer-motion";
 import { longDate } from "../format";
-import { useEur } from "../privacy";
+import { maskFrac, MaskedText, useEur, useMasked } from "../privacy";
 import Sheet from "../ui/Sheet";
 import { hours, KindBadge, ProductChips, ProgressRing, StatusPill } from "./bits";
 import { useState } from "react";
@@ -68,8 +68,8 @@ function Measured({ items }: { items: MeasuredOutcome[] }) {
             <span className={`eco-pill ${m.status === "verified" ? "done" : m.status === "pending" ? "proposed" : "blocked"}`}>
               {m.status === "verified" ? "verified" : m.status === "pending" ? "pending" : "not met"}
             </span>
-            <span><b>{m.label}.</b> {m.summary}{m.check_on && m.status === "pending" ? ` (${longDate(m.check_on)})` : ""}</span>
-            {m.evidence.length > 0 && <small className="muted-note">{m.evidence.join(" · ")}</small>}
+            <span><b><MaskedText text={m.label} />.</b> <MaskedText text={m.summary} />{m.check_on && m.status === "pending" ? ` (${longDate(m.check_on)})` : ""}</span>
+            {m.evidence.length > 0 && <small className="muted-note"><MaskedText text={m.evidence.join(" · ")} /></small>}
           </li>
         ))}
       </ul>
@@ -79,6 +79,7 @@ function Measured({ items }: { items: MeasuredOutcome[] }) {
 }
 
 function TripleWin({ outcome, potential }: { outcome: WinTotals; potential: WinTotals }) {
+  const masked = useMasked();
   const eur = useEur();
   const rows = [
     { who: "You", now: `${eur(outcome.customer_eur)} · ${hours(outcome.hours_saved)}`, max: `${eur(potential.customer_eur)} · ${hours(potential.hours_saved)}`, frac: potential.customer_eur + potential.hours_saved > 0 ? (outcome.customer_eur + outcome.hours_saved) / (potential.customer_eur + potential.hours_saved) : 0 },
@@ -91,7 +92,7 @@ function TripleWin({ outcome, potential }: { outcome: WinTotals; potential: WinT
       {rows.map((r) => (
         <div key={r.who} className="eco-triple-row">
           <span className="who">{r.who}</span>
-          <span className="bar"><motion.i initial={{ width: 0 }} animate={{ width: `${Math.round(r.frac * 100)}%` }} /></span>
+          <span className="bar"><motion.i initial={{ width: 0 }} animate={{ width: `${Math.round(maskFrac(r.frac, masked) * 100)}%` }} /></span>
           <span className="val"><b>{r.now}</b> <small>/ {r.max}</small></span>
         </div>
       ))}
@@ -116,7 +117,7 @@ function StepRow({ step, busy, onReview, onReset, onConnect }: { step: Step; bus
           <span>{step.provider.name}</span>
           <KindBadge provider={step.provider} />
         </div>
-        {!held && step.why_this_provider && <p className="eco-whyp">{step.why_this_provider}</p>}
+        {!held && step.why_this_provider && <p className="eco-whyp"><MaskedText text={step.why_this_provider} /></p>}
         <ProductChips products={step.products} />
         {!held && win && <div className="eco-steps-win">{win}</div>}
         {step.status === "in_progress" && (
@@ -125,7 +126,7 @@ function StepRow({ step, busy, onReview, onReset, onConnect }: { step: Step; bus
         {step.result && step.status === "done" && !held && (
           <motion.div className="eco-result" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
             <span className="from">{step.provider.kind === "partner" ? `${step.provider.name} replied` : "KBC"}</span>
-            {step.result}
+            <MaskedText text={step.result} />
           </motion.div>
         )}
         {step.status === "blocked" && (
@@ -168,7 +169,7 @@ export default function JourneySheet({ goal, busy, onReview, onReset, onPassport
       <div className="eco-journey-head">
         <ProgressRing done={goal.progress.done} total={goal.progress.total} size={64} />
         <div>
-          <p className="eco-tagline">{goal.tagline}</p>
+          <p className="eco-tagline"><MaskedText text={goal.tagline} /></p>
           <p className="muted-note">
             {goal.origin === "detected" ? "Spotted by KBC" : "Your goal"} · started {longDate(goal.created_on)}
             {goal.target_date ? ` · target ${longDate(goal.target_date)}` : ""}
@@ -209,7 +210,7 @@ export default function JourneySheet({ goal, busy, onReview, onReset, onPassport
       {goal.evidence.length > 0 && (
         <div className="eco-evidence small">
           <div className="eco-evidence-h">Why this goal</div>
-          <ul>{goal.evidence.map((e, i) => <li key={i}>{e}</li>)}</ul>
+          <ul>{goal.evidence.map((e, i) => <li key={i}><MaskedText text={e} /></li>)}</ul>
         </div>
       )}
       <div className="eco-journey-foot">

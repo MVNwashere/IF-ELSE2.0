@@ -2,6 +2,7 @@
 // vetted partners you can pick from (ranked by results, not by fee) and what KBC earns if you go ahead.
 import { useState } from "react";
 import { addDays, longDate } from "../format";
+import { MaskedText } from "../privacy";
 import Sheet from "../ui/Sheet";
 import { KindBadge, ProductChips } from "./bits";
 import type { PartnerOption, Step } from "./types";
@@ -63,7 +64,7 @@ export default function ConsentSheet({ step, asOf, busy, onApprove, onDecline, o
             <b>{p.name}</b>
             <KindBadge provider={p} />
           </div>
-          <p>{step.title}. {step.description}</p>
+          <p><MaskedText text={`${step.title}. ${step.description}`} /></p>
           <ProductChips products={step.products} />
         </div>
 
@@ -117,7 +118,7 @@ export default function ConsentSheet({ step, asOf, busy, onApprove, onDecline, o
           {p.integration && <div className="eco-integration">Connected via {p.integration}</div>}
         </div>
 
-        {step.why_this_provider && <p className="eco-whyp">Why {step.provider.name}: {step.why_this_provider}</p>}
+        {step.why_this_provider && <p className="eco-whyp">Why {step.provider.name}: <MaskedText text={step.why_this_provider} /></p>}
 
         <div className="eco-consent-actions">
           <button type="button" className="btn-primary" disabled={busy}

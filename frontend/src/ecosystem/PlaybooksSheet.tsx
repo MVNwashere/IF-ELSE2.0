@@ -1,4 +1,5 @@
 // State a goal yourself: every playbook KBC can orchestrate.
+import { MaskedText } from "../privacy";
 import Sheet from "../ui/Sheet";
 import type { Goal, PlaybookSummary } from "./types";
 
@@ -22,7 +23,7 @@ export default function PlaybooksSheet({ playbooks, goals, busy, onStart, onOpen
             <span className="eco-goal-icon" aria-hidden="true">{p.icon}</span>
             <div className="gallery-text">
               <b>{p.title}</b>
-              <span>{p.tagline}</span>
+              <span><MaskedText text={p.tagline} /></span>
               <span>{p.steps} steps · {p.ecosystems.join(", ")}</span>
             </div>
             {existing

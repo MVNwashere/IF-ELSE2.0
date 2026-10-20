@@ -1,8 +1,9 @@
-import { useEur } from "../privacy";
+import { maskFrac, MASK_PCT, useEur, useMasked } from "../privacy";
 import { num, str, type SectionProps } from "./types";
 
 export default function SavingsGoal({ props }: SectionProps) {
   const eur = useEur();
+  const masked = useMasked();
   const label = str(props.goal_label, "Savings");
   const saved = num(props.saved_eur);
   const target = num(props.target_eur);
@@ -17,10 +18,10 @@ export default function SavingsGoal({ props }: SectionProps) {
           <circle cx="32" cy="32" r={r} fill="none" stroke="var(--border)" strokeWidth="7" />
           <circle
             cx="32" cy="32" r={r} fill="none" stroke="var(--primary)" strokeWidth="7" strokeLinecap="round"
-            strokeDasharray={c} strokeDashoffset={c * (1 - ratio)} transform="rotate(-90 32 32)"
+            strokeDasharray={c} strokeDashoffset={c * (1 - maskFrac(ratio, masked))} transform="rotate(-90 32 32)"
             style={{ transition: "stroke-dashoffset .6s ease" }}
           />
-          <text x="32" y="36" textAnchor="middle" fontSize="13" fontWeight="800" fill="var(--text)">{Math.round(ratio * 100)}%</text>
+          <text x="32" y="36" textAnchor="middle" fontSize="13" fontWeight="800" fill="var(--text)">{masked ? MASK_PCT : `${Math.round(ratio * 100)}%`}</text>
         </svg>
         <div>
           <div className="big" style={{ fontSize: "1.2em" }}>{eur(saved)}</div>
