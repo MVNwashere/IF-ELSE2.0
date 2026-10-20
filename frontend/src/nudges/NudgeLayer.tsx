@@ -4,6 +4,7 @@
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NAV_ICONS } from "../components/icons";
+import { MaskedText } from "../privacy";
 import Sheet from "../ui/Sheet";
 import type { Banner, Nudge } from "./types";
 import { TIER_LABEL } from "./types";
@@ -119,9 +120,9 @@ function NudgeBanner({ banner, reduceMotion, onRun, onAck, onInbox, onDone }: Ba
         onPointerLeave={clearPress}
         onContextMenu={(e) => { e.preventDefault(); setMenu(true); }}
       >
-        <b>{title}</b>
-        <span className="nudge-why">{why}</span>
-        <span className="nudge-cta">{single ? single.action.label : "Open Kate's inbox"} →</span>
+        <b><MaskedText text={title} /></b>
+        <span className="nudge-why"><MaskedText text={why} /></span>
+        <span className="nudge-cta"><MaskedText text={single ? single.action.label : "Open Kate's inbox"} /> →</span>
       </button>
       <AnimatePresence>
         {menu && (
@@ -152,19 +153,19 @@ function InboxItem({ n, onRun, onAck }: { n: Nudge; onRun: (n: Nudge) => void; o
         <span className="nudge-time">{when(n.delivered_at)}</span>
         {n.status !== "new" && <span className="nudge-status">{n.status}</span>}
       </div>
-      <b>{n.title}</b>
-      <p>{n.why}</p>
+      <b><MaskedText text={n.title} /></b>
+      <p><MaskedText text={n.why} /></p>
       {n.evidence.length > 0 && (
         <details className="nudge-evidence">
           <summary>Why now?</summary>
-          <ul>{n.evidence.map((e, i) => <li key={i}>{e}</li>)}</ul>
+          <ul>{n.evidence.map((e, i) => <li key={i}><MaskedText text={e} /></li>)}</ul>
         </details>
       )}
       <div className="nudge-item-foot">
         <span className="nudge-channel">{channelLine(n)}</span>
       </div>
       <div className="nudge-item-actions">
-        <button type="button" className="btn-primary small" onClick={() => onRun(n)}>{n.action.label}</button>
+        <button type="button" className="btn-primary small" onClick={() => onRun(n)}><MaskedText text={n.action.label} /></button>
         {n.status === "new" && <button type="button" className="link" onClick={() => onAck(n, "dismissed")}>Not now</button>}
         {n.mutable && n.status !== "muted" && <button type="button" className="link" onClick={() => onAck(n, "mute")}>Mute topic</button>}
       </div>

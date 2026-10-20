@@ -1,7 +1,7 @@
 // Balance curve on the blue tile. Touch or hover to read the balance on any day.
 import { useState, type PointerEvent } from "react";
 import { shortDate } from "../format";
-import { useEur } from "../privacy";
+import { maskSeries, useEur, useMasked } from "../privacy";
 import type { Point } from "./history";
 
 const W = 330;
@@ -10,16 +10,18 @@ const PAD = 4;
 
 export default function BalanceChart({ points }: { points: Point[] }) {
   const eur = useEur();
+  const masked = useMasked();
   const [hover, setHover] = useState<number | null>(null);
   if (points.length < 2) return null;
 
   const last = points.length - 1;
-  const values = points.map((p) => p.balance_eur);
+  // Hidden amounts: a flat line, so the curve can't give the balance history away.
+  const values = maskSeries(points.map((p) => p.balance_eur), masked);
   const min = Math.min(...values);
   const span = Math.max(...values) - min || 1;
-  const xy = points.map((p, i) => ({
+  const xy = values.map((v, i) => ({
     x: PAD + (i / last) * (W - PAD * 2),
-    y: H - PAD - ((p.balance_eur - min) / span) * (H - PAD * 2 - 8),
+    y: masked ? H / 2 : H - PAD - ((v - min) / span) * (H - PAD * 2 - 8),
   }));
   const line = xy.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const area = `M${xy[0].x.toFixed(1)},${H} L${line} L${xy[last].x.toFixed(1)},${H} Z`;

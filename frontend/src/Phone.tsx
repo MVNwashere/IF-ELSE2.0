@@ -10,7 +10,7 @@ import { NAV_ICONS } from "./components/icons";
 import { resolve } from "./components/registry";
 import type { SectionCtx } from "./components/types";
 import { FEED_PERSONA_LABEL, longDate, PERSONA_LABEL, pct } from "./format";
-import { PrivacyContext } from "./privacy";
+import { maskText, PrivacyContext } from "./privacy";
 import { greeting, themeVars } from "./theme";
 import GallerySheet from "./ui/GallerySheet";
 import KateSheet, { useKateChat } from "./ui/KateSheet";
@@ -79,6 +79,12 @@ export default function Phone(p: Props) {
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [revealed, setRevealed] = useState(false);
   const phoneRef = useRef<HTMLDivElement>(null);
+  // Turning "Hide amounts" off and on again must start masked: a reveal never outlives a privacy change.
+  const [privacyWas, setPrivacyWas] = useState(theme.privacy);
+  if (privacyWas !== theme.privacy) {
+    setPrivacyWas(theme.privacy);
+    setRevealed(false);
+  }
   const masked = theme.privacy && !revealed;
 
   // Reveal masked amounts for a few seconds.
@@ -273,7 +279,7 @@ export default function Phone(p: Props) {
                     exit={{ opacity: 0, height: 0 }}
                   >
                     <div><b>Composed for:</b> {mix}</div>
-                    {themeExplain && <div>{themeExplain}</div>}
+                    {themeExplain && <div>{maskText(themeExplain, masked)}</div>}
                     {theme.overrides.length > 0 && <div><b>You chose:</b> {theme.overrides.join(", ").replace(/_/g, " ")}</div>}
                     <div style={{ opacity: .8 }}>theme: {theme.density} · {theme.tone} · {theme.contrast} contrast · {theme.appearance}{theme.accent ? ` · ${theme.accent}` : ""}</div>
                   </motion.div>
@@ -337,7 +343,7 @@ export default function Phone(p: Props) {
                           {tappable && <span className="hero-chevron" aria-hidden="true"><ChevronRight /></span>}
                           {explain && (
                             <div className="explain-badge">
-                              <span>{why ?? `${s.component}: no explanation provided.`}</span>
+                              <span>{why ? maskText(why, masked) : `${s.component}: no explanation provided.`}</span>
                               {s.component !== "ForYouFeed" && s.size !== "hero" && (
                                 <span className="tools">
                                   <button type="button" title="Pin this section" onClick={() => p.onLayoutPref(s.component, "pinned")}>📌</button>

@@ -128,12 +128,26 @@ export class ApiError extends Error {
   constructor(status: number, message: string) { super(message); this.status = status; }
 }
 
+// Every request belongs to the session that sent it. Logging out or switching customer aborts whatever is still in
+// flight, so a late response for the previous customer can never render for the next one.
+let sessionAbort = new AbortController();
+
+export function abortSessionRequests(): void {
+  sessionAbort.abort();
+  sessionAbort = new AbortController();
+}
+
+export function isAbort(e: unknown): boolean {
+  return e instanceof DOMException && e.name === "AbortError";
+}
+
 export async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
     credentials: "same-origin",
+    signal: sessionAbort.signal,
   });
   if (!res.ok) {
     let detail = res.statusText;

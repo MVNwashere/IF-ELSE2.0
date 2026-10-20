@@ -5,6 +5,13 @@ The goal and context are in [CLAUDE.md](../CLAUDE.md).
 
 ## 2026-10-20
 
+- **Aikido scan remediated** (branch `security/aikido-remediation`). starlette ≥ 1.0.1 (FastAPI ≥ 0.135) plus
+  `TrustedHostMiddleware` (set `ALLOWED_HOSTS` to demo from another device). The login limiter is keyed on
+  (IP, username) plus a looser per-IP limit, is bounded and atomic, and only counts failures. Unknown users run a dummy
+  hash verify. The Kate limiter is atomic. Customer State snapshot dates are clamped and capped at 64 per customer.
+  Restricted transactions stay out of the category profile. Hidden hero tiles are honoured. The demo password is no
+  longer printed. The frontend privacy mask is centralised and state is cleared on account switch. Tests are in
+  `tests/test_security.py`. (Henri)
 - **Decision: hero journey = Lotte goes freelance, told as a life timeline from today (20 Oct 2026) forward.**
   A KBC mentor advised against the house journey because KBC already covers house buying. Entrepreneurship is a
   suggested domain, and the pain (regularisation of social contributions, Peppol, VAT) comes later, which fits "before

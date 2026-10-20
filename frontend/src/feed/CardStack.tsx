@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Card as CardT, Decision } from "../api";
-import { maskText, useEur, useMasked } from "../privacy";
+import { maskText, MASK_PCT, useEur, useMasked } from "../privacy";
 import Sheet from "../ui/Sheet";
 import { ProductChips } from "../ecosystem/bits";
 import type { ProductRef } from "../ecosystem/types";
@@ -76,13 +76,13 @@ export default function CardStack({ cards, caughtUp, hiddenCount, asOf, onFeedba
             {(() => {
               const full = cards.find((c) => c.card_key === active.card?.card_key);
               return full?.cta?.action === "start_goal" && typeof full.details?.playbook_id === "string" ? (
-                <button type="button" className="btn-primary" onClick={() => { setActive(null); onCta("start_goal", full); }}>{full.cta.label}</button>
+                <button type="button" className="btn-primary" onClick={() => { setActive(null); onCta("start_goal", full); }}>{maskText(full.cta.label, masked)}</button>
               ) : null;
             })()}
             {Array.isArray(metrics) && metrics.length > 0 && (
               <div className="feed-detail-metrics">
                 {(metrics as { label: string; value: number }[]).map((row, i) => (
-                  <div key={`${row.label}-${i}`}><span>{row.label}</span><b>{active.card?.details.metric_unit === "%" ? `${row.value}%` : active.card?.details.metric_unit === "months" ? `${row.value} months` : eur(row.value)}</b></div>
+                  <div key={`${row.label}-${i}`}><span>{row.label}</span><b>{active.card?.details.metric_unit === "%" ? (masked ? MASK_PCT : `${row.value}%`) : active.card?.details.metric_unit === "months" ? `${masked ? "••" : row.value} months` : eur(row.value)}</b></div>
                 ))}
               </div>
             )}
@@ -97,7 +97,7 @@ export default function CardStack({ cards, caughtUp, hiddenCount, asOf, onFeedba
                 monthsToTarget === 0 ? "Target already covered" : `About ${monthsToTarget} months to reach this target`}</strong>
               <small>Estimate only. No transfer is scheduled.</small>
             </div>)}
-            {typeof active.card?.details.methodology === "string" && <p>{active.card.details.methodology}</p>}
+            {typeof active.card?.details.methodology === "string" && <p>{maskText(active.card.details.methodology, masked)}</p>}
             {active.card?.evidence.length ? <>
               <h3>Why you're seeing this</h3>
               <ul>{active.card.evidence.map((line, i) => <li key={i}>{maskText(line, masked)}</li>)}</ul>
@@ -110,7 +110,7 @@ export default function CardStack({ cards, caughtUp, hiddenCount, asOf, onFeedba
                     const card = cards.find((c) => c.card_type === item.card_type);
                     setActive(card ? { title: card.title, body: card.body, card } :
                       { title: item.title, body: item.body, card: item });
-                  }}>{item.title} <span aria-hidden="true">→</span></button>
+                  }}>{maskText(item.title, masked)} <span aria-hidden="true">→</span></button>
                 ))}
               </div>
             </>}

@@ -1,11 +1,12 @@
 import { categoryLabel } from "../format";
-import { useEur } from "../privacy";
+import { maskFrac, useEur, useMasked } from "../privacy";
 import { arr, num, str, type SectionProps } from "./types";
 
 interface Cat { category: string; eur: number }
 
 export default function FamilyBudgetHero({ props }: SectionProps) {
   const eur = useEur();
+  const masked = useMasked();
   const month = str(props.month_label, "This month");
   const income = num(props.month_income_eur);
   const spent = num(props.month_spent_eur);
@@ -24,7 +25,7 @@ export default function FamilyBudgetHero({ props }: SectionProps) {
           : <>{eur(budget - spent)} <span style={{ fontSize: ".45em", fontWeight: 600 }}>to go</span></>}
       </div>
       <div className="line">{eur(spent)} spent of {eur(budget)} · {eur(income)} in so far</div>
-      <div className="bar"><i style={{ width: `${ratio * 100}%` }} /></div>
+      <div className="bar"><i style={{ width: `${maskFrac(ratio, masked) * 100}%` }} /></div>
       <div className="kv">
         <div>Child benefit<b>{eur(childBenefit)}</b></div>
         <div>Childcare<b>{eur(childcare)}</b></div>

@@ -793,8 +793,10 @@ def plan_gallery(scores: dict[str, float], reasons: dict[str, str], order: list[
             continue
         state = "shown" if comp in order else "hidden" if comp in hidden else "available"
         label, desc = TILE_LABEL[comp]
+        # a hidden tile's reason can quote the data the customer chose to hide
+        reason = "" if state == "hidden" else _explain(comp, ctx, reasons, False)
         items.append(GalleryItem(component=comp, label=label, description=desc,
-                                 reason=_explain(comp, ctx, reasons, False), score=round(scores[comp], 3),
+                                 reason=reason, score=round(scores[comp], 3),
                                  state=state, is_hero=comp in HERO_COMPONENTS))
     for item in [i for i in items if i.state == "available"][:3]:
         item.suggested = True
@@ -829,8 +831,10 @@ def plan_home_layout(
                    and p.component not in hidden]
     pinned_names = {p.component for p in pinned_rest}
 
-    # 1. hero: the customer's pinned one, else the best-scoring
-    hero = pinned_hero or max(HERO_COMPONENTS, key=lambda h: (scores[h], -HERO_COMPONENTS.index(h)))
+    # 1. hero: the customer's pinned one, else the best-scoring one they haven't hidden
+    #    (there is always a main tile, so if every hero is hidden the best one still shows)
+    heroes = [h for h in HERO_COMPONENTS if h not in hidden] or list(HERO_COMPONENTS)
+    hero = pinned_hero or max(heroes, key=lambda h: (scores[h], -HERO_COMPONENTS.index(h)))
     # 2. feed right after; pinned tiles keep their slots and the best of the rest fills the gaps
     budget = max(DENSITY_BUDGET[theme["density"]], 2 + len(pinned_rest))
     candidates = [

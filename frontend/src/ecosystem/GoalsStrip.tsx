@@ -1,6 +1,7 @@
 // Top of the home: active goals (tap → journey) and what KBC noticed (explainable, nothing happens until Start).
 import { AnimatePresence, motion } from "framer-motion";
 import { pct } from "../format";
+import { MaskedText } from "../privacy";
 import { ProgressRing, useWinLine } from "./bits";
 import type { Goal, GoalCandidate, GoalsResponse } from "./types";
 
@@ -22,7 +23,7 @@ function GoalTile({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
     <button type="button" className="eco-goal" onClick={onOpen}>
       <span className="eco-goal-icon" aria-hidden="true">{goal.icon}</span>
       <span className="eco-goal-text">
-        <b>{goal.title}</b>
+        <b><MaskedText text={goal.title} /></b>
         <span>{goal.status === "completed" ? "Completed 🎉" : `${goal.progress.done} of ${goal.progress.total} steps done`}</span>
         {next && (
           <span className={`eco-next ${waiting ? "waiting" : ""}`}>
@@ -44,11 +45,11 @@ function CandidateCard({ c, busy, onStart, onHide }: { c: GoalCandidate; busy: b
         <span className="eco-noticed">KBC noticed…</span>
         <span className="eco-conf" title="How sure KBC is about this">{pct(c.confidence)} sure</span>
       </div>
-      <h3><span aria-hidden="true">{c.icon}</span> {c.title}</h3>
-      <p className="eco-why">{c.why_now}</p>
+      <h3><span aria-hidden="true">{c.icon}</span> <MaskedText text={c.title} /></h3>
+      <p className="eco-why"><MaskedText text={c.why_now} /></p>
       <div className="eco-evidence">
         <div className="eco-evidence-h">Why we think so</div>
-        <ul>{c.evidence.map((e, i) => <li key={i}>{e}</li>)}</ul>
+        <ul>{c.evidence.map((e, i) => <li key={i}><MaskedText text={e} /></li>)}</ul>
       </div>
       {c.partners_preview.length > 0 && (
         <div className="eco-chips">

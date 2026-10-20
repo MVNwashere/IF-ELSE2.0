@@ -11,12 +11,12 @@ import datetime as dt
 import os
 import threading
 import time
-from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from . import auth, db
 from .auth import Principal
@@ -43,6 +43,9 @@ SYNTH_SEED = int(os.environ.get("SYNTH_SEED", "42"))
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "0") == "1"
 PORTFOLIO_SIZE = 2_300_000
 KATE_MAX_PER_MINUTE = 30
+# Comma-separated Host header allow-list; add the real hostname(s) when deploying.
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
+                 if h.strip()]
 # The synthetic dataset's reference "today". Time travel is clamped to [first transaction, DEMO_TODAY].
 DEMO_TODAY = dt.date.fromisoformat(os.environ.get("DEMO_TODAY", "2026-10-20"))
 
@@ -71,6 +74,7 @@ app = FastAPI(title="KBC Adaptive Home", lifespan=lifespan, docs_url=None, redoc
 app.include_router(customer_state_router)
 app.include_router(ecosystem_router)
 app.include_router(nudges_router)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 
 @app.middleware("http")
@@ -80,6 +84,7 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Cache-Control"] = "no-store"
+    response.headers["Vary"] = "Cookie"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
@@ -134,17 +139,13 @@ def _pin(conn, customer_id: int, component: str, at: dt.date, position: int | No
     db.set_layout_pref(conn, customer_id, component, "pinned", at, position)
 
 
-_kate_calls: dict[int, deque] = defaultdict(deque)
+_kate_limiter = auth.SlidingWindowLimiter(KATE_MAX_PER_MINUTE, 60)
 
 
 def _kate_rate_limit(user_id: int) -> None:
-    now = time.time()
-    q = _kate_calls[user_id]
-    while q and q[0] < now - 60:
-        q.popleft()
-    if len(q) >= KATE_MAX_PER_MINUTE:
+    # atomic check-and-count, before any of Kate's work
+    if _kate_limiter.hit(user_id) is None:
         raise HTTPException(status_code=429, detail="Kate needs a breather, try again in a minute")
-    q.append(now)
 
 
 def _as_of_param(as_of: dt.date | None = Query(default=None)) -> dt.date | None:
@@ -159,14 +160,8 @@ def _as_of_param(as_of: dt.date | None = Query(default=None)) -> dt.date | None:
 @app.post("/api/login", response_model=LoginResponse)
 def login(body: LoginRequest, request: Request, response: Response) -> LoginResponse:
     ip = request.client.host if request.client else "unknown"
-    auth.check_rate_limit(f"u:{body.username}")
-    auth.check_rate_limit(f"ip:{ip}")
     with db.tx() as conn:
-        row = db.get_user(conn, body.username)
-    if not row or not auth.verify_password(body.password, row["password_hash"]):
-        auth.record_attempt(f"u:{body.username}")
-        auth.record_attempt(f"ip:{ip}")
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        row = auth.authenticate(conn, body.username, body.password, ip)
     auth.set_session_cookie(response, auth.make_session(row["id"], row["role"]), secure=COOKIE_SECURE)
     return LoginResponse(role=row["role"], username=row["username"])
 
