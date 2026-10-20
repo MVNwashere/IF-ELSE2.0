@@ -1,6 +1,7 @@
 // Self-contained fixtures and browser-local state. No runtime API requests.
 import customersJson from '../demo-data/customers.json';
 import { ApiError } from '../api';
+import { JURY, renameForJury } from '../jury/mode';
 import type { Component, DeclaredSignalRow, HomeResponse, LoginResponse, Section, StylePrefs, TileGridPrefs, TimelineResponse } from '../api';
 import type { ConsentGrant, EventRow, Goal, GoalsResponse, SourceView, SourcesResponse } from '../ecosystem/types';
 import type { NudgeAck, NudgesResponse } from '../nudges/types';
@@ -18,7 +19,7 @@ export interface CustomerFixture {
   results: Record<string, string>; sources: SourcesResponse;
   source_values: Record<string, Record<string, string | number>>; tiles: Record<Component, Section>;
 }
-export const fixtures = customersJson as unknown as Record<CustomerName, CustomerFixture>;
+export const fixtures = (JURY ? renameForJury(customersJson) : customersJson) as unknown as Record<CustomerName, CustomerFixture>;
 export interface LocalCustomer {
   tileGrid?: TileGridPrefs;
   style: StylePrefs | null; consent: boolean | null;
@@ -47,8 +48,15 @@ function load(): SavedState {
   return fresh();
 }
 export const saved = load();
+const listeners = new Set<() => void>();
+/** Runs after every save, so a view of the demo state (the jury guide) can follow along. */
+export function subscribe(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => { listeners.delete(fn); };
+}
 export function persist(): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch { /* Still usable without storage. */ }
+  listeners.forEach((fn) => fn());
 }
 export function copy<T>(value: T): T { return structuredClone(value); }
 export async function reply<T>(value: T): Promise<T> { return copy(value); }

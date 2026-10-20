@@ -8,8 +8,11 @@ import type {
 import { localData } from "./demo/data";
 import { localProfile } from "./demo/profile";
 
-export const MOCK = typeof window !== "undefined" &&
-  (new URLSearchParams(window.location.search).get("mock") === "1" || import.meta.env.MODE === "mock");
+import { JURY } from "./jury/mode";
+
+export { JURY };
+export const MOCK = JURY || (typeof window !== "undefined" &&
+  (new URLSearchParams(window.location.search).get("mock") === "1" || import.meta.env.MODE === "mock"));
 
 const apiData: typeof localData = {
   login: (username: string, password: string) => api.login(username, password),

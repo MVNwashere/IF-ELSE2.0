@@ -1,0 +1,73 @@
+/* Jury mode: the app on a real phone. The phone frame becomes the screen; on a wide screen it stays a centred column. */
+.jury-stage {
+  position: relative; width: 100%; max-width: 480px; height: 100vh; height: 100dvh; margin: 0 auto; overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.jury-stage .phone-bezel { width: 100%; height: 100%; border-radius: 0; padding: 0; background: none; box-shadow: none; }
+.jury-stage .phone-bezel::before { display: none; }
+.jury-stage .phone { border-radius: 0; }
+.jury-stage .phone-top { padding-top: calc(14px + env(safe-area-inset-top)); }
+.jury-stage .bottom-nav { height: calc(74px + env(safe-area-inset-bottom)); padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+.jury-stage .phone-scroll { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+.jury-stage .toast { bottom: calc(96px + env(safe-area-inset-bottom)); }
+/* iOS zooms into any focused field under 16px */
+.jury-stage input, .jury-stage textarea, .jury-stage select { font-size: max(16px, 1em); }
+
+/* ------------------------------------------------------------------ picker */
+.jury-picker {
+  height: 100%; display: flex; flex-direction: column; gap: 22px; overflow-y: auto;
+  padding: calc(28px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+  background: linear-gradient(170deg, #0d6fb8 0%, #08508a 100%); color: #fff;
+}
+.jury-brand { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; opacity: .8; }
+.jury-picker h1 { margin-top: 8px; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spacing: -.03em; }
+.jury-picker header p { margin-top: 10px; font-size: 15px; line-height: 1.45; opacity: .9; }
+.jury-personas { display: flex; flex-direction: column; gap: 10px; }
+.jury-personas button {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px; text-align: left; color: #fff;
+  border: 1px solid rgba(255,255,255,.28); border-radius: 18px; background: rgba(255,255,255,.12);
+}
+.jury-personas button:active { background: rgba(255,255,255,.24); }
+.jury-personas button:disabled { opacity: .7; }
+.jury-personas button > span:last-child { display: flex; flex-direction: column; gap: 3px; }
+.jury-personas b { font-size: 17px; }
+.jury-personas button > span:last-child > span { font-size: 14px; line-height: 1.35; opacity: .88; }
+.jury-avatar {
+  flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center;
+  background: #fff; color: #0d6fb8; font-size: 20px; font-weight: 800;
+}
+.jury-error { background: rgba(153,27,27,.55); padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+.jury-picker footer { margin-top: auto; font-size: 12px; opacity: .75; text-align: center; }
+
+/* ------------------------------------------------------------------ guide */
+.jury-pill {
+  position: absolute; z-index: 90; left: 50%; transform: translateX(-50%); top: calc(10px + env(safe-area-inset-top));
+  padding: 6px 12px; border: none; border-radius: 999px; background: #0f172a; color: #fff;
+  font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.jury-guide {
+  position: absolute; z-index: 90; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom));
+  padding: 16px; border-radius: 20px; background: #0f172a; color: #fff; box-shadow: 0 18px 50px rgba(0,0,0,.45);
+  font-size: 14px; animation: jury-in .25s ease-out;
+}
+@keyframes jury-in { from { opacity: 0; transform: translateY(12px); } }
+.jury-guide-head { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+.jury-x { width: 32px; height: 32px; border: none; border-radius: 50%; background: rgba(255,255,255,.1); color: #fff; }
+.jury-done { margin-top: 8px; line-height: 1.45; color: #cbd5e1; }
+.jury-guide ol { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.jury-guide li { display: flex; gap: 10px; align-items: flex-start; color: #94a3b8; }
+.jury-guide li > span:last-child { display: flex; flex-direction: column; gap: 3px; }
+.jury-guide li > span:last-child > span { color: #e2e8f0; line-height: 1.4; }
+.jury-guide li.next, .jury-guide li.done { color: #fff; }
+.jury-check {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #475569;
+  display: grid; place-items: center; font-size: 12px; font-weight: 800;
+}
+.jury-guide li.next .jury-check { border-color: #00a3e0; }
+.jury-guide li.done .jury-check { border-color: #16a34a; background: #16a34a; color: #fff; }
+.jury-actions { display: flex; gap: 8px; margin-top: 14px; }
+.jury-actions button {
+  flex: 1; padding: 10px 8px; border: 1px solid #334155; border-radius: 12px; background: none; color: #fff;
+  font-size: 13px; font-weight: 700;
+}
+.jury-actions .jury-go { border-color: #0d6fb8; background: #0d6fb8; }
