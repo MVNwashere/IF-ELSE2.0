@@ -13,8 +13,8 @@ test('a judge picks a person and the guide follows the full loop', async ({ page
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/?jury=1');
   await expect(page.locator('.panel')).toHaveCount(0);
-  await page.getByRole('button', { name: /Lotte, 27/ }).click();
-  await expect(page.locator('.phone h1')).toContainText('Lotte');
+  await page.getByRole('button', { name: /Juliette, 26/ }).click();
+  await expect(page.locator('.phone h1')).toContainText('Juliette');
   const guide = page.getByRole('dialog', { name: 'Demo guide' });
   await expect(guide).toContainText('Start as a freelancer');
   await page.getByRole('button', { name: "Let's go" }).click();
@@ -36,13 +36,15 @@ test('a judge picks a person and the guide follows the full loop', async ({ page
   await page.getByRole('button', { name: 'Make the text bigger' }).first().click();
   await page.getByRole('button', { name: 'Use large text' }).click();
   await expect(guide).toContainText("That's the full loop");
+  await expect(page.locator('.phone')).toContainText('Juliette');
+  await expect(page.locator('body')).not.toContainText('Lotte');
 
-  // Another person keeps Lotte's progress; restart wipes it.
+  // Another person keeps Juliette's progress; restart wipes it.
   await guide.getByRole('button', { name: 'Another person' }).click();
-  await page.getByRole('button', { name: /Lotte, 27/ }).click();
+  await page.getByRole('button', { name: /Juliette, 26/ }).click();
   await expect(guide).toContainText("That's the full loop");
   await guide.getByRole('button', { name: 'Restart' }).click();
-  await page.getByRole('button', { name: /Lotte, 27/ }).click();
+  await page.getByRole('button', { name: /Juliette, 26/ }).click();
   await expect(guide.locator('li.done')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

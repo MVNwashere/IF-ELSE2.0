@@ -62,8 +62,8 @@ choices saved in the browser. `npm test` runs the Playwright UI tests against th
 
 Jury demo (for the pitch QR code): `npm run build:jury` writes a static site to `frontend/dist-jury/` that runs on the
 demo engine with no backend, so it can go on any static host (Netlify, Vercel, GitHub Pages; relative asset paths, so a
-subfolder works too). It shows the phone app full screen on the judge's own phone: pick Lotte, Sara, Jan or Marc
-instead of logging in, and a three-step guide follows their progress (start a goal, approve a partner, let Kate change
+subfolder works too). It shows the phone app full screen on the judge's own phone: pick Juliette (the pitch's
+freelancer; Lotte's fixture under her name), Sara, Jan or Marc instead of logging in, and a three-step guide follows their progress (start a goal, approve a partner, let Kate change
 the home). Each phone keeps its own state; Restart wipes it. Try it locally with `npm run dev:jury` (port 5176, also
 reachable from a phone on the same Wi-Fi), or add `?jury=1` to any URL.
 

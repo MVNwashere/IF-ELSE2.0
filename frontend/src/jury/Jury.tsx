@@ -5,7 +5,7 @@ import { fixtures, saved, STORAGE_KEY, subscribe, type CustomerName } from "../d
 import "./jury.css";
 
 const PERSONAS: { username: CustomerName; name: string; age: string; story: string }[] = [
-  { username: "lotte", name: "Lotte", age: "27", story: "Just went freelance. Her first client paid on 16 October." },
+  { username: "lotte", name: "Juliette", age: "26", story: "Going freelance. Her first client just paid, and KBC noticed." },
   { username: "sara", name: "Sara", age: "34", story: "Freelancer and young mother. Her car insurance renews in 12 days." },
   { username: "jan", name: "Jan", age: "71", story: "Retired. A calm, large layout and a scam shield." },
   { username: "marc", name: "Marc", age: "52", story: "Investor, thinking about retirement and a long trip." },

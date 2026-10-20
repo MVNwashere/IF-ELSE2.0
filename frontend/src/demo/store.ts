@@ -1,6 +1,7 @@
 // Self-contained fixtures and browser-local state. No runtime API requests.
 import customersJson from '../demo-data/customers.json';
 import { ApiError } from '../api';
+import { JURY, renameForJury } from '../jury/mode';
 import type { Component, DeclaredSignalRow, HomeResponse, LoginResponse, Section, StylePrefs, TileGridPrefs, TimelineResponse } from '../api';
 import type { ConsentGrant, EventRow, Goal, GoalsResponse, SourceView, SourcesResponse } from '../ecosystem/types';
 import type { NudgeAck, NudgesResponse } from '../nudges/types';
@@ -18,7 +19,7 @@ export interface CustomerFixture {
   results: Record<string, string>; sources: SourcesResponse;
   source_values: Record<string, Record<string, string | number>>; tiles: Record<Component, Section>;
 }
-export const fixtures = customersJson as unknown as Record<CustomerName, CustomerFixture>;
+export const fixtures = (JURY ? renameForJury(customersJson) : customersJson) as unknown as Record<CustomerName, CustomerFixture>;
 export interface LocalCustomer {
   tileGrid?: TileGridPrefs;
   style: StylePrefs | null; consent: boolean | null;

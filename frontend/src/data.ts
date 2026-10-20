@@ -8,10 +8,9 @@ import type {
 import { localData } from "./demo/data";
 import { localProfile } from "./demo/profile";
 
-/** Jury mode: the phone app full screen on a judge's own phone, on the demo engine (?jury=1 or `--mode jury`). */
-export const JURY = typeof window !== "undefined" &&
-  (new URLSearchParams(window.location.search).get("jury") === "1" || import.meta.env.MODE === "jury");
+import { JURY } from "./jury/mode";
 
+export { JURY };
 export const MOCK = JURY || (typeof window !== "undefined" &&
   (new URLSearchParams(window.location.search).get("mock") === "1" || import.meta.env.MODE === "mock"));
 
