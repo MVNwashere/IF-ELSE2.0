@@ -1,8 +1,9 @@
 // Thin layer over the API that switches to the mock fixture when the URL has ?mock=1.
 import { api } from "./api";
 import type {
-  CardType, Component, DeclaredSignal, Decision, HomeResponse, KateAction, KateReply, KateTurn, LayoutPrefState,
-  LoginResponse, Section, Size, StylePrefs, TimelineResponse,
+  CardType, Component, CorrectionKind, DeclaredSignal, Decision, FactValue, HomeResponse, KateAction, KateReply,
+  KateTurn, LayoutPrefState, LoginResponse, ProfileFactKey, ProfileField, ProfileResponse, Purpose, Section, Size,
+  StylePrefs, TimelineResponse,
 } from "./api";
 import mockHome from "../mock/home_sara.json";
 
@@ -164,6 +165,12 @@ function mockKate(message: string, cardKey: string | null, history: KateTurn[]):
   if (m.includes("hide") || m.includes("savings")) {
     return { reply: "I can hide your savings goal from the home screen. You can always bring it back.", actions: [action("hide_tile", "Hide Savings goal", { component: "SavingsGoal" })], quick_replies: [], source: "rules" };
   }
+  if (m.includes("know about me") || m.includes("my profile")) {
+    return { reply: "You told us about your work and family; from your transactions your home is built for a young family and freelance work. In your profile you can correct anything and decide what it's used for.", actions: [action("open_profile", "Open my profile")], quick_replies: ["Who has my data?"], source: "rules" };
+  }
+  if (m.includes("kids") || m.includes("children")) {
+    return { reply: "Thanks for telling me. Shall I save it to your profile? You can change or delete it any time.", actions: [action("update_profile", "Save: 2 children", { fact_key: "children", fact_value: 2 })], quick_replies: [], source: "rules" };
+  }
   if (m.includes("reset") || m.includes("auto")) {
     return { reply: "I can put all your style settings back to Auto.", actions: [action("reset_style", "Reset to Auto")], quick_replies: [], source: "rules" };
   }
@@ -177,6 +184,86 @@ function mockKate(message: string, cardKey: string | null, history: KateTurn[]):
     source: "rules",
   };
 }
+
+// ---- mock profile (?mock=1): a few fields, enough to click through the profile sheet ----
+const opts = (o: Record<string, string>) => Object.entries(o).map(([value, label]) => ({ value, label }));
+const mockField = (f: Pick<ProfileField, "key" | "label" | "category" | "kind" | "hint"> & Partial<ProfileField>): ProfileField =>
+  ({ options: [], min: null, max: null, used_for: ["Kate's answers", "your advisor"], value: null, value_label: null, source: null, updated_on: null, ...f });
+let mockProfile: ProfileResponse = {
+  as_of: fixture.as_of,
+  first_name: fixture.customer.first_name,
+  fields: [
+    mockField({ key: "partner", label: "Relationship", category: "household", kind: "enum", hint: "Shared costs and protection depend on it.", options: opts({ single: "single", partner: "living together", married: "married" }) }),
+    mockField({ key: "children", label: "Children living with you", category: "household", kind: "int", hint: "Your home shows family budget tools when you have children.", min: 0, max: 12, value: 1, value_label: "1 child", source: "kate", updated_on: fixture.as_of }),
+    mockField({ key: "employment", label: "Work", category: "work", kind: "enum", hint: "Freelancers see VAT and invoices.", options: opts({ employee: "an employee", self_employed: "self-employed", retired: "retired" }), value: "self_employed", value_label: "self-employed", source: "you", updated_on: fixture.as_of }),
+    mockField({ key: "avoid_topics", label: "No offers about", category: "contact", kind: "set", hint: "We hold back offers on these topics.", options: opts({ investing: "investing", insurance: "insurance", credit: "loans and credit" }) }),
+  ],
+  declared: [],
+  personas: fixture.persona_mix.map((p) => ({ persona: p.persona, label: p.persona.replace(/_/g, " "), weight_pct: Math.round(p.weight * 100), evidence: p.evidence, from_you: false })),
+  goals: [{ playbook_id: "buy_home", title: "Buy your first home", evidence: ["You pay rent every month", "Your savings grew steadily"] }],
+  corrections: [],
+  permissions: [
+    { purpose: "personalise_offers", label: "Offers based on my data", description: "KBC may use your transactions to pick the offers you see.", when_off: "Only service messages.", allowed: true },
+    { purpose: "detect_life_events", label: "Spot life changes from my transactions", description: "KBC may notice changes and suggest a plan.", when_off: "No goal suggestions.", allowed: true },
+    { purpose: "kate_memory", label: "Kate may remember what I tell her", description: "Kate offers to save what you tell her.", when_off: "Kate won't offer to save anything.", allowed: true },
+    { purpose: "kate_ai", label: "Kate may use an AI model", description: "Answers written by an AI model.", when_off: "Built-in rules only.", allowed: false },
+    { purpose: "advisor_view", label: "My advisor may see my profile", description: "Your advisor can see this page.", when_off: "Your advisor sees your products only.", allowed: true },
+  ],
+  data_access: { partners_with_access: 0, fields_shared: 0, sources_connected: 0 },
+};
+
+function mockFact(key: ProfileFactKey, value: FactValue | null, source: "you" | "kate" | null): ProfileResponse {
+  mockProfile = {
+    ...mockProfile,
+    fields: mockProfile.fields.map((f) => f.key !== key ? f : {
+      ...f, value, source, updated_on: value === null ? null : mockProfile.as_of,
+      value_label: value === null ? null : Array.isArray(value)
+        ? value.map((v) => f.options.find((o) => o.value === v)?.label ?? v).join(", ")
+        : f.options.find((o) => o.value === value)?.label ?? String(value),
+    }),
+  };
+  return mockProfile;
+}
+
+export const profileData = {
+  get(asOf?: string): Promise<ProfileResponse> {
+    return MOCK ? Promise.resolve(mockProfile) : api.profile(asOf);
+  },
+  setFact(key: ProfileFactKey, value: FactValue, via: "you" | "kate", asOf?: string): Promise<ProfileResponse> {
+    return MOCK ? Promise.resolve(mockFact(key, value, via)) : api.setFact(key, value, via, asOf);
+  },
+  deleteFact(key: ProfileFactKey, asOf?: string): Promise<ProfileResponse> {
+    return MOCK ? Promise.resolve(mockFact(key, null, null)) : api.deleteFact(key, asOf);
+  },
+  forgetKate(asOf?: string): Promise<ProfileResponse> {
+    if (MOCK) {
+      for (const f of mockProfile.fields) if (f.source === "kate") mockFact(f.key, null, null);
+      return Promise.resolve(mockProfile);
+    }
+    return api.forgetKate(asOf);
+  },
+  correction(kind: CorrectionKind, target: string, state: "set" | "clear", asOf?: string): Promise<ProfileResponse> {
+    if (MOCK) {
+      const rest = mockProfile.corrections.filter((c) => !(c.kind === kind && c.target === target));
+      const label = kind === "persona" ? `Not ${target.replace(/_/g, " ")}` : `Not interested: ${target.replace(/_/g, " ")}`;
+      mockProfile = {
+        ...mockProfile,
+        corrections: state === "set" ? [...rest, { kind, target, label, created_on: mockProfile.as_of }] : rest,
+        personas: kind === "persona" && state === "set" ? mockProfile.personas.filter((p) => p.persona !== target) : mockProfile.personas,
+        goals: kind === "goal" && state === "set" ? mockProfile.goals.filter((g) => g.playbook_id !== target) : mockProfile.goals,
+      };
+      return Promise.resolve(mockProfile);
+    }
+    return api.correction(kind, target, state, asOf);
+  },
+  permission(purpose: Purpose, allowed: boolean, asOf?: string): Promise<ProfileResponse> {
+    if (MOCK) {
+      mockProfile = { ...mockProfile, permissions: mockProfile.permissions.map((p) => (p.purpose === purpose ? { ...p, allowed } : p)) };
+      return Promise.resolve(mockProfile);
+    }
+    return api.permission(purpose, allowed, asOf);
+  },
+};
 
 export const data = {
   login(username: string, password: string): Promise<LoginResponse> {

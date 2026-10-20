@@ -133,8 +133,8 @@ numbers are optimistic because the rules and that data were written together.
   precision (18–44%); see [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md).
 - In Lotte's simulated future, goals, layout, Kate and outcomes follow the timeline, but the For You feed stays at
   today's data.
-- Kate's optional Gemini layer (`KATE_LLM=gemini`) is implemented but untested against the live API; Kate runs on
-  deterministic rules by default.
+- Kate's AI mode (`KATE_LLM=openrouter`) is tested with a scripted fake model, not yet against a live model. Without
+  it, or for customers who haven't allowed it, Kate runs on her rules.
 - Facts behind the freelance journey (social-contribution rates and minimums, advance-tax dates, the pension-savings
   ceiling, the Peppol mandate) are modelled from public rules and need checking before real use.
 - English only.

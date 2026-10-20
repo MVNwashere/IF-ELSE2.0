@@ -30,6 +30,9 @@ from .ecosystem.registry import registry
 from .ecosystem.signals import forecasts, upcoming_deadlines
 from .engine import kate, pipeline
 from .engine.persona import dominant
+from .profile import service as profile_service
+from .profile.api import router as profile_router
+from .profile.fields import avoided, offer_topics
 from .recommender.feed import recommend
 from .schemas import (
     HERO_COMPONENTS, AdvisorOverview, ConsentRequest, DeclareRequest, FeedbackRequest, FeedPersona, HomeResponse, KateReply,
@@ -75,6 +78,7 @@ app = FastAPI(title="KBC Takes Care", lifespan=lifespan, docs_url=None, redoc_ur
 app.include_router(customer_state_router)
 app.include_router(ecosystem_router)
 app.include_router(nudges_router)
+app.include_router(profile_router)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 
@@ -129,7 +133,19 @@ def _load_and_build(customer_id: int, as_of: dt.date | None, touch: bool = True)
         enrich_feed(home.feed, ecosystem_service.relevant_playbooks(conn, customer, txs, balance_today, effective,
                                                                prefs.declared))
         home.feed_personas = [FeedPersona.model_validate(persona) for persona in personas]
+    _hold_back_topics(home, avoided(prefs.facts))
     return home, features
+
+
+def _hold_back_topics(home: HomeResponse, topics: set[str]) -> None:
+    """"No offers about investing": tips and offers on a topic the customer opted out of leave the feed (counted as
+    hidden). Overview cards about their own contracts (core_*) and urgent alerts stay."""
+    if not topics:
+        return
+    kept = [c for c in home.feed.cards
+            if c.card_type.startswith("core_") or c.stage == "urgent" or not (offer_topics(c.title) & topics)]
+    home.feed.hidden_count += len(home.feed.cards) - len(kept)
+    home.feed.cards = kept
 
 
 def _home(customer_id: int, as_of: dt.date | None) -> HomeResponse:
@@ -277,8 +293,10 @@ def me_kate(body: KateRequest, as_of: dt.date | None = Depends(_as_of_param),
     with db.tx() as conn:
         goals = ecosystem_service.goals_response(conn, user.customer_id, features.as_of, home.declared)
         ctx = ecosystem_service.context_for(conn, user.customer_id, features.as_of)
+        profile = profile_service.build(conn, user.customer_id, features.as_of, persona_mix=home.persona_mix)
+        consents = ecosystem_service.consents(conn, user.customer_id, features.as_of)
     return kate.reply(home, features, body, goals=goals, deadlines=upcoming_deadlines(ctx, 100),
-                      forecasts=forecasts(ctx))
+                      forecasts=forecasts(ctx), profile=profile, consents=consents)
 
 
 @app.post("/api/me/consent", response_model=HomeResponse)

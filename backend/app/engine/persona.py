@@ -1,7 +1,8 @@
 """Features → persona mix (weights, not a label). Every weight carries plain-English evidence."""
 from __future__ import annotations
 
-from ..schemas import PERSONAS, DeclaredSignalRow, Features, Persona, PersonaWeight
+from ..profile.fields import phrase
+from ..schemas import PERSONAS, CorrectionRow, DeclaredSignalRow, Features, Persona, PersonaWeight, ProfileFactRow
 from .features import fmt_date, fmt_eur
 
 # ---- tuning knobs -----------------------------------------------------------------
@@ -33,6 +34,7 @@ SCORE = {                         # raw-score contributions, capped at 1.0 per p
     "retiree_pension": 0.8,
     "retiree_age": 0.5,
     "declared": 0.6,               # the customer told Kate (e.g. "we're expecting"): strong, but not absolute
+    "stated": 0.6,                 # a profile fact ("I'm self-employed"): as strong as a declared signal
 }
 DECLARED_PERSONA: dict[str, Persona] = {
     "expecting_baby": "young_family",
@@ -171,6 +173,37 @@ _SCORERS = {
 }
 
 
+# profile fact (key, value) → (persona, share of SCORE["stated"])
+STATED_PERSONA: dict[tuple[str, str], tuple[Persona, float]] = {
+    ("employment", "self_employed"): ("freelancer", 1.0),
+    ("employment", "employee_side_job"): ("freelancer", 0.5),
+    ("employment", "student"): ("student", 1.0),
+    ("employment", "retired"): ("retiree", 1.0),
+}
+
+
+def _stated(fact: ProfileFactRow) -> tuple[Persona, float] | None:
+    if fact.key == "children" and isinstance(fact.value, int) and not isinstance(fact.value, bool) and fact.value > 0:
+        return "young_family", 1.0
+    if isinstance(fact.value, str):
+        return STATED_PERSONA.get((fact.key, fact.value))
+    return None
+
+
+def _apply_stated(raw: dict[str, tuple[float, list[str]]], facts: list[ProfileFactRow],
+                  as_of) -> dict[str, tuple[float, list[str]]]:
+    """Profile facts count as signals from the day they were saved, like declared signals."""
+    out = dict(raw)
+    for fact in facts:
+        hit = _stated(fact)
+        if hit is None or fact.updated_at > as_of:
+            continue
+        p, share = hit
+        s, ev = out[p]
+        out[p] = (s + SCORE["stated"] * share, [f"You told us {phrase(fact.key, fact.value)}"] + ev)
+    return out
+
+
 def _apply_declared(raw: dict[str, tuple[float, list[str]]], declared: list[DeclaredSignalRow],
                     as_of) -> dict[str, tuple[float, list[str]]]:
     """Things the customer told Kate count as signals too, from the day they said it (time travel respects it)."""
@@ -184,13 +217,21 @@ def _apply_declared(raw: dict[str, tuple[float, list[str]]], declared: list[Decl
     return out
 
 
-def infer_persona_mix(features: Features, declared: list[DeclaredSignalRow] | None = None) -> list[PersonaWeight]:
+def infer_persona_mix(features: Features, declared: list[DeclaredSignalRow] | None = None,
+                      facts: list[ProfileFactRow] | None = None,
+                      corrections: list[CorrectionRow] | None = None) -> list[PersonaWeight]:
     raw: dict[str, tuple[float, list[str]]] = {p: _SCORERS[p](features) for p in PERSONAS}
     if declared:
         raw = _apply_declared(raw, declared, features.as_of)
+    if facts:
+        raw = _apply_stated(raw, facts, features.as_of)
+    # "That's not me": a persona the customer rejected scores nothing, whatever the transactions say
+    rejected = {c.target for c in corrections or [] if c.kind == "persona" and c.created_at <= features.as_of}
+    raw = {p: ((0.0, []) if p in rejected else v) for p, v in raw.items()}
     total = sum(s for s, _ in raw.values())
     if total <= 0:
-        return [PersonaWeight(persona="young_professional", weight=1.0,
+        fallback = next((p for p in ("young_professional",) + PERSONAS if p not in rejected), "young_professional")
+        return [PersonaWeight(persona=fallback, weight=1.0,
                               evidence=["No strong signals yet, so we start from a general profile"])]
     weights = {p: s / total for p, (s, _) in raw.items()}
     kept = {p: w for p, w in weights.items() if w >= MIN_WEIGHT}

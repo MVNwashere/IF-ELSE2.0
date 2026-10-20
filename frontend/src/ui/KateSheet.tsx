@@ -44,6 +44,14 @@ export function confirmation(action: KateAction, gallery: GalleryItem[]): string
     case "open_card": return null;
     case "start_goal": return "Done. I've lined up the steps; you approve each one before anything is shared.";
     case "open_goal": return null;
+    case "update_profile": return "Saved to your profile. You can change or delete it there any time.";
+    case "forget_fact": return "Done, I've deleted that from your profile.";
+    case "forget_kate_facts": return "Done. Everything you told me is gone from your profile.";
+    case "correct_inference": return "Thanks for correcting me. Your home no longer assumes that; undo it in your profile.";
+    case "set_permission": return action.allowed ? "Done, that's switched on. You can switch it off in your profile." : "Done, that's switched off.";
+    case "revoke_consent": return "Done. The partner's access is revoked and they were told to delete your data.";
+    case "open_profile":
+    case "open_passport": return null;
   }
 }
 

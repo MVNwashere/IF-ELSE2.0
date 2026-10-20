@@ -37,6 +37,7 @@ from . import signals, store
 from .context import PROPERTY_SEARCH, TRAVEL_MERCHANTS, CustomerContext, build_context
 from .intent import detect_with_suppressed
 from .registry import registry
+from .service import withheld_goals
 
 log = logging.getLogger(__name__)
 
@@ -661,6 +662,7 @@ def simulate(conn, customer_id: int, since: dt.date, as_of: dt.date, warmup_days
         if fb.decision == "less":
             less.setdefault(fb.card_type, fb.created_at)
     journey = journey_candidates(conn, customer_id)
+    withheld = withheld_goals(prefs)
     goal_rows = [r for r in store.goals(conn, customer_id) if r["status"] != "cancelled"]
 
     start = since - dt.timedelta(days=warmup_days)
@@ -694,6 +696,8 @@ def simulate(conn, customer_id: int, since: dt.date, as_of: dt.date, warmup_days
             consumed.add(c.key)
             if c.skip_if_taken and c.playbook_id in taken:
                 continue
+            if c.source == "intent" and (withheld is None or c.playbook_id in withheld):
+                continue                               # the customer's profile says: don't suggest this
             if c.action.kind == "start_goal" and c.action.playbook_id in active:
                 c = replace(c, action=KateAction(kind="open_goal", label="Open my plan",
                                                  goal_id=active[c.action.playbook_id],
