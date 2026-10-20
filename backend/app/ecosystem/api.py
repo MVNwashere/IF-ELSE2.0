@@ -11,7 +11,8 @@ from ..auth import Principal
 from . import service, sources, store
 from .models import (
     PARTNER_ID_PATTERN, SOURCE_ID_PATTERN, STEP_ID_PATTERN, ConsentsResponse, EcosystemOverview, Goal, GoalsResponse,
-    ManifestResult, PartnerManifest, SourceConnectRequest, SourcesResponse, StartGoalRequest, StepDecisionRequest,
+    HouseholdAnswerRequest, HouseholdInviteRequest, ManifestResult, PartnerManifest, PartnerSimRequest,
+    SourceConnectRequest, SourcesResponse, StallAnswerRequest, StartGoalRequest, StepDecisionRequest,
 )
 from .webhooks import MAX_BODY_BYTES, WebhookError
 
@@ -19,12 +20,13 @@ router = APIRouter(tags=["ecosystem"])
 
 
 def _as_of(conn, customer_id: int, as_of: dt.date | None) -> dt.date:
-    """Same clamp as the home endpoint: [first transaction, DEMO_TODAY]."""
+    """Same clamp as the home endpoint: [first transaction, DEMO_TODAY], or up to the simulated future's end."""
     rng = db.date_range(conn, customer_id)
     if not rng:
         raise HTTPException(status_code=404, detail="No data for customer")
     lo, hi = rng[0], max(rng[1], service.DEMO_TODAY)
-    return hi if as_of is None else min(max(as_of, lo), hi)
+    top = max(hi, db.future_end(customer_id) or hi)
+    return hi if as_of is None else min(max(as_of, lo), top)
 
 
 def _raise(e: service.EcosystemError | WebhookError | sources.SourceError):
@@ -37,10 +39,13 @@ def me_goals(as_of: dt.date | None = Query(default=None),
     with db.tx() as conn:
         at = _as_of(conn, user.customer_id, as_of)
         declared = db.get_prefs(conn, user.customer_id).declared
+        pending = service.sweep_timeouts(conn, at, user.customer_id)   # partners that missed their SLA
         try:
-            return service.goals_response(conn, user.customer_id, at, declared)
+            response = service.goals_response(conn, user.customer_id, at, declared)
         except service.EcosystemError as e:
             _raise(e)
+    service.run_simulations(pending)   # timed-out partners are asked to delete the data
+    return response
 
 
 @router.post("/api/me/goals", response_model=Goal)
@@ -73,7 +78,8 @@ def me_step_decision(body: StepDecisionRequest, goal_id: int = Path(ge=1),
     service.run_simulations(pending)   # after commit: the simulated partner answers through the webhook path
     if pending:
         with db.tx() as conn:          # with a zero delay the partner has already answered
-            goal = service.goal_model(conn, store.goal(conn, user.customer_id, goal_id), at)
+            goal = service.goal_model(conn, store.goal_for(conn, user.customer_id, goal_id), at,
+                                      viewer=user.customer_id)
     return goal
 
 
@@ -88,6 +94,50 @@ def me_cancel_goal(goal_id: int = Path(ge=1), as_of: dt.date | None = Query(defa
             _raise(e)
         db.audit(conn, user.user_id, "goal.cancel", str(goal_id))
     service.run_simulations(pending)   # partners confirm deletion through the signed webhook path
+    return {"ok": True}
+
+
+@router.post("/api/me/goals/{goal_id}/household", response_model=Goal)
+def me_household_invite(body: HouseholdInviteRequest, goal_id: int = Path(ge=1),
+                        as_of: dt.date | None = Query(default=None),
+                        user: Principal = Depends(auth.require_customer)) -> Goal:
+    """Share a goal with a household member. Owner only; the member must accept."""
+    with db.tx() as conn:
+        at = _as_of(conn, user.customer_id, as_of)
+        try:
+            goal = service.invite_member(conn, user.customer_id, goal_id, body.username, at)
+        except service.EcosystemError as e:
+            _raise(e)
+        db.audit(conn, user.user_id, "household.invite", f"{goal_id} → {body.username}")
+    return goal
+
+
+@router.post("/api/me/household/{goal_id}")
+def me_household_answer(body: HouseholdAnswerRequest, goal_id: int = Path(ge=1),
+                        as_of: dt.date | None = Query(default=None),
+                        user: Principal = Depends(auth.require_customer)) -> dict:
+    with db.tx() as conn:
+        at = _as_of(conn, user.customer_id, as_of)
+        try:
+            service.answer_invitation(conn, user.customer_id, goal_id, body.accept, at)
+        except service.EcosystemError as e:
+            _raise(e)
+        db.audit(conn, user.user_id, "household.accept" if body.accept else "household.decline", str(goal_id))
+    return {"ok": True}
+
+
+@router.post("/api/me/goals/{goal_id}/stall")
+def me_stall_answer(body: StallAnswerRequest, goal_id: int = Path(ge=1), as_of: dt.date | None = Query(default=None),
+                    user: Principal = Depends(auth.require_customer)) -> dict:
+    """Answer the "still want this?" prompt: keep, pause (no reminders), resume or stop."""
+    with db.tx() as conn:
+        at = _as_of(conn, user.customer_id, as_of)
+        try:
+            pending = service.answer_stall(conn, user.customer_id, goal_id, body.answer, at)
+        except service.EcosystemError as e:
+            _raise(e)
+        db.audit(conn, user.user_id, f"goal.{body.answer}", str(goal_id))
+    service.run_simulations(pending)
     return {"ok": True}
 
 
@@ -136,7 +186,23 @@ async def partner_webhook(request: Request, partner_id: str = Path(pattern=PARTN
 def ecosystem_overview(user: Principal = Depends(auth.require_advisor)) -> EcosystemOverview:
     with db.tx() as conn:
         db.audit(conn, user.user_id, "ecosystem.overview", "portfolio")
-        return service.overview(conn)
+        pending = service.sweep_timeouts(conn, service.DEMO_TODAY)
+        result = service.overview(conn)
+    service.run_simulations(pending)
+    return result
+
+
+@router.post("/api/ecosystem/partners/{partner_id}/simulate")
+def partner_simulate(body: PartnerSimRequest, partner_id: str = Path(pattern=PARTNER_ID_PATTERN),
+                     user: Principal = Depends(auth.require_advisor)) -> dict:
+    """Demo switch (KBC staff only): how a simulated partner answers from now on: done, late, reject, fail, timeout."""
+    try:
+        result = service.set_partner_sim(partner_id, body.mode)
+    except service.EcosystemError as e:
+        _raise(e)
+    with db.tx() as conn:
+        db.audit(conn, user.user_id, "partner.simulate", f"{partner_id}={body.mode}")
+    return result
 
 
 # ---- inbound data sources (data KBC reads, with the customer's OK) -------------------------------------------------

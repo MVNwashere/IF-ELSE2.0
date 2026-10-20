@@ -1,4 +1,4 @@
-"""KBC Adaptive Home API.
+"""KBC Takes Care API.
 
 - Customer endpoints derive the customer from the session cookie. No customer IDs in URLs (no IDOR).
 - Every body/query is a Pydantic model (schemas.py). `as_of` is clamped to the customer's data range.
@@ -33,7 +33,8 @@ from .engine.persona import dominant
 from .recommender.feed import recommend
 from .schemas import (
     HERO_COMPONENTS, AdvisorOverview, ConsentRequest, DeclareRequest, FeedbackRequest, FeedPersona, HomeResponse, KateReply,
-    KateRequest, LayoutPrefRequest, LoginRequest, LoginResponse, StylePrefs, SuggestionRequest, TimelineResponse,
+    KateRequest, LayoutPrefRequest, LoginRequest, LoginResponse, Milestone, StylePrefs, SuggestionRequest,
+    TimelineResponse,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -66,7 +67,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="KBC Adaptive Home", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="KBC Takes Care", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 app.include_router(customer_state_router)
 app.include_router(ecosystem_router)
@@ -95,13 +96,15 @@ async def security_headers(request: Request, call_next):
 
 
 def _effective_as_of(conn, customer_id: int, as_of: dt.date | None) -> dt.date:
-    """Clamp the requested date to [first transaction, DEMO_TODAY]. Never the future."""
+    """Clamp the requested date to [first transaction, DEMO_TODAY], or up to the end of the customer's simulated
+    future (Lotte's life timeline). No date means today, never the simulated future."""
     rng = db.date_range(conn, customer_id)
     if not rng:
         raise HTTPException(status_code=404, detail="No data for customer")
     lo, hi = rng
     hi = max(hi, DEMO_TODAY)
-    return hi if as_of is None else min(max(as_of, lo), hi)
+    top = max(hi, db.future_end(customer_id) or hi)
+    return hi if as_of is None else min(max(as_of, lo), top)
 
 
 def _load_and_build(customer_id: int, as_of: dt.date | None, touch: bool = True):
@@ -203,6 +206,12 @@ def me_timeline(user: Principal = Depends(auth.require_customer)) -> TimelineRes
         raise HTTPException(status_code=404, detail="No data for customer")
     tl = pipeline.build_timeline(customer, txs, balance_today)
     tl.max_date = max(tl.max_date, DEMO_TODAY)
+    tl.today = DEMO_TODAY
+    if db.future_end(user.customer_id):   # simulated life-timeline chapters after today
+        from synth.demo_customers import lotte_future_chapters
+        tl.milestones = [m for m in tl.milestones if m.date <= DEMO_TODAY] + [
+            Milestone(date=dt.date.fromisoformat(str(ch["date"])), label=f"Simulated: {ch['title']}")
+            for ch in lotte_future_chapters()]
     return tl
 
 

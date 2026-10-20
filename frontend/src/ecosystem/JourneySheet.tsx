@@ -4,7 +4,8 @@ import { longDate } from "../format";
 import { useEur } from "../privacy";
 import Sheet from "../ui/Sheet";
 import { hours, KindBadge, ProductChips, ProgressRing, StatusPill } from "./bits";
-import type { Goal, MeasuredOutcome, Step, WinTotals } from "./types";
+import { useState } from "react";
+import type { Goal, MeasuredOutcome, StallAnswer, Step, WinTotals } from "./types";
 
 interface Props {
   goal: Goal;
@@ -16,6 +17,34 @@ interface Props {
   onClose: () => void;
   onConnectSource?: (sourceId: string) => void;
   onStartNext?: (playbookId: string) => void;
+  onInvite?: (username: string) => void;
+  onStall?: (answer: StallAnswer) => void;
+}
+
+const STALL_LABEL: Record<"keep" | "pause" | "stop", string> = { keep: "Keep going", pause: "Pause it", stop: "Stop it" };
+
+/** Shared with a household member: who is in, and a way to invite one (owner only, shareable goals). */
+function Household({ goal, busy, onInvite }: { goal: Goal; busy: boolean; onInvite?: (username: string) => void }) {
+  const [name, setName] = useState("");
+  const members = goal.household ?? [];
+  if (!members.length && (!onInvite || goal.role === "member")) return null;
+  return (
+    <div className="eco-household" aria-label="Household">
+      {members.length > 0 && (
+        <p className="muted-note">
+          👥 Shared goal: {members.map((m) => `${m.you ? "you" : m.first_name}${m.status === "invited" ? " (invited)" : ""}`).join(" & ")}.
+          {" "}Steps that share data with a partner need everyone's OK.
+        </p>
+      )}
+      {onInvite && goal.role !== "member" && goal.status === "active" && (
+        <form className="eco-invite" onSubmit={(e) => { e.preventDefault(); if (name.trim()) { onInvite(name.trim().toLowerCase()); setName(""); } }}>
+          <input aria-label="Username of your partner" placeholder="Share with your partner (username)" value={name}
+            maxLength={40} pattern="[a-z0-9_]{2,40}" onChange={(e) => setName(e.target.value)} />
+          <button type="submit" className="btn-ghost small" disabled={busy || !name.trim()}>Invite</button>
+        </form>
+      )}
+    </div>
+  );
 }
 
 /** Journey step 5: what KBC verified in your own transactions, next to what was estimated. */
@@ -99,7 +128,12 @@ function StepRow({ step, busy, onReview, onReset, onConnect }: { step: Step; bus
             {step.result}
           </motion.div>
         )}
-        {step.status === "blocked" && <p className="eco-blocked">You revoked access. Approve again to continue.</p>}
+        {step.status === "blocked" && (
+          <p className="eco-blocked">{step.fallback ? step.fallback.message : "You revoked access. Approve again to continue."}</p>
+        )}
+        {step.joint && (step.waiting_for?.length ?? 0) > 0 && (step.approved_by?.length ?? 0) > 0 && (
+          <div className="eco-waiting">👥 Waiting for {step.waiting_for!.join(" and ")} to approve. Nothing is shared until then.</div>
+        )}
         {step.source_hint && !held && (
           step.source_hint.connected
             ? <div className="eco-source-hint ok">🔌 Using {step.source_hint.name} (connected with your OK)</div>
@@ -112,7 +146,9 @@ function StepRow({ step, busy, onReview, onReset, onConnect }: { step: Step; bus
         <div className="eco-step-actions">
           {(step.status === "proposed" || step.status === "blocked") && (
             <button type="button" className="btn-primary small" disabled={busy} onClick={onReview}>
-              {step.provider.kind === "advisor" ? "Book a meeting" : step.alternatives && step.alternatives.length > 1 ? "Compare & approve" : "Review & approve"}
+              {step.provider.kind === "advisor" ? "Book a meeting"
+                : step.fallback?.partner_name ? `Review ${step.fallback.partner_name}`
+                : step.alternatives && step.alternatives.length > 1 ? "Compare & approve" : "Review & approve"}
             </button>
           )}
           {step.status === "declined" && (
@@ -124,7 +160,7 @@ function StepRow({ step, busy, onReview, onReset, onConnect }: { step: Step; bus
   );
 }
 
-export default function JourneySheet({ goal, busy, onReview, onReset, onPassport, onCancel, onClose, onConnectSource, onStartNext }: Props) {
+export default function JourneySheet({ goal, busy, onReview, onReset, onPassport, onCancel, onClose, onConnectSource, onStartNext, onInvite, onStall }: Props) {
   const steps = [...goal.steps].sort((a, b) => a.order - b.order);
   const measured = goal.measured ?? [];
   return (
@@ -145,6 +181,24 @@ export default function JourneySheet({ goal, busy, onReview, onReset, onPassport
           <button type="button" className="btn-primary small" disabled={busy} onClick={() => onStartNext(goal.next_goal!)}>Start</button>
         </div>
       )}
+      {goal.stall && onStall && (
+        <div className="eco-next-goal" role="status">
+          <span>{goal.stall.question}</span>
+          <span className="eco-stall-actions">
+            {goal.stall.options.filter((o) => o !== "stop" || goal.role !== "member").map((o) => (
+              <button key={o} type="button" className={o === "keep" ? "btn-primary small" : "btn-ghost small"} disabled={busy}
+                onClick={() => onStall(o)}>{STALL_LABEL[o]}</button>
+            ))}
+          </span>
+        </div>
+      )}
+      {goal.paused && (
+        <div className="eco-next-goal">
+          <span>⏸ Paused: no reminders until you pick it up again.</span>
+          {onStall && <button type="button" className="btn-ghost small" disabled={busy} onClick={() => onStall("resume")}>Resume</button>}
+        </div>
+      )}
+      <Household goal={goal} busy={busy} onInvite={onInvite} />
       <Measured items={measured} />
       <TripleWin outcome={goal.outcome} potential={goal.potential} />
       <ol className="eco-steps">
@@ -160,7 +214,7 @@ export default function JourneySheet({ goal, busy, onReview, onReset, onPassport
       )}
       <div className="eco-journey-foot">
         <button type="button" className="btn-ghost" onClick={onPassport}>🔐 Consent passport</button>
-        {goal.status === "active" && <button type="button" className="link danger" onClick={onCancel}>Stop this goal</button>}
+        {goal.status === "active" && goal.role !== "member" && <button type="button" className="link danger" onClick={onCancel}>Stop this goal</button>}
       </div>
     </Sheet>
   );

@@ -1,24 +1,11 @@
----
-title: Customer State data model
-type: spec          # context | spec | decision | notes
-status: final          # draft | review | final | outdated
-incorporated: yes      # no | partial | yes | n/a
-code_refs: [backend/app/customer_state/]
-owner: team IF-ELSE
-created: 2026-09-30
-updated: 2026-10-20
-source: round 1 repo, github.com/Senne-Meuleman/IF-ELSE
----
-
 # Customer State
 
-Customer State is a backend banking-data foundation, separate from the existing adaptive-home engine.
-It describes observations, calculations, supported patterns, historical changes and uncertain financial
-inferences. Nothing in `backend/app/customer_state/` imports `app.engine`, ranks content, or chooses UI.
+Customer State is a backend banking-data foundation, separate from the customer app's layout engine. It describes
+observations, calculations, supported patterns, historical changes and uncertain financial inferences. Nothing in
+`backend/app/customer_state/` imports `app.engine` or the recommender, ranks content, or chooses UI.
 
-The home feed now consumes this capability through `backend/app/recommender/`. Customer State remains independent:
-it does not import the recommendation engine or choose UI. The existing layout planner still uses its original
-feature pipeline.
+The For You feed consumes it through `backend/app/recommender/`. The layout planner and Kate use the feature
+pipeline in `backend/app/engine/features.py` instead (see [CUSTOMER-APP.md](CUSTOMER-APP.md)).
 
 ## Architecture
 

@@ -17,13 +17,18 @@ from typing import Callable, Iterable
 
 from ..engine.features import fmt_date
 from ..schemas import Transaction
-from .context import TRAVEL_MERCHANTS
+from .context import FUEL, TRAVEL_MERCHANTS
 from .models import Goal, MeasuredOutcome, Step
 
 DAY = dt.timedelta(days=1)
 SAVINGS_RATE = 0.02          # illustrative KBC savings rate vs 0% on a current account
 VAT = 21 / 121               # VAT share of an invoice amount incl. VAT
 INCOME_TAX_RESERVE = 0.25    # the reserve rule in the go_freelance playbook
+# counterparty keywords for the life-event and business goals
+DEPOSIT = "huurwaarborg"
+BNPL = ("klarna", "alma")   # "alma" only as the whole name or "alma (…)": "Alma 2 Leuven" is a student restaurant
+FAILED_DEBIT = "storno domicili"
+CARE = ("woonzorgcentrum", "thuiszorg", "thuisverpleging")
 
 
 def _eur(x: float) -> str:
@@ -294,6 +299,131 @@ def _baby(goal: Goal, txs: list[Transaction], as_of: dt.date) -> list[MeasuredOu
                             summary=f"We'll check the child benefit arrives by {fmt_date(check)}.")]
 
 
+def _own_steps(goal: Goal) -> list[Step]:
+    """Done steps the journey actually did (not ones the customer already had): the anchor for new goals,
+    whose playbooks may rename steps without breaking the measurement."""
+    return [s for s in goal.steps if s.status == "done" and not s.already_held]
+
+
+def _has(t: Transaction, words: Iterable[str]) -> bool:
+    cp = t.counterparty.lower()
+    return any(w in cp for w in words)
+
+
+def _is_bnpl(t: Transaction) -> bool:
+    cp = t.counterparty.lower().strip()
+    return "klarna" in cp or cp == "alma" or cp.startswith("alma (")
+
+
+def _move(goal: Goal, txs: list[Transaction], as_of: dt.date) -> list[MeasuredOutcome]:
+    """Moving house: did the old rent deposit come back?"""
+    steps = _own_steps(goal)
+    if not steps:
+        return []
+    anchor = _anchor(goal, steps)
+    base = dict(metric="deposit_returned", label="Old rent deposit back", estimate_eur=_estimate(steps),
+                step_id=steps[-1].step_id)
+    back = [t for t in txs if t.amount > 0 and DEPOSIT in t.counterparty.lower() and anchor - 60 * DAY < t.date <= as_of]
+    if back:
+        total = sum(t.amount for t in back)
+        return [MeasuredOutcome(**base, status="verified", measured_eur=round(total, 2),
+                                evidence=[f"Deposit received {fmt_date(back[-1].date)} from {back[-1].counterparty}"],
+                                summary=f"Your old rent deposit is back: {_eur(total)}.")]
+    if as_of < anchor + 120 * DAY:
+        check = max(anchor + 90 * DAY, as_of + DAY)
+        return [MeasuredOutcome(**base, status="pending", check_on=check, evidence=["No deposit returned yet"],
+                                summary=f"Landlords often take a few months. We'll check on {fmt_date(check)}.")]
+    return [MeasuredOutcome(**base, status="not_met", measured_eur=0.0,
+                            evidence=[f"No deposit returned in the 4 months since {fmt_date(anchor)}"],
+                            summary="Your old deposit hasn't come back. KBC can help you claim it.")]
+
+
+def _back_on_track(goal: Goal, txs: list[Transaction], as_of: dt.date) -> list[MeasuredOutcome]:
+    """Debt and arrears: no failed direct debits for 60 days, and less pay-later spending than before."""
+    steps = _own_steps(goal)
+    if not steps:
+        return []
+    anchor = _anchor(goal, steps)
+    is_bnpl = _is_bnpl
+    before = _monthly_spend(txs, is_bnpl, anchor - 120 * DAY, anchor)
+    base = dict(metric="arrears", label="No failed payments, less pay-later", unit="€ a year",
+                estimate_eur=_estimate(steps), step_id=steps[-1].step_id)
+    check = anchor + 60 * DAY
+    ev = [f"Before: {_eur(before)} a month on pay-later (4 months up to {fmt_date(anchor)})"]
+    if as_of < check:
+        return [MeasuredOutcome(**base, status="pending", check_on=check, evidence=ev,
+                                summary=f"We'll check on {fmt_date(check)}: 60 days without a failed payment.")]
+    failed = [t for t in txs if FAILED_DEBIT in t.counterparty.lower() and anchor < t.date <= as_of]
+    after = _monthly_spend(txs, is_bnpl, max(anchor, as_of - 60 * DAY), as_of)
+    ev.append(f"After: {_eur(after)} a month (last 60 days up to {fmt_date(as_of)})")
+    if failed:
+        return [MeasuredOutcome(**base, status="not_met", evidence=ev + [f"Failed direct debit on {fmt_date(failed[-1].date)}"],
+                                summary="A payment still bounced. Your KBC advisor will look at the budget with you.")]
+    ev.append(f"No failed direct debits since {fmt_date(anchor)}")
+    return [MeasuredOutcome(**base, status="verified", measured_eur=round(max(0.0, before - after) * 12), evidence=ev,
+                            summary="No bounced payments since the plan started"
+                                    + (f", and {_eur((before - after) * 12)} a year less on pay-later." if after < before else "."))]
+
+
+def _ev(goal: Goal, txs: list[Transaction], as_of: dt.date) -> list[MeasuredOutcome]:
+    """Switching to an electric car: fuel spending down."""
+    steps = _own_steps(goal)
+    if not steps:
+        return []
+    anchor = _anchor(goal, steps)
+    is_fuel = lambda t: t.category == "transport" and _has(t, FUEL)   # noqa: E731
+    before = _monthly_spend(txs, is_fuel, anchor - 180 * DAY, anchor)
+    start = anchor + 30 * DAY          # delivery of the car
+    check = start + 90 * DAY
+    base = dict(metric="fuel_spend", label="Fuel bill", estimate_eur=_estimate(steps), unit="€ a year",
+                step_id=steps[-1].step_id)
+    ev = [f"Before: {_eur(before)} a month on fuel (6 months up to {fmt_date(anchor)})"]
+    if as_of < check or before <= 0:
+        return [MeasuredOutcome(**base, status="pending", check_on=check, evidence=ev,
+                                summary=f"We'll compare your fuel spending on {fmt_date(check)}.")]
+    after = _monthly_spend(txs, is_fuel, max(start, as_of - 120 * DAY), as_of)
+    saving = (before - after) * 12
+    ev.append(f"After: {_eur(after)} a month (last 4 months up to {fmt_date(as_of)})")
+    if saving > 0.25 * before * 12:
+        return [MeasuredOutcome(**base, status="verified", measured_eur=round(saving), evidence=ev,
+                                summary=f"You spend about {_eur(saving)} a year less on fuel.")]
+    return [MeasuredOutcome(**base, status="not_met", measured_eur=round(saving), evidence=ev,
+                            summary="Your fuel spending hasn't dropped yet. Is the car delivered?")]
+
+
+def _care(goal: Goal, txs: list[Transaction], as_of: dt.date, balance_today: float | None) -> list[MeasuredOutcome]:
+    """Care for a parent: care costs paid without the account going below zero."""
+    steps = _own_steps(goal)
+    if not steps:
+        return []
+    anchor = _anchor(goal, steps)
+    base = dict(metric="care_covered", label="Care costs covered without overdraft", estimate_eur=_estimate(steps),
+                step_id=steps[-1].step_id)
+    check = anchor + 60 * DAY
+    paid = [t for t in txs if anchor < t.date <= as_of and t.amount < 0 and _has(t, CARE)]
+    if as_of < check or not paid:
+        nxt = max(check, as_of + DAY)
+        return [MeasuredOutcome(**base, status="pending", check_on=nxt, evidence=[f"{len(paid)} care payment(s) so far"],
+                                summary=f"We'll check that the care bills are paid smoothly on {fmt_date(nxt)}.")]
+    total = -sum(t.amount for t in paid)
+    ev = [f"{len(paid)} care payment(s) since {fmt_date(anchor)}: {_eur(total)}"]
+    bal = _balance_at(txs, balance_today, anchor)
+    lowest, low_on = (bal, anchor) if bal is not None else (None, None)
+    for t in txs:
+        if bal is not None and anchor < t.date <= as_of:
+            bal += t.amount
+            if bal < lowest:
+                lowest, low_on = bal, t.date
+    if lowest is not None and lowest < 0:
+        return [MeasuredOutcome(**base, status="not_met", measured_eur=round(total, 2),
+                                evidence=ev + [f"Account at {_eur(lowest)} on {fmt_date(low_on)}"],
+                                summary="The care bills pushed your account below zero once. Let's adjust the plan.")]
+    if lowest is not None:
+        ev.append(f"Lowest balance since then: {_eur(lowest)}")
+    return [MeasuredOutcome(**base, status="verified", measured_eur=round(total, 2), evidence=ev,
+                            summary=f"{_eur(total)} of care costs paid, and your account never went below zero.")]
+
+
 def measure(goal: Goal, txs: list[Transaction], as_of: dt.date,
             balance_today: float | None = None) -> list[MeasuredOutcome]:
     """Realised outcomes of a goal at `as_of`, from the customer's own transactions (only those up to as_of)."""
@@ -315,6 +445,14 @@ def measure(goal: Goal, txs: list[Transaction], as_of: dt.date,
         return _home(goal, seen, as_of)
     if pid == "new_baby":
         return _baby(goal, seen, as_of)
+    if pid == "move_house":
+        return _move(goal, seen, as_of)
+    if pid == "back_on_track":
+        return _back_on_track(goal, seen, as_of)
+    if pid == "ev_switch":
+        return _ev(goal, seen, as_of)
+    if pid == "care_parent":
+        return _care(goal, seen, as_of, _balance_shift(txs, balance_today, as_of))
     return []
 
 

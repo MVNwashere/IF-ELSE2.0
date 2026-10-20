@@ -1,7 +1,7 @@
 // Goals state for the phone: load per as_of, poll while a partner is working, run the customer's decisions.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { eco } from "./client";
-import type { Goal, GoalsResponse, StepDecision } from "./types";
+import type { Goal, GoalsResponse, StallAnswer, StepDecision } from "./types";
 
 const POLL_MS = 1500;
 export const ECO_RESET_EVENT = "eco:reset";
@@ -57,11 +57,14 @@ export function useGoals(asOf: string, customerKey: string, onError: (msg: strin
   const connectSource = useCallback((sourceId: string, playbookId: string) => run(() => eco.connectSource(sourceId, playbookId, asOf)), [run, asOf]);
   const cancel = useCallback((goalId: number) => run(() => eco.cancelGoal(goalId)), [run]);
   const reset = useCallback(() => run(() => eco.goalsReset()), [run]);
+  const invite = useCallback((goalId: number, username: string) => run(() => eco.invite(goalId, username, asOf)), [run, asOf]);
+  const answerInvite = useCallback((goalId: number, accept: boolean) => run(() => eco.answerInvite(goalId, accept, asOf)), [run, asOf]);
+  const answerStall = useCallback((goalId: number, answer: StallAnswer) => run(() => eco.stall(goalId, answer, asOf)), [run, asOf]);
   const hide = useCallback((playbookId: string) => setHidden((h) => new Set(h).add(playbookId)), []);
 
   const goal = useCallback((id: number): Goal | undefined => data?.goals.find((g) => g.goal_id === id), [data]);
 
-  return { data, busy, hidden, load, start, decide, cancel, reset, hide, goal, connectSource, asOf };
+  return { data, busy, hidden, load, start, decide, cancel, reset, hide, goal, connectSource, asOf, invite, answerInvite, answerStall };
 }
 
 export type GoalsState = ReturnType<typeof useGoals>;

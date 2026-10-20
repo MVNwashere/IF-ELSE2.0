@@ -1,4 +1,4 @@
-"""Round 2 signals and intents: freelance deadlines and forecasts, new life-event detectors, playbooks, evaluation."""
+"""Signals and intents: freelance deadlines and forecasts, new life-event detectors, playbooks, evaluation."""
 from __future__ import annotations
 
 import datetime as dt
@@ -181,7 +181,7 @@ def test_every_detector_has_a_valid_playbook():
 
 def test_intent_evaluation_smoke():
     r = evaluate(n=60, seed=42)
-    assert r["customers"] == 64 and set(r["goals"]) == set(DETECTORS)
+    assert r["customers"] == 69 and set(r["goals"]) == set(DETECTORS)
     for pid, g in r["goals"].items():
         if g["precision"] is not None and g["detected"] >= 3:
             assert g["precision"] >= 0.7, pid

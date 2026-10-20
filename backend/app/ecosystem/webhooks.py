@@ -10,7 +10,9 @@ The partner id in the path selects the key, so a partner can only ever sign for 
 step routed to that same partner. Events are idempotent on (partner_id, event_id).
 
 The partners in this proof of concept are simulated (`simulate_partner`): they answer through exactly this
-verification path, after a short delay, so the demo exercises the real security checks.
+verification path, after a short delay, so the demo exercises the real security checks. Real partners are messy, so
+a simulated partner can also answer late, reject the lead, fail, or never answer at all (behaviour per partner:
+`PARTNER_SIM_BEHAVIOUR="billit:reject,setle:timeout"` in .env, or the console's demo switch).
 """
 from __future__ import annotations
 
@@ -30,6 +32,39 @@ MAX_BODY_BYTES = 4096
 # A dev master key, random per process, unless set in .env. Real partners get their own key per partner
 # (PARTNER_WEBHOOK_SECRET_<ID>), exchanged when they are onboarded through the Partner Hub.
 _MASTER = (os.environ.get("PARTNER_WEBHOOK_MASTER") or secrets.token_hex(32)).encode()
+
+
+SimMode = str   # one of SIM_MODES
+SIM_MODES = ("done", "late", "reject", "fail", "timeout")
+LATE_FACTOR = 3.0           # a "late" partner answers after 3× the normal delay
+REJECT_REASON = "Fully booked: we can't take on new clients before next month"
+FAIL_REASON = "Our system could not process the request"
+
+
+def _parse_behaviour(raw: str) -> dict[str, SimMode]:
+    out = {}
+    for part in raw.split(","):
+        pid, _, mode = part.strip().partition(":")
+        if pid and mode in SIM_MODES:
+            out[pid] = mode
+    return out
+
+
+_behaviour: dict[str, SimMode] = _parse_behaviour(os.environ.get("PARTNER_SIM_BEHAVIOUR", ""))
+
+
+def behaviour_of(partner_id: str) -> SimMode:
+    return _behaviour.get(partner_id, "done")
+
+
+def set_behaviour(partner_id: str, mode: SimMode) -> None:
+    """Demo switch: how a simulated partner answers from now on ("done" restores the default)."""
+    if mode not in SIM_MODES:
+        raise ValueError(mode)
+    if mode == "done":
+        _behaviour.pop(partner_id, None)
+    else:
+        _behaviour[partner_id] = mode
 
 
 class WebhookError(Exception):
@@ -74,13 +109,22 @@ def signed_request(partner_id: str, payload: dict) -> tuple[bytes, dict[str, str
 
 def simulate_partner(partner_id: str, ref: str, result: str,
                      deliver: Callable[[str, bytes, dict[str, str]], None]) -> None:
-    """A mock partner: acknowledges, does the work, then reports back with a signed 'done' webhook."""
-    delay = float(os.environ.get("PARTNER_SIM_DELAY", "4"))
+    """A mock partner: does the work, then reports back with a signed webhook. Its behaviour decides how: 'done'
+    (normal), 'late' (done, but slowly), 'reject' (declines the lead), 'fail' or 'timeout' (never answers)."""
+    mode = behaviour_of(partner_id)
+    if mode == "timeout":
+        return
+    delay = float(os.environ.get("PARTNER_SIM_DELAY", "4")) * (LATE_FACTOR if mode == "late" else 1)
+    status, text = {"reject": ("rejected", REJECT_REASON), "fail": ("failed", FAIL_REASON)}.get(mode, ("done", result))
 
     def run() -> None:
-        body, headers = signed_request(partner_id, {"event_id": f"{ref}.done", "ref": ref, "status": "done",
-                                                    "result": result[:300]})
-        deliver(partner_id, body, headers)
+        body, headers = signed_request(partner_id, {"event_id": f"{ref}.{status}", "ref": ref, "status": status,
+                                                    "result": text[:300]})
+        try:
+            deliver(partner_id, body, headers)
+        except Exception:  # noqa: BLE001 - e.g. a late answer after a timeout is refused (409)
+            if delay <= 0:
+                raise
 
     if delay <= 0:
         run()

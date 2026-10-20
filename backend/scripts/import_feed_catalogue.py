@@ -1,6 +1,6 @@
 """One-time import of the supplied product catalogue into checked-in structured data.
 
-Run without arguments after editing docs/feed-specs/03_feed_cards_catalogue.md.
+Run without arguments after editing docs/reference/feed-specs/03_feed_cards_catalogue.md.
 The app reads only the resulting JSON.
 """
 from __future__ import annotations
@@ -63,5 +63,5 @@ def main(source: Path) -> None:
 
 
 if __name__ == "__main__":
-    default = Path(__file__).resolve().parents[2] / "docs" / "feed-specs" / "03_feed_cards_catalogue.md"
+    default = Path(__file__).resolve().parents[2] / "docs" / "reference" / "feed-specs" / "03_feed_cards_catalogue.md"
     main(Path(sys.argv[1]) if len(sys.argv) > 1 else default)

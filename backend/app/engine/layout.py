@@ -1,4 +1,4 @@
-"""Component registry + deterministic layout planner (DESIGN.md §6.6).
+"""Component registry + deterministic layout planner (docs/CUSTOMER-APP.md).
 
 `plan_layout(features, persona_mix, prefs, customer, txs, as_of, cards) -> Layout`
 

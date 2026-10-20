@@ -1,4 +1,4 @@
-"""Synthetic customers + transactions for the KBC Adaptive Home PoC.
+"""Synthetic customers + transactions for the KBC Takes Care proof of concept.
 
 Everything is fake and deterministic under a seed. Scenarios are injected and recorded in
 `customers.ground_truth` (never returned to customers) so the engine can be evaluated.
@@ -347,7 +347,7 @@ def pick_weighted(rng: random.Random, options: list[tuple[str, float]]) -> str:
 
 
 # ----------------------------------------------------------------------------------
-# Round 2: goal scenarios (ground truth "goal:<playbook_id>") for the intent evaluation
+# Goal scenarios (ground truth "goal:<playbook_id>") for the intent evaluation
 # ----------------------------------------------------------------------------------
 # A separate RNG decides and shapes them, so customers without a goal scenario are generated exactly as before.
 
@@ -465,6 +465,389 @@ def inject_goal_after_balance(g: random.Random, b: TxBuilder, goal: str, events:
         b.add(d, g.choice([1092.10, 1153.80, 979.60]), "tuition", g.choice(UNIVERSITIES) + " (inschrijvingsgeld)")
         events.append({"type": "goal:study_start", "date": d.isoformat()})
     return round(sum(t.amount for t in b.txs[before:]), 2)
+
+
+# ----------------------------------------------------------------------------------
+# More goal scenarios and near misses (look-alikes that must not trigger a goal)
+# ----------------------------------------------------------------------------------
+# The new goals, and the four goals that only came from base patterns, get injected truth ("goal:<id>"). Near misses
+# look like a goal but aren't one ("near_miss:<id>"), so the evaluation also counts false alarms. They use the same
+# goal RNG, drawn only for customers without a first-draw goal, so earlier scenarios are generated exactly as before.
+
+ENTERPRISE_COUNTERS = ["Xerius", "Liantis", "Acerta", "UCM"]
+SIDE_JOB_FUNDS = ["Xerius (bijberoep)", "Liantis (bijberoep)"]
+SIDE_JOB_CLIENTS = ["Bakkerij Claes", "Fotostudio Lens", "Vzw Sportkring", "Kapsalon Nova", "Webshop Bloem",
+                    "Café De Hoek"]
+FOREIGN_CLIENTS = ["Northwind GmbH (DE)", "Studio Lumière SARL (FR)", "Brightline Ltd (UK)", "Kanaal BV (NL)",
+                   "Atlas Inc (US)"]
+CARE_HOMES = ["WZC Hof ter Linde (woonzorgcentrum)", "WZC De Linde (woonzorgcentrum)"]
+HOME_CARE = ["Familiehulp (thuiszorg)", "i-mens (thuisverpleging)"]
+REMOVALS = ["Verhuisfirma De Kat", "Verhuizingen Peeters"]
+AUDITORS = ["Bedrijfsrevisor Verhaegen (waardering)", "Bedrijfsrevisor Dumont (waardering)"]
+TRANSFER_LAWYERS = ["Advocatenkantoor Lydian (overdracht)", "Advocatenkantoor Claeys (overdracht)"]
+BOOKKEEPERS = ["Boekhouder Vandenberghe", "Boekhouder Fidu Plus"]
+BNPL = ["Klarna", "Alma"]
+BAILIFFS = ["Gerechtsdeurwaarder Maes", "Gerechtsdeurwaarder Leclercq"]
+AUCTIONS = ["BelOrta (veiling)", "Veiling Hoogstraten"]
+FARM_SUPPLIERS = ["Aveve", "Agrofront"]
+CHARGERS = ["Allego", "Shell Recharge", "Ionity", "Fastned"]
+WEDDING_VENUES = ["Trouwzaal Kasteel Ter Walle", "Trouwzaal Hof van Oost"]
+JEWELLERS = ["Juwelier Slaets", "Juwelier Desmet"]
+FAMILY_LAWYERS = ["Advocaat Van Damme (echtscheiding)", "Bemiddelaar Hermans (scheiding)"]
+TRAVEL_BOOKINGS = ["Brussels Airlines", "TUI", "Sunweb", "Ryanair"]
+PROPERTY_ALERTS = ["Immoweb zoekalert", "Zimmo Premium zoekalert"]
+INSPECTORS = ["Bouwkundig Expertisebureau Vandamme", "Bouwkundig Expertisebureau Mertens"]
+UNKNOWN_PAYEES = ["Hr. J. Vandamme", "Safe Account Services", "M. Dubois (veilige rekening)", "Bank Support Desk"]
+STREETS = ["Kerkstraat", "Stationsstraat", "Molenstraat", "Rue de la Station", "Dorpsstraat"]
+
+# near-miss pattern → the goals it must NOT be mistaken for
+NEAR_MISS_LABELS: dict[str, tuple[str, ...]] = {
+    "resale_income": ("side_job",), "webshop_refund": ("go_international",), "hospital_bill": ("care_parent",),
+    "rent_indexation": ("move_house",), "bookkeeper_only": ("sell_business",), "single_bnpl": ("back_on_track",),
+    "garden_purchase": ("farm_growth",), "holiday_charge": ("ev_switch",), "saving_for_house": ("first_investment",),
+    "december_jewellery": ("together",), "traffic_lawyer": ("separation",),
+    "salary_pause": ("go_freelance", "job_change"), "one_invoice": ("go_freelance", "side_job"),
+    "property_sale": ("inheritance",), "landlord_search": ("buy_home",), "accident_repair": ("mobility",),
+    "refunded_flight": ("travel",),
+}
+NEAR_MISS_SHARE = 0.17
+NEAR_MISS_WEIGHT = {"salary_pause": 4.0, "one_invoice": 3.0, "webshop_refund": 6.0, "bookkeeper_only": 5.0,
+                    "landlord_search": 2.0, "saving_for_house": 3.0, "rent_indexation": 1.5, "accident_repair": 1.5}
+NEAR_MISS_BEFORE = {"rent_indexation", "bookkeeper_only", "saving_for_house", "salary_pause", "one_invoice",
+                    "landlord_search"}
+
+
+def _person(g: random.Random) -> str:
+    return f"{g.choice(NL_FIRST + FR_FIRST)} {g.choice(NL_LAST + FR_LAST)}"
+
+
+def _monthly_signed(b: TxBuilder, start: dt.date, end: dt.date, day: int, amount: float, category: str,
+                    counterparty: str) -> None:
+    """A monthly flow with an explicit sign (e.g. a partner's contribution booked as `other` income)."""
+    for y, m in months_between(start, end):
+        d = safe_date(y, m, day)
+        if start <= d <= end:
+            b.add_signed(d, amount, category, counterparty)
+
+
+def _days_ago(g: random.Random, lo: int, hi: int) -> dt.date:
+    return TODAY - dt.timedelta(days=g.randint(lo, hi))
+
+
+def _rents(b: TxBuilder) -> list[Transaction]:
+    return sorted((t for t in b.txs if t.category == "rent" and t.counterparty.startswith("Immo ")),
+                  key=lambda t: t.date)
+
+
+def _salaried(b: TxBuilder) -> bool:
+    return any(t.category == "salary" and t.date > TODAY - dt.timedelta(days=60) for t in b.txs)
+
+
+def _label(events: list[dict], goal: str, d: dt.date, **extra) -> None:
+    events.append({"type": f"goal:{goal}", "date": d.isoformat(), **extra})
+
+
+def pick_more_goal(g: random.Random, b: TxBuilder, primary: str, personas: list[str], products: list[str], age: int,
+                   first_job: bool, event_types: list[str]) -> str | None:
+    """A second draw for customers without a first-draw goal: the remaining goals and the base-pattern goals."""
+    if primary == "student" or {"idle_cash", "cashflow_squeeze"} & set(event_types):
+        return None
+    renter, salaried = len(_rents(b)) >= 3, _salaried(b)
+    family = "young_family" in personas
+    options: list[tuple[str, float]] = []
+    if primary == "retiree":
+        options += [("peace_of_mind", 0.11), ("travel", 0.05)]
+    else:
+        if salaried and "freelancer" not in personas:
+            options.append(("side_job", 0.08))
+        if primary == "young_professional" and not first_job and age <= 38:
+            options.append(("first_investment", 0.11))
+        if primary == "freelancer":
+            options += [("go_international", 0.18), ("farm_growth", 0.14), ("sell_business", 0.17)]
+        if renter and salaried and not family:
+            options.append(("buy_home", 0.20))
+        if renter:
+            options.append(("move_house", 0.12))
+        if not family and age <= 40:
+            options += [("together", 0.14), ("new_baby", 0.12)]
+        if (family or "mortgage" in products) and age >= 28:
+            options.append(("separation", 0.07))
+        options += [("care_parent", 0.04), ("ev_switch", 0.05), ("travel", 0.03), ("back_on_track", 0.04)]
+    r, acc = g.random(), 0.0
+    for goal, p in options:
+        acc += p
+        if r < acc:
+            return goal
+    return None
+
+
+def pick_near_miss(g: random.Random, b: TxBuilder, primary: str, personas: list[str], products: list[str], age: int,
+                   first_job: bool) -> str | None:
+    """About 17% of the customers without any goal get one look-alike pattern."""
+    if g.random() >= NEAR_MISS_SHARE:
+        return None
+    student, retiree = primary == "student", primary == "retiree"
+    salaried, renter = _salaried(b), len(_rents(b)) >= 3
+    early_salary = any(t.category == "salary" and t.date < TODAY - dt.timedelta(days=330) for t in b.txs)
+    eligible = {
+        "resale_income": True, "single_bnpl": True, "refunded_flight": True, "holiday_charge": age < 70,
+        "webshop_refund": "freelancer" in personas, "hospital_bill": not student and not retiree,
+        "rent_indexation": renter, "bookkeeper_only": primary == "freelancer",
+        "garden_purchase": "freelancer" not in personas,
+        "saving_for_house": primary == "young_professional" and renter and salaried and not first_job and age <= 38,
+        "december_jewellery": not retiree, "traffic_lawyer": not student,
+        "salary_pause": early_salary and "freelancer" not in personas,
+        "one_invoice": salaried and "freelancer" not in personas,
+        "property_sale": not student, "landlord_search": "mortgage" in products,
+        "accident_repair": not student and age < 70,
+    }
+    options = [k for k, ok in eligible.items() if ok]
+    if not options:
+        return None
+    # the patterns with a narrow audience get more weight, so every near miss shows up a few times
+    weights = [NEAR_MISS_WEIGHT.get(k, 1.0) for k in options]
+    return g.choices(options, weights)[0]
+
+
+def inject_more_goal(g: random.Random, b: TxBuilder, goal: str, events: list[dict], products: list[str],
+                     city: str, phase: str) -> float:
+    """Inject a pick_more_goal scenario. Phase 'before' reshapes flows ahead of the balance calibration; 'after' adds
+    one-off payments and returns their net amount (to shift balance_today)."""
+    before = len(b.txs)
+    if phase == "before":
+        if goal == "side_job":
+            start = _days_ago(g, 60, 170)
+            b.add(start - dt.timedelta(days=g.randint(3, 15)), 105.50, "other",
+                  f"Ondernemingsloket {g.choice(ENTERPRISE_COUNTERS)} (inschrijving KBO)")
+            clients, d = g.sample(SIDE_JOB_CLIENTS, g.randint(1, 2)), start
+            while d <= TODAY:
+                b.add(d, g.uniform(300, 1500), "invoice_income", g.choice(clients))
+                d += dt.timedelta(days=g.randint(20, 45))
+            fund = g.choice(SIDE_JOB_FUNDS)
+            for y, m in months_between(start, TODAY):
+                if m in (3, 6, 9, 12) and start <= safe_date(y, m, 20) <= TODAY:
+                    b.add(safe_date(y, m, 20), g.uniform(85, 120), "social_contribution", fund)
+            _label(events, goal, start)
+        elif goal == "go_international":
+            first = _days_ago(g, 50, 200)
+            clients, d = g.sample(FOREIGN_CLIENTS, g.randint(1, 2)), first
+            while d <= TODAY:   # intra-EU B2B: reverse charge, so no Belgian VAT on these
+                b.add(d, g.uniform(2500, 7000), "invoice_income", g.choice(clients))
+                d += dt.timedelta(days=g.randint(25, 50))
+            _label(events, goal, first)
+        elif goal == "care_parent":
+            start = _days_ago(g, 45, 200)
+            if g.random() < 0.6:
+                b.monthly(start, TODAY, g.randint(3, 10), g.uniform(450, 1100), "healthcare", g.choice(CARE_HOMES))
+            else:
+                cp, amount = g.choice(HOME_CARE), g.uniform(120, 300)
+                b.monthly(start, TODAY, 5, amount, "healthcare", cp)
+                b.monthly(start, TODAY, 20, amount, "healthcare", cp)
+            _label(events, goal, start)
+        elif goal == "move_house":
+            old = _rents(b)[-1]
+            move = _days_ago(g, 20, 120)
+            month_start = safe_date(move.year, move.month, 1)
+            b.txs = [t for t in b.txs if not (t.counterparty == old.counterparty and t.category == "rent"
+                                              and t.date > month_start)]
+            new_cp = "Immo " + g.choice([n for n in NL_LAST + FR_LAST if "Immo " + n != old.counterparty])
+            rent = -old.amount * g.uniform(0.9, 1.25)
+            b.add(move - dt.timedelta(days=20), rent * g.choice([2, 3]), "rent", f"Huurwaarborg {new_cp}")
+            b.monthly(move, TODAY, move.day, rent, "rent", new_cp)
+            b.add(move, g.uniform(400, 1200), "other", g.choice(REMOVALS))
+            b.add(move + dt.timedelta(days=5), g.uniform(80, 200), "utilities", f"{g.choice(UTILITIES)} (nieuw contract)")
+            _label(events, goal, move)
+        elif goal == "farm_growth":
+            auction = g.choice(AUCTIONS)
+            for y, m in months_between(b.start, TODAY):
+                if 5 <= m <= 10:
+                    b.add(safe_date(y, m, g.randint(5, 25)), g.uniform(2000, 6000), "invoice_income", auction)
+            for _ in range(g.randint(4, 8)):
+                b.add(_days_ago(g, 60, 390), g.uniform(150, 1200), "other", g.choice(FARM_SUPPLIERS))
+            b.add(dt.date(2026, 1, 15), g.uniform(120, 180), "other", "Boerenbond (lidgeld)")
+            big = _days_ago(g, 10, 60)
+            b.add(big, g.uniform(3000, 9000), "other", "Agrofront")
+            _label(events, goal, big)
+        elif goal == "first_investment":
+            if "investment_plan" in products:
+                products.remove("investment_plan")
+            if "savings" not in products:
+                products.append("savings")
+            b.monthly(b.start, TODAY, 3, g.uniform(500, 900), "savings_transfer", "KBC Spaarrekening")
+            pay = max((t for t in b.txs if t.category == "salary"), key=lambda t: t.date)
+            bonus = dt.date(2025, 12, 18)
+            amount = pay.amount * g.uniform(0.9, 1.1)
+            b.add(bonus, amount, "salary", f"{pay.counterparty} (eindejaarspremie)")
+            b.add(bonus + dt.timedelta(days=2), amount * 0.8, "savings_transfer", "KBC Spaarrekening")
+            _label(events, goal, bonus)
+        elif goal == "together" and g.random() < 0.6:
+            start = _days_ago(g, 60, 200)
+            _monthly_signed(b, start, TODAY, g.randint(1, 5), round(g.uniform(400, 800), 2), "other",
+                            f"{_person(g)} (bijdrage huur)")
+            _label(events, goal, start, kind="moved_in")
+        elif goal == "separation":
+            sep = _days_ago(g, 30, 150)
+            _monthly_signed(b, b.start, sep - dt.timedelta(days=1), 2, round(g.uniform(500, 900), 2), "other",
+                            f"{_person(g)} (bijdrage gezin)")
+            new_rent = sep + dt.timedelta(days=3)
+            b.monthly(new_rent, TODAY, new_rent.day, g.uniform(650, 950), "rent",
+                      "Immo " + g.choice(NL_LAST + FR_LAST))
+            b.add(min(TODAY, sep + dt.timedelta(days=g.randint(5, 40))), g.uniform(400, 1500), "other",
+                  g.choice(FAMILY_LAWYERS))
+            _label(events, goal, sep)
+        elif goal == "new_baby":
+            first = _days_ago(g, 20, 110)
+            b.add(first, g.uniform(40, 200), "baby", g.choice(BABY))
+            for _ in range(g.randint(2, 7)):
+                b.add(first + dt.timedelta(days=g.randint(0, (TODAY - first).days)), g.uniform(20, 200), "baby",
+                      g.choice(BABY))
+            birth = first + dt.timedelta(days=g.randint(20, 60))
+            if g.random() < 0.5 and birth <= TODAY - dt.timedelta(days=10):
+                b.monthly(birth, TODAY, 8, 178.0, "child_benefit", CHILD_BENEFIT_PAYER)
+            _label(events, goal, first)
+        elif goal == "buy_home":
+            if "savings" not in products:
+                products.append("savings")
+            search = _days_ago(g, 45, 200)
+            b.monthly(search, TODAY, search.day, 9.99, "property", g.choice(PROPERTY_ALERTS))
+            if g.random() < 0.5:
+                b.add(search + dt.timedelta(days=g.randint(20, (TODAY - search).days - 5)), g.uniform(300, 500),
+                      "property", g.choice(INSPECTORS))
+            if g.random() < 0.3:
+                d, amount = _days_ago(g, 5, 40), round(g.uniform(15000, 35000), -2)
+                b.add_signed(d - dt.timedelta(days=2), amount, "savings_transfer", "KBC Spaarrekening")
+                b.add(d, amount, "property", f"{g.choice(NOTARIES)} (derdenrekening)")
+            _label(events, goal, search)
+        return 0.0
+    if goal == "sell_business":
+        d = _days_ago(g, 20, 120)
+        b.add(d, g.uniform(1500, 4000), "other", g.choice(AUDITORS))
+        if g.random() < 0.6:
+            b.add(min(TODAY, d + dt.timedelta(days=g.randint(5, 30))), g.uniform(800, 2500), "other",
+                  g.choice(TRANSFER_LAWYERS))
+        _label(events, goal, d)
+    elif goal == "back_on_track":
+        start = TODAY - dt.timedelta(days=150)
+        for k in range(5):   # buy-now-pay-later use rising month after month
+            for _ in range(k + g.randint(1, 2)):
+                b.add(start + dt.timedelta(days=30 * k + g.randint(0, 29)), g.uniform(40, 180), "other", g.choice(BNPL))
+        debits = [t for t in b.txs if t.category in ("telecom", "utilities", "subscription")
+                  and TODAY - dt.timedelta(days=60) <= t.date <= TODAY - dt.timedelta(days=3)]
+        for t in g.sample(debits, min(len(debits), g.randint(1, 2))):
+            b.add_signed(t.date + dt.timedelta(days=2), -t.amount, "other", f"Storno domiciliëring {t.counterparty}")
+        b.add(_days_ago(g, 5, 45), g.uniform(150, 600), "other", g.choice(BAILIFFS))
+        _label(events, goal, start + dt.timedelta(days=60))
+    elif goal == "ev_switch":
+        first = _days_ago(g, 20, 110)
+        b.add(first, g.uniform(8, 45), "transport", g.choice(CHARGERS))
+        for _ in range(g.randint(2, 7)):
+            b.add(first + dt.timedelta(days=g.randint(0, (TODAY - first).days)), g.uniform(8, 45), "transport",
+                  g.choice(CHARGERS))
+        _label(events, goal, first)
+    elif goal == "together" and not any(e["type"] == "goal:together" for e in events):
+        d = _days_ago(g, 20, 150)
+        b.add(d, g.uniform(50, 150), "other", f"Gemeente {city} (huwelijk)")
+        b.add(d - dt.timedelta(days=g.randint(10, 60)), g.uniform(1500, 5000), "other", g.choice(WEDDING_VENUES))
+        b.add(d - dt.timedelta(days=g.randint(5, 90)), g.uniform(800, 3500), "other", g.choice(JEWELLERS))
+        _label(events, goal, d, kind="wedding")
+    elif goal == "travel":
+        d = _days_ago(g, 3, 40)
+        b.add(d, g.uniform(300, 2500), "leisure", g.choice(TRAVEL_BOOKINGS))
+        if g.random() < 0.4:
+            b.add(d + dt.timedelta(days=g.randint(0, 2)), g.uniform(250, 900), "leisure", "Booking.com")
+        _label(events, goal, d)
+    elif goal == "peace_of_mind":
+        d = _days_ago(g, 1, 12)
+        b.add(d, g.uniform(500, 3000), "other", g.choice(UNKNOWN_PAYEES))
+        _label(events, goal, d, kind="new_payee")
+    return round(sum(t.amount for t in b.txs[before:]), 2)
+
+
+def inject_near_miss(g: random.Random, b: TxBuilder, pattern: str, events: list[dict], products: list[str],
+                     age: int, phase: str) -> float:
+    """Inject a look-alike pattern, labelled near_miss:<goal> for each goal it must not trigger."""
+    if (phase == "before") != (pattern in NEAR_MISS_BEFORE):
+        return 0.0
+    before = len(b.txs)
+    d = _days_ago(g, 10, 150)
+    if pattern == "resale_income":
+        b.add_signed(d, round(g.uniform(20, 250), 2), "other", g.choice(["2dehands.be uitbetaling", "Vinted uitbetaling"]))
+    elif pattern == "webshop_refund":
+        b.add_signed(d, round(g.uniform(30, 150), 2), "other", "Zalando SE (DE) terugbetaling")
+    elif pattern == "hospital_bill":
+        b.add(d, g.uniform(150, 900), "healthcare", "AZ Groeninge (ziekenhuisfactuur)")
+    elif pattern == "rent_indexation":
+        rents = _rents(b)
+        landlord = rents[-1].counterparty
+        for t in rents:
+            if t.counterparty == landlord and t.date >= d:
+                t.amount = round(t.amount * (1 + g.uniform(0.02, 0.04)), 2)
+    elif pattern == "bookkeeper_only":
+        cp = g.choice(BOOKKEEPERS)
+        for y, m in months_between(b.start, TODAY):
+            if m in (1, 4, 7, 10):
+                b.add(safe_date(y, m, 25), g.uniform(150, 400), "other", cp)
+    elif pattern == "single_bnpl":
+        b.add(d, g.uniform(30, 150), "other", g.choice(BNPL))
+    elif pattern == "garden_purchase":
+        b.add(d, g.uniform(20, 90), "other", "Aveve")
+    elif pattern == "holiday_charge":
+        d = dt.date(2026, g.choice([7, 8]), g.randint(1, 28))
+        b.add(d, g.uniform(25, 45), "transport", "Ionity")
+    elif pattern == "saving_for_house":
+        if "savings" not in products:
+            products.append("savings")
+        b.monthly(b.start, TODAY, 3, g.uniform(500, 900), "savings_transfer", "KBC Spaarrekening")
+        b.monthly(d, TODAY, d.day, 9.99, "property", g.choice(PROPERTY_ALERTS))
+        _label(events, "buy_home", d)   # a real goal, just not the near-missed one
+    elif pattern == "december_jewellery":
+        d = dt.date(2025, 12, g.randint(5, 23))
+        b.add(d, g.uniform(300, 1500), "other", g.choice(JEWELLERS))
+    elif pattern == "traffic_lawyer":
+        b.add(d, g.uniform(200, 600), "other", "Advocaat Van Damme (verkeersboete)")
+    elif pattern == "salary_pause":
+        # parental leave or a sabbatical: the same employer pays again afterwards
+        d = _days_ago(g, 190, 300)
+        back = d + dt.timedelta(days=g.randint(60, 140))
+        b.txs = [t for t in b.txs if not (t.category == "salary" and d < t.date < back)]
+        if g.random() < 0.6:
+            b.monthly(d + dt.timedelta(days=10), back, 15, g.uniform(400, 900), "benefit", "RVA (ouderschapsverlof)")
+    elif pattern == "one_invoice":
+        b.add(d, g.uniform(300, 900), "invoice_income", g.choice(SIDE_JOB_CLIENTS))
+    elif pattern == "property_sale":
+        b.add_signed(d, round(g.uniform(40000, 120000), -2), "other", f"{g.choice(NOTARIES)} (verkoop woning)")
+        if 50 <= age <= 64:   # a big inflow can make the wealth goals legitimately visible: label them
+            _label(events, "retire_well", d)
+        if age >= 65 and "savings" not in products:
+            _label(events, "peace_of_mind", d)
+    elif pattern == "landlord_search":
+        _monthly_signed(b, b.start, TODAY, 4, round(g.uniform(600, 900), 2), "other",
+                        f"Huur {g.choice(STREETS)} (huurder {_person(g)})")
+        d = _days_ago(g, 60, 300)
+        b.monthly(d, TODAY, d.day, 9.99, "property", "Immoweb zoekalert")
+    elif pattern == "accident_repair":
+        amount = round(g.uniform(800, 2500), 2)
+        b.add(d, amount, "transport", g.choice(GARAGE_NAMES))
+        b.add_signed(min(TODAY, d + dt.timedelta(days=g.randint(7, 25))), amount, "other",
+                     f"{g.choice(EXTERNAL_INSURERS)} (schadevergoeding)")
+    elif pattern == "refunded_flight":
+        d, amount = _days_ago(g, 8, 40), round(g.uniform(300, 900), 2)
+        b.add(d, amount, "leisure", "Brussels Airlines")
+        b.add_signed(d + dt.timedelta(days=g.randint(3, 7)), amount, "leisure", "Brussels Airlines (terugbetaling)")
+    for goal in NEAR_MISS_LABELS[pattern]:
+        events.append({"type": f"near_miss:{goal}", "date": d.isoformat(), "pattern": pattern})
+    return round(sum(t.amount for t in b.txs[before:]), 2)
+
+
+def label_base_trips(b: TxBuilder, events: list[dict]) -> None:
+    """The balance sweep books some surplus months as a Neckermann trip: a real booking in the data, so label it."""
+    if any(e["type"] == "goal:travel" for e in events):
+        return
+    trip = next((t for t in sorted(b.txs, key=lambda t: t.date, reverse=True)
+                 if t.counterparty == "Neckermann Reizen" and t.amount <= -250
+                 and t.date > TODAY - dt.timedelta(days=45)), None)
+    if trip:
+        _label(events, "travel", trip.date, kind="base_sweep")
 
 
 def top_up_if_overdrawn(g: random.Random, b: TxBuilder, balance: float, since: dt.date) -> float:
@@ -651,17 +1034,33 @@ def make_regular(cid: int, seed: int) -> tuple[Customer, list[Transaction], floa
                   rng.choice(["Brico", "Garage Vermeersch", "Tandarts De Wilde", "Zalando"]))
         events.append({"type": "cashflow_squeeze", "date": since.isoformat()})
 
-    # --- round 2 goal scenarios (own RNG: everyone else is generated exactly as before)
+    # --- goal scenarios (own RNG: everyone else is generated exactly as before)
     g = random.Random(seed * 7919 + cid * 31 + 1)
-    goal = pick_goal_scenario(g, primary, personas, products, age, pre_salary_living is not None, event_types)
+    first_job = pre_salary_living is not None
+    goal = pick_goal_scenario(g, primary, personas, products, age, first_job, event_types)
+    more = near = None
+    if goal is None:   # extra draws only here, so the earlier goal scenarios stay exactly as they were
+        more = pick_more_goal(g, b, primary, personas, products, age, first_job, event_types)
+        if more is None:
+            near = pick_near_miss(g, b, primary, personas, products, age, first_job)
     if goal == "retire_well":
         age = g.randint(50, 62)
         birth_year = TODAY.year - age
     elif goal == "study_start":
         age = g.randint(45, 56)
         birth_year = TODAY.year - age
+    elif more == "care_parent" or near == "hospital_bill":
+        age = g.randint(42, 62)
+        birth_year = TODAY.year - age
+    elif more == "sell_business" or near == "bookkeeper_only":
+        age = g.randint(56, 64)
+        birth_year = TODAY.year - age
     if goal:
         inject_goal_before_balance(g, b, goal, events, personas)
+    if more:
+        inject_more_goal(g, b, more, events, products, city, "before")
+    if near:
+        inject_near_miss(g, b, near, events, products, age, "before")
 
     # --- balance path: keep the running balance in a sane band so time travel never shows absurd balances
     spend_90 = -sum(t.amount for t in b.between(TODAY - dt.timedelta(days=90), TODAY) if t.amount < 0)
@@ -725,6 +1124,13 @@ def make_regular(cid: int, seed: int) -> tuple[Customer, list[Transaction], floa
                 events.append({"type": "goal:peace_of_mind", "date": events[-1]["date"]})
             if "savings" not in products:
                 events.append({"type": "idle_cash", "date": TODAY.isoformat()})
+    if more or near:
+        added = (inject_more_goal(g, b, more, events, products, city, "after") if more
+                 else inject_near_miss(g, b, near, events, products, age, "after"))
+        balance = round(balance + added, 2)
+        dates = [dt.date.fromisoformat(e["date"]) for e in events if e["type"].startswith(("goal:", "near_miss:"))]
+        balance = top_up_if_overdrawn(g, b, balance, min(dates) - dt.timedelta(days=200))
+    label_base_trips(b, events)
 
     customer = Customer(
         id=cid, first_name=first, last_name=last, birth_year=birth_year, city=city,
@@ -794,7 +1200,7 @@ def build(db_path: str, n: int = 1000, seed: int = 42, verbose: bool = True) -> 
         print("  scenarios:")
         for k, v in summary["scenarios"].items():
             print(f"    {k:20s} {v}")
-        print(f"  logins: lotte / sara / jan / marc / c1..c{n} / advisor  (password: {DEMO_PASSWORD!r})")
+        print(f"  logins: lotte / sara / jan / marc / tom / els / amir / pieter / nina / c1..c{n} / advisor  (password: {DEMO_PASSWORD!r})")
     return summary
 
 

@@ -197,7 +197,7 @@
 .ec-assume b { color: var(--amber); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
 .ec-assume ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.5; }
 
-/* ---- core round 2: measured outcomes, sources, alternatives, fees, advisor, deletion ---- */
+/* ---- measured outcomes, sources, alternatives, fees, advisor, deletion ---- */
 .eco-kind.advisor { background: color-mix(in srgb, var(--amber) 18%, transparent); color: var(--amber); }
 .eco-measured { margin: 10px 0; padding: 12px 14px; border-radius: 14px; background: var(--card); border: var(--border-w) solid var(--border); }
 .eco-measured-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
@@ -221,3 +221,9 @@
 .eco-source-values { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .8em; margin: 6px 0; }
 .ec-rules { margin-top: 10px; }
 .ec-rules summary { cursor: pointer; font-weight: 600; }
+
+/* households, stall prompt */
+.eco-household { margin: 8px 0; }
+.eco-invite { display: flex; gap: 8px; margin-top: 6px; }
+.eco-invite input { flex: 1; min-width: 0; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line, #d0d7e2); font: inherit; background: transparent; color: inherit; }
+.eco-stall-actions { display: flex; flex-wrap: wrap; gap: 6px; }

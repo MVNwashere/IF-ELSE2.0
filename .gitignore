@@ -18,6 +18,8 @@ dist/
 # Databases
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 
 # OS / editor
 .DS_Store

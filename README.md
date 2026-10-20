@@ -1,117 +1,49 @@
-# IF-ELSE2.0: KBC Adaptive Home, round 2
+# KBC Takes Care
 
-Tectonic Hackathon final, 20 October 2026 (KBC track). This repo continues our round 1 project,
-**KBC Adaptive Home** ([github.com/Senne-Meuleman/IF-ELSE](https://github.com/Senne-Meuleman/IF-ELSE)),
-for the round 2 challenge: *move customers from intent to successful action, with KBC and its partners*.
+*From intent to impact.* **Peace of mind: KBC takes care of it.** A customer states a goal, or KBC spots it in their own banking signals, and
+KBC turns it into a guided journey across its own services and a network of vetted partners, with the customer
+approving every step and every piece of data shared. The outcome is measured for the customer, KBC and the partners.
 
-## What comes from round 1 and what's new
+Built by team IF-ELSE for KBC at the Tectonic Hackathon (October 2026). **All data is synthetic**; partners, offers and amounts are
+illustrative.
 
-- **From round 1 (30 Sept 2026):** everything in `backend/`, `frontend/` and the docs `DESIGN.md`,
-  `KBC-QUESTIONS.md`, `CUSTOMER-STATE.md`, `COMPONENT-PROPS.md` and `feed-specs/`. Imported as-is on 20 Oct.
-- **New today:** see the git history after the commit "Import round 1 code and docs", and `docs/` files created on
-  2026-10-20.
-
-## Goal
-
-**KBC case: "From intent to impact".** Design a scalable ecosystem that helps customers move from intent to
-successful action.
-
-The customer states a goal (buying a house, building up a pension, investing) and **KBC takes care of the rest**,
-through a trusted network of vetted partners: brokers, insurers, investment funds, estate agents, renovation and
-energy partners. Everything happens in the customer's own app. A triple win for the customer, KBC and the partners.
-
-## From IF-ELSE to IF-ELSE2.0
-
-**We are bringing our previous idea, IF-ELSE, into IF-ELSE2.0, but with a new goal.**
-
-- **IF-ELSE (v1)** was the front-end step: *KBC Adaptive Home*, an app that adapts to each customer's life
-  situation (persona mix, explainable feed, assistant Kate).
-- **IF-ELSE2.0** keeps that foundation and adds the backend step: the **ecosystem engine** that turns a customer's
-  intent into a completed outcome, together with KBC's partners.
-- The **new goal** decides what we build: peace of mind for the customer, KBC as the trusted orchestrator, and a
-  triple win for the customer, KBC and the partners.
-
-The full goal and context are in [CLAUDE.md](CLAUDE.md). Decisions and progress are in [docs/LOG.md](docs/LOG.md).
-
-## Structure
-
-| Folder      | Purpose                         |
-|-------------|---------------------------------|
-| `backend/`  | FastAPI engine and API (round 1)|
-| `frontend/` | React + Vite phone app (round 1)|
-| `data/`     | Data files (synthetic only)     |
-| `docs/`     | Design docs                     |
-| `notes/`    | Working notes                   |
-
-## Setup
-
-```bash
-cp .env.example .env   # then fill in values
-```
-
-## The ecosystem engine (new in round 2)
+## What it does
 
 ```
-signals (transactions, Kate) ─► intent detector ─► "KBC noticed…" candidate ─► customer taps Start
-playbooks/*.json ─► journey of steps ─► per step: KBC service, or vetted partner after a consent grant
-partner ─► HMAC-signed webhook ─► step done ─► triple-win ledger ─► customer app + KBC ecosystem console
+signals (transactions, Kate, connected sources) ─► intent detector ─► "KBC noticed…" ─► customer taps Start
+playbooks/*.json ─► journey of steps ─► per step: a KBC service, or a vetted partner after a consent grant
+partner ─► HMAC-signed webhook ─► step done ─► measured outcome + triple-win ledger ─► app and KBC console
 ```
 
-| Piece | Where | What |
-|---|---|---|
-| KBC building blocks | `backend/app/ecosystem/catalogue.json` | All 229 items of `docs/KBC_Ecosystems.xlsx` (21 ecosystems). Rebuild: `py -3.12 -m scripts.import_ecosystems` |
-| Partner registry | `partners.json` | 11 vetted partners (Immoscoop, Setle, De Immowinkel, Impact us today, Encon, Billit, Go Solid, Firsty, Brussels Airport, Helena, Bolero): allowed data fields, value-share model, vetting checks, integration surface |
-| Goals | `playbooks/*.json` | 13 goals: buy a home, energy upgrade, new baby, go freelance, get paid, retire well, travel, safe banking, mobility, first employee, inheritance, study start, job change. A new goal is a file; all are validated at startup |
-| Intent | `intent.py` | Transparent rules with evidence and confidence (e.g. Lotte's property search alert, inspection and purchase deposit, months before the deed) |
-| Journey + consent | `service.py`, `store.py` | Step state machine; consent passport with expiry and revoke; only granted fields that the partner is allowed to receive leave KBC; never asks for what the customer already holds |
-| Partner webhooks | `webhooks.py` | `POST /api/partners/{id}/webhook`, HMAC-SHA256 over timestamp + body, 5-minute window, idempotent event ids, strict schema. Partners are simulated through this same path; `scripts/partner_webhook.py` plays a partner over HTTP |
-| Feed + Kate | `links.py`, `engine/kate.py` | Feed cards link to the matching journey and products; Kate offers ("we want to buy a house") and opens journeys |
-| Kate nudges | `nudges.py`, `GET /api/me/nudges` | Proactive pushes with an attention budget (2/week, quiet hours, once per topic, mute); urgent scam/overdraft alerts bypass it. "Play nudges" in the demo panel replays them |
-| Deadlines + forecasts | `signals.py` | VAT, advance tax, social contributions, renewals, trips; the regularisation gap a starter doesn't see coming |
-| Measured outcomes | `outcomes.py` | Verifies results from later transactions instead of trusting estimates |
-| Data sources | `sources.py`, `GET /api/me/sources` | PSD2, eBox, Billit, KBO, mypension.be, EPC, Fluvius: purpose-bound, expiring consent; connected values replace estimates |
-| Console | `GET /api/ecosystem/overview` | Advisor login: goal funnel over the portfolio, partner network, live verified events, triple win and a 2.3M projection with its assumptions |
+- **Recognise.** Transparent rules spot 24 goals from a customer's own transactions, each with evidence and a
+  confidence: going freelance, a side job, buying a home, an energy upgrade, a new baby, caring for a parent, getting
+  back on track, retiring well and more. Commercial goals are held back in hard times, with the reason.
+- **Understand.** The goal's context comes from what KBC already knows (persona mix, products, Customer State), so
+  the customer is never asked twice.
+- **Activate.** Each goal is a playbook file. Steps route to KBC building blocks (229 items from KBC's own
+  catalogue) or to 29 vetted partners and advisors, each with the data fields it may receive and a value-share model.
+- **Guide.** A journey of steps with a consent passport (grant, expiry, revoke), data minimisation enforced in code,
+  partner fallback when one rejects or times out, joint approval for households, and Kate nudges within an attention
+  budget.
+- **Measure.** Outcomes are verified from later transactions instead of trusted estimates, and roll up into a
+  triple-win view in the KBC ecosystem console.
 
-Demo logins (password `demo`): `lotte`, `sara`, `jan`, **`marc`** (new: the 52-year-old investor persona) and
-`advisor` (the KBC ecosystem console). Partners, offers and amounts are illustrative.
+The customer sees it in the **KBC Takes Care app**: a phone app whose home screen adapts to the customer's persona mix,
+with an explainable For You feed, time travel across the customer's life, customisation and the assistant **Kate**,
+who proposes and never acts on her own.
 
----
+Details: [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md) (the ecosystem engine) and
+[docs/CUSTOMER-APP.md](docs/CUSTOMER-APP.md) (the customer app and its engine).
 
-*Round 1 README follows.*
-
-## KBC Adaptive Home
-
-*Persona sets the stage, moments fill it.*
-
-One banking app that **looks and behaves differently depending on the customer's life situation**. Nobody designed
-the home screen you see: the system composed it from signals in the customer's own transactions.
-
-- **Adaptive layout** (who you are): a persona mix (student, young professional, young family, freelancer, retiree)
-  decides which modules appear, which is the hero, density, contrast and tone.
-- **For You feed** (what is happening now): nine soft personas and the supplied ten core cards plus 100 targeted
-  catalogue definitions, ranked from Customer State observations, urgency, consent and feedback. Cards whose
-  required data is unavailable are held back. The feed **ends**.
-- **Explainable and controllable**: "Why am I seeing this?" on every card and every section; dismiss, snooze,
-  less like this, pin, hide, consent switch.
-- **Time travel**: the same customer, recomputed "as of" any date over 8 years. Watch the layout morph.
-- **Yours to shape** (v2): pin tiles to a slot (they stay put while the rest adapts), hide tiles, add from a tile
-  gallery, restyle (text size, contrast, dark mode, tone, accent, reduce motion, hide amounts), every setting with
-  an **Auto** default. When life changes, the app **suggests** a tile instead of silently rearranging yours.
-- **Kate** (v2): a chat assistant grounded in the same signals. "Ask Kate" on every card, a proactive opener, and
-  she can *propose* changes (pin a tile, bigger text, "we're expecting") that you confirm with one tap.
-
-Built for the Tectonic Hackathon (KBC challenge). **All data is synthetic.** See `docs/DESIGN.md` for the design and
-`docs/KBC-QUESTIONS.md` for how this answers KBC's five questions.
-
-### Run it
+## Run it
 
 Backend (Python 3.12):
 
 ```bash
+cp .env.example .env                                # then fill in the secrets
 cd backend
-py -3.12 -m pip install -r requirements.txt        # or: python -m pip install ...
-py -3.12 -m synth.generate --n 1000 --seed 42       # builds backend/kbc.db (also runs automatically on first start)
-py -3.12 -m uvicorn app.main:app --reload --port 8000
+py -3.12 -m pip install -r requirements.txt
+py -3.12 -m uvicorn app.main:app --reload --port 8000 --env-file ../.env   # builds backend/kbc.db on first start
 ```
 
 Frontend (Node 22):
@@ -122,113 +54,85 @@ npm install
 npm run dev            # http://localhost:5173 (proxies /api to :8000)
 ```
 
-Or build once and let the backend serve it: `npm run build`, then open http://localhost:8000.
+Or run `npm run build` and let the backend serve the app at http://localhost:8000. A standalone UI without a backend
+runs at http://localhost:5173/?mock=1.
 
-Standalone UI without a backend: http://localhost:5173/?mock=1
+To rebuild the synthetic data explicitly: `py -3.12 -m synth.generate --n 1000 --seed 42` (or delete
+`backend/kbc.db`).
 
-### Demo logins
+## Demo logins
 
-Password for all: `demo` (override with `DEMO_PASSWORD` in `.env`).
+Password for all: `demo` (override with `DEMO_PASSWORD`; the demo panel's customer switcher assumes `demo`).
 
-| Username | Story | What it shows |
+| Username | Who | What it shows |
 |---|---|---|
-| `lotte` | 2018 student in Leuven → 2021 first job → 2022 mortgage → 2024 baby → 2026 freelance | **Time travel**: drag the slider and watch the same person pass through every persona |
-| `sara` | Freelancer **and** young mother; car insurance renews in 12 days; Netflix price increase | A **blend** nobody designed, the honest insurance comparison |
-| `jan` | 71, retiree; pension; a duplicate charge; idle cash | Retiree layout: large, calm, high contrast, scam shield |
-| `advisor` | Portfolio view | Persona distribution, card volume, scoring time projected to 2.3M customers |
+| `lotte` | 27, left her job in September, first client paid on 16 Oct 2026 | The hero journey: going freelance. Her life timeline runs past today as a simulated future (VAT, a trip, a first employee, the regularisation bill already covered) |
+| `sara` | Freelancer and young mother | A persona blend nobody designed; car insurance renewing in 12 days |
+| `jan` | 71, retiree | Large, calm, high-contrast layout; scam shield; a duplicate charge |
+| `marc` | 52, investor | Pension, wealth and estate planning |
+| `tom` | Employee with a side business | Side job, before it becomes going freelance |
+| `els` | 48, a child at university and a mother in care | The sandwich generation |
+| `amir` | Newcomer with four months of data | Cold start |
+| `pieter` | SME owner with clients abroad | Going international |
+| `nina` | BNPL instalments and bounced debits | Back on track only; commercial goals suppressed |
+| `advisor` | KBC | The ecosystem console: goal funnel, partner network, live events, triple win, projection to 2.3M customers |
 
 Regular synthetic customers: `c1` … `c1000`.
 
-### How it works
+## Repository
 
-```
-transactions ─► features ─► existing persona mix ─► layout planner ─► layout spec ─┐
-       └──────► Customer State ─► nine personas + catalogue recommender ─► feed ───┤
-                                                                  feedback ─────────┘► phone renderer
-```
-
-| Module | What it does |
+| Path | What |
 |---|---|
-| `backend/synth/` | ~1,000 synthetic customers with injected scenarios + 3 hand-crafted demo customers (8-year histories) |
-| `backend/app/engine/features.py` | transactions → features (income pattern, recurring payments, runway, idle cash, life events) |
-| `backend/app/engine/persona.py` | features → weighted persona mix with plain-language evidence |
-| `backend/app/engine/cards.py` | 13 card generators, each with evidence, impact, lifecycle stage |
-| `backend/app/engine/ranker.py` | `persona_fit × (urgency, impact, confidence, novelty) × fatigue`, then hard constraints |
-| `backend/app/engine/layout.py` | component registry + deterministic planner → validated layout spec; pins, style overrides, tile gallery, suggestions |
-| `backend/app/customer_state/` | normalized banking observations, metrics, changes, uncertainty and cached snapshots |
-| `backend/app/recommender/` | nine persona scores, ten core card generators, 100 imported targeted card definitions, eligibility and feed ranking |
-| `backend/app/engine/kate.py` | Kate: grounded intent rules → reply + proposed actions; optional Gemini rephrasing with number validation |
-| `backend/app/main.py` | FastAPI: session auth, `/api/me/*` from session only, feedback, prefs, consent, advisor overview |
-| `frontend/` | React + Vite + Framer Motion: control panel, phone frame, registry renderer, animated morphs |
+| `backend/app/ecosystem/` | Ecosystem engine: intents, playbooks, partners, journeys, consent, webhooks, nudges, signals, outcomes, data sources |
+| `backend/app/engine/` | Features, persona mix, cards, ranker, layout planner, Kate |
+| `backend/app/customer_state/`, `backend/app/recommender/` | Customer State and the For You feed |
+| `backend/app/main.py`, `auth.py`, `db.py`, `schemas.py` | FastAPI app, session auth, SQLite, API contracts |
+| `backend/synth/` | Synthetic customers, demo personas, the blind holdout set |
+| `backend/scripts/` | Evaluation, catalogue imports, a partner webhook client |
+| `frontend/` | React + Vite phone app and console |
+| `data/` | Evaluation reports |
+| `docs/` | Design docs; `docs/reference/` holds KBC's ecosystem catalogue and the feed card specifications |
 
-Tests: `cd backend && py -3.12 -m pytest` (including recommender, Customer State, feedback and API isolation).
+## Tests and evaluation
 
-Offline evaluation against the injected ground truth: `cd backend && py -3.12 -m scripts.evaluate`
+From `backend/`:
 
-Customer State: see [docs/CUSTOMER-STATE.md](docs/CUSTOMER-STATE.md) for its data model, calculations,
-synthetic scenarios, persistence and `/api/me/customer-state` endpoints. The home feed now consumes its snapshots;
-the existing layout planner and Kate still use the earlier feature pipeline.
+```bash
+py -3.12 -m pytest                       # unit and API tests
+py -3.12 -m scripts.evaluate             # persona and feed quality vs injected ground truth
+py -3.12 -m scripts.evaluate_intents     # goal detection on the synthetic portfolio, with look-alikes
+py -3.12 -m scripts.evaluate_holdout     # goal detection on 300 customers written without seeing the rules
+```
 
-The three supplied specifications are preserved in [docs/feed-specs](docs/feed-specs). After changing the targeted
-card specification, run `python backend/scripts/import_feed_catalogue.py` to rebuild the checked-in JSON catalogue.
-The feed uses observed values rather than the example amounts written in the specifications. Tapping a feed card
-opens its available breakdown, explanation and related cards. Goals and emergency-buffer cards include an adjustable
-savings estimate. Feedback persists and immediately re-ranks the feed.
+The number to quote is the **blind holdout**: macro precision 84%, recall 80%, false positives on hard negatives 7%
+on its first run ([data/holdout_report_blind_v1.json](data/holdout_report_blind_v1.json)). The synthetic-portfolio
+numbers are optimistic because the rules and that data were written together.
 
-| Metric (1,000 synthetic customers, seed 42) | Value |
-|---|---|
-| persona recall / dominant-persona precision | 0.94 / 1.00 |
-| feed precision@5 / recall vs injected events | 0.66 / 0.85 |
-| scoring time per customer (laptop, single core) | ≈ 3 ms |
+## Security
 
-Remaining misses are mostly by design: renewals more than 45 days out are not shown yet, and a price increase that
-has not been charged yet cannot be detected.
+- HMAC-signed `HttpOnly` `SameSite=Lax` session cookie; PBKDF2-SHA256 password hashes; login rate limits.
+- Customer endpoints take the customer from the session only (no IDOR); every input is a Pydantic model; SQL uses
+  bound parameters only; security headers and CSP; the frontend renders text, never HTML.
+- Partner webhooks are HMAC-SHA256 signed over timestamp and body, with a 5-minute window, idempotent event ids and
+  a strict schema.
+- Data leaves KBC only under an active consent grant, and only the fields that partner is allowed to receive.
+  Grants, revokes and outbound payloads are audited.
+- Kate can't change anything herself: she returns proposed actions that run through the same validated endpoints
+  after the customer taps. The optional LLM layer only rephrases, and every number must appear in the grounded
+  context.
+- Secrets only via `.env`; ground truth is never returned to customers.
 
-### Security (Aikido)
+## Limitations
 
-- HMAC-signed `HttpOnly` `SameSite=Lax` session cookie (8h); PBKDF2-SHA256 200k-iteration password hashes;
-  login rate limit per username and per IP.
-- Customer endpoints take the customer from the session only: no customer ids in customer URLs (no IDOR).
-- Every input is a Pydantic model with patterns, enums and length limits. SQL uses bound parameters only.
-- Security headers + CSP; the frontend renders text nodes only, never HTML.
-- Advisor endpoints check the role server-side and write to `audit_log`.
-- Kate can't change anything herself: she returns proposed actions, which the app runs through the same validated
-  endpoints after the customer taps. Messages ≤ 500 chars, 30/min per user; LLM output (if enabled) must be plain
-  text whose numbers all appear in the grounded context, else the deterministic answer is used.
-- Secrets only via `.env` (see `.env.example`); `ground_truth` is never returned to customers.
-
-### Scale story
-
-The engine is pure functions per customer, so it is embarrassingly parallel. In production: nightly batch +
-event triggers (salary received, due date entering a new stage) recompute and cache each `HomeResponse`; the app
-open is a cache read. The advisor overview times scoring the whole synthetic portfolio and extrapolates to 2.3M.
-
-### Demo script (< 3 min)
-
-1. Log in as `lotte`, turn on **Explain mode**, drag the time slider from 2018 to 2026: the layout changes with
-   her life, while the feed changes its core values, persona mix and eligible targeted cards.
-2. Switch to `sara`: the feed combines parent, household and self-employed signals. Open a core card for its
-   observed breakdown and related cards; see the business and family recommendations beneath the core cards.
-3. Swipe a card away or choose "less like this": the feed re-ranks. Scroll to "✓ You're all caught up".
-4. Switch to `jan`: large text, high contrast, pension hero and a simpler feed with bill calendar and safety guidance.
-5. **Make it yours**: as `lotte`, tap Edit, pin a tile, then drag the slider: the pinned tile stays while the rest
-   morphs. At Jan 2026 a banner suggests "You've started invoicing clients. Add Tax reserve?". Open settings and
-   pick dark mode or large text; Explain mode now says "You chose …".
-6. Ask Kate "we're expecting a baby": she proposes to take it into account; one tap shifts the persona mix, with
-   the evidence "You told Kate on …".
-7. Log in as `advisor` and call `GET /api/advisor/overview` for the scale numbers.
-
-### Not done / honest limitations
-
-- Rules, not ML: persona scoring and ranking are transparent rule-based models by design; the contracts allow
+- Rules, not ML: detectors, persona scores and rankers are transparent rules by design. The contracts allow
   swapping in trained models.
-- LLM copywriting (Gemini) and voice (ElevenLabs) are designed (see `docs/DESIGN.md` §6.7) but not wired in;
-  everything works with deterministic templates. Kate's optional Gemini layer (`KATE_LLM=gemini`, needs
-  `pip install google-genai` and credentials) is implemented but untested against the live API; Kate runs on
+- Partners are simulated through the same signed webhook path a real partner would use.
+- Weak detectors on the blind holdout: first employee, buy home, first investment and energy upgrade all have low
+  precision (18–44%); see [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md).
+- In Lotte's simulated future, goals, layout, Kate and outcomes follow the timeline, but the For You feed stays at
+  today's data.
+- Kate's optional Gemini layer (`KATE_LLM=gemini`) is implemented but untested against the live API; Kate runs on
   deterministic rules by default.
-- Offers and prices in comparison cards are illustrative placeholders, not KBC products.
-- The catalogue retains all 100 concepts. Cards that need unavailable inputs (live rates, verified holdings,
-  confirmed travel or life events, account goals, card controls or external offers) are withheld. Apart from the
-  savings estimate, bespoke calculators, booking and money-movement workflows described in the catalogue remain
-  unavailable.
-- English only. Synthetic data only.
+- Facts behind the freelance journey (social-contribution rates and minimums, advance-tax dates, the pension-savings
+  ceiling, the Peppol mandate) are modelled from public rules and need checking before real use.
+- English only.

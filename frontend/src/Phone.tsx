@@ -299,6 +299,7 @@ export default function Phone(p: Props) {
                   onHide={(pb) => { goals.hide(pb); notify("Okay, not now"); }}
                   onPlaybooks={() => setEcoSheet({ kind: "playbooks" })}
                   onPassport={() => setEcoSheet({ kind: "passport" })}
+                  onAnswerInvite={(id, accept) => void goals.answerInvite(id, accept)}
                 />
               )}
               <LayoutGroup id="home-sections">

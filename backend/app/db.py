@@ -161,9 +161,35 @@ def all_customer_ids(conn: sqlite3.Connection) -> list[int]:
     return [r["id"] for r in conn.execute("SELECT id FROM customers ORDER BY id")]
 
 
+# Life timeline: simulated, future-dated transactions (Lotte's chapters after DEMO_TODAY). They are never
+# stored, so the stored data still ends "today"; they are appended in memory and the end balance moves with them,
+# so balance_at(as_of) stays right for every date. Everything filters on as_of, so today's view is unchanged.
+FUTURE_TX_ID_BASE = 50_000_000
+_future: dict[int, list[Transaction]] | None = None
+
+
+def _simulated_future() -> dict[int, list[Transaction]]:
+    global _future
+    if _future is None:
+        from synth.demo_customers import lotte_future_transactions   # lazy: synth is heavy and optional
+        by_customer: dict[int, list[Transaction]] = {}
+        for i, t in enumerate(sorted(lotte_future_transactions(), key=lambda t: (t.date, t.counterparty))):
+            by_customer.setdefault(t.customer_id, []).append(t.model_copy(update={"id": FUTURE_TX_ID_BASE + i}))
+        _future = by_customer
+    return _future
+
+
+def future_end(customer_id: int) -> dt.date | None:
+    """Last simulated future date for this customer (None: no simulated future)."""
+    txs = _simulated_future().get(customer_id)
+    return txs[-1].date if txs else None
+
+
 def get_balance_today(conn: sqlite3.Connection, customer_id: int) -> float:
+    """The balance after the last transaction returned by get_transactions (simulated future included)."""
     row = conn.execute("SELECT balance_today FROM accounts WHERE customer_id = ?", (customer_id,)).fetchone()
-    return float(row["balance_today"]) if row else 0.0
+    stored = float(row["balance_today"]) if row else 0.0
+    return round(stored + sum(t.amount for t in _simulated_future().get(customer_id, [])), 2)
 
 
 def get_transactions(conn: sqlite3.Connection, customer_id: int) -> list[Transaction]:
@@ -172,13 +198,14 @@ def get_transactions(conn: sqlite3.Connection, customer_id: int) -> list[Transac
         "WHERE customer_id = ? ORDER BY date, id",
         (customer_id,),
     ).fetchall()
-    return [
+    stored = [
         Transaction(
             id=r["id"], customer_id=r["customer_id"], date=dt.date.fromisoformat(r["date"]),
             amount=r["amount"], category=r["category"], counterparty=r["counterparty"],
         )
         for r in rows
     ]
+    return stored + list(_simulated_future().get(customer_id, []))
 
 
 def get_prefs(conn: sqlite3.Connection, customer_id: int) -> Prefs:

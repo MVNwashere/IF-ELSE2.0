@@ -38,7 +38,19 @@ export interface Step {
   alternatives?: PartnerOption[];
   source_hint?: SourceHint | null;
   booking?: string;
+  fallback?: FallbackOffer | null;
+  joint?: boolean;
+  approved_by?: string[];
+  waiting_for?: string[];
 }
+
+/** The partner rejected or missed its SLA: who can do it instead (nothing shared until you approve again). */
+export interface FallbackOffer { reason: "rejected" | "timeout" | "failed"; message: string; partner_id: string | null; partner_name: string | null }
+export interface HouseholdMember { first_name: string; role: "owner" | "member"; status: "invited" | "active"; you: boolean }
+export interface StallPrompt { since: string; days: number; question: string; options: ("keep" | "pause" | "stop")[] }
+export interface HouseholdInvite { goal_id: number; title: string; icon: string; from_name: string }
+export type StallAnswer = "keep" | "pause" | "resume" | "stop";
+export type SimMode = "done" | "late" | "reject" | "fail" | "timeout";
 
 export interface FeeDisclosure { model: ValueShareModel | null; amount_eur: number; pct: number; kbc_earns: string; you_pay_extra: string }
 export interface PartnerOption {
@@ -50,6 +62,8 @@ export interface PartnerOption {
   chosen: boolean;
   fee: FeeDisclosure;
   data_shared: DataField[];
+  demoted?: boolean;
+  tried?: boolean;
 }
 export interface SourceHint { source_id: string; name: string; prompt: string; connected: boolean }
 export type OutcomeStatus = "verified" | "pending" | "not_met";
@@ -95,6 +109,10 @@ export interface Goal {
   next_goal: string | null;
   next_goal_title?: string | null;
   measured?: MeasuredOutcome[];
+  role?: "owner" | "member";
+  household?: HouseholdMember[];
+  paused?: boolean;
+  stall?: StallPrompt | null;
 }
 
 export interface GoalCandidate {
@@ -119,6 +137,7 @@ export interface GoalsResponse {
   goals: Goal[];
   holdings: ProductRef[];
   playbooks: PlaybookSummary[];
+  invitations?: HouseholdInvite[];
 }
 
 export interface ConsentGrant {
@@ -165,7 +184,12 @@ export interface SourcesResponse { sources: SourceView[]; connected: number; not
 export interface ConsentsResponse { grants: ConsentGrant[]; partners_with_access: number; fields_shared: number; sources?: SourceView[] }
 
 export interface FunnelRow { playbook_id: string; title: string; icon: string; detected: number; started: number; steps_done: number; completed: number; projected_2_3m: number }
-export interface PartnerRow { partner_id: string; name: string; ecosystems: string[]; value_share: ValueShare; leads: number; completed: number; fees_eur: number; avg_response_s: number | null }
+export interface PartnerRow {
+  partner_id: string; name: string; ecosystems: string[]; value_share: ValueShare; leads: number; completed: number; fees_eur: number; avg_response_s: number | null;
+  // live scorecard
+  calls?: number; sla_misses?: number; rejections?: number; failures?: number; late_answers?: number;
+  outcome_rate_live?: number | null; sla_hours?: number; demoted?: boolean; sim_mode?: SimMode;
+}
 export interface EventRow { at: string; partner_id: string; kind: string; summary: string; verified: boolean }
 
 export interface LearningRow {

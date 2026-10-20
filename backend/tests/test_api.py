@@ -179,7 +179,7 @@ def test_security_headers(client):
     assert r.headers["X-Frame-Options"] == "DENY"
 
 
-# ---- v2: customisation, suggestions, declared signals, Kate ------------------------
+# ---- customisation, suggestions, declared signals, Kate ------------------------
 
 
 def _as(client: TestClient, username: str) -> None:

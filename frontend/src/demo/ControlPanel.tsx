@@ -28,14 +28,21 @@ const DEMO = [
   { username: "sara", hint: "freelancer + young mother" },
   { username: "jan", hint: "retiree, 71" },
   { username: "marc", hint: "the 52-year-old investor" },
+  { username: "tom", hint: "employee with a side business" },
+  { username: "els", hint: "kids at uni + mother in care" },
+  { username: "amir", hint: "newcomer, 4 months of data" },
+  { username: "pieter", hint: "SME owner, clients abroad" },
+  { username: "nina", hint: "BNPL and bounced debits" },
   { username: "advisor", hint: "KBC ecosystem console" },
 ];
 
 export default function ControlPanel(p: Props) {
   const tl = p.timeline;
   const totalDays = tl ? Math.max(1, daysBetween(tl.min_date, tl.max_date)) : 1;
-  const currentDate = p.asOf ?? tl?.max_date ?? null;
-  const currentIdx = tl && currentDate ? Math.max(0, Math.min(totalDays, daysBetween(tl.min_date, currentDate))) : totalDays;
+  // After `today` the timeline is simulated (Lotte's life timeline); without it, the end of the axis is today.
+  const todayIdx = tl?.today ? Math.max(0, Math.min(totalDays, daysBetween(tl.min_date, tl.today))) : totalDays;
+  const currentDate = p.asOf ?? tl?.today ?? tl?.max_date ?? null;
+  const currentIdx = tl && currentDate ? Math.max(0, Math.min(totalDays, daysBetween(tl.min_date, currentDate))) : todayIdx;
   const [slider, setSlider] = useState(currentIdx);
 
   // keep the slider in sync when the customer/timeline changes
@@ -45,7 +52,7 @@ export default function ControlPanel(p: Props) {
   useEffect(() => {
     if (!tl) return;
     const t = window.setTimeout(() => {
-      const date = slider >= totalDays ? null : addDays(tl.min_date, slider);
+      const date = slider === todayIdx || (slider >= totalDays && todayIdx >= totalDays) ? null : addDays(tl.min_date, slider);
       if (date !== p.asOf) p.onAsOf(date);
     }, 150);
     return () => window.clearTimeout(t);
@@ -71,7 +78,7 @@ export default function ControlPanel(p: Props) {
   return (
     <aside className="panel">
       <h1>
-        KBC Adaptive Home
+        KBC Takes Care
         <small>Demo controls · synthetic data{p.mock ? " · MOCK MODE" : ""}</small>
       </h1>
 
@@ -100,7 +107,7 @@ export default function ControlPanel(p: Props) {
           <div className="slider-wrap">
             <div className="slider-date">
               {longDate(previewDate)}
-              {slider >= totalDays ? <small>today</small> : <small>as of</small>}
+              {slider === todayIdx ? <small>today</small> : slider > todayIdx ? <small>simulated future</small> : <small>as of</small>}
             </div>
             <div className="slider">
               <input

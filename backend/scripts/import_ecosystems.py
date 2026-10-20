@@ -1,4 +1,4 @@
-"""Rebuild app/ecosystem/catalogue.json from docs/KBC_Ecosystems.xlsx (KBC's own list of building blocks).
+"""Rebuild app/ecosystem/catalogue.json from docs/reference/KBC_Ecosystems.xlsx (KBC's own list of building blocks).
 
 Dev-only: needs openpyxl (`py -3.12 -m pip install openpyxl`). The JSON is checked in, so the app never reads Excel.
 Run from backend/: `py -3.12 -m scripts.import_ecosystems`
@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "docs" / "KBC_Ecosystems.xlsx"
+SRC = ROOT / "docs" / "reference" / "KBC_Ecosystems.xlsx"
 OUT = ROOT / "backend" / "app" / "ecosystem" / "catalogue.json"
 
 

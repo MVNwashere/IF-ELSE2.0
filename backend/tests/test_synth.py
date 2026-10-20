@@ -1,4 +1,4 @@
-"""Synthetic data sanity checks (DESIGN.md §6.1)."""
+"""Synthetic data sanity checks (docs/CUSTOMER-APP.md)."""
 from __future__ import annotations
 
 import json
@@ -17,7 +17,7 @@ ALL_SCENARIOS = {"student", "young_family", "freelancer", "retiree", "young_prof
 def conn(tmp_path_factory):
     path = str(tmp_path_factory.mktemp("db") / "kbc_test.db")
     summary = build(path, n=30, seed=7, verbose=False)
-    assert summary["customers"] == 34   # 30 regular + lotte, sara, jan, marc
+    assert summary["customers"] == 39   # 30 regular + lotte, sara, jan, marc, tom, els, amir, pieter, nina
     c = sqlite3.connect(path)
     c.row_factory = sqlite3.Row
     yield c

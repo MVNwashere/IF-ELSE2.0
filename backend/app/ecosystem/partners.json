@@ -22,7 +22,9 @@
   {"field": "vehicle", "label": "Your car (make, model, year)"},
   {"field": "commute", "label": "Your commute (distance and days a week)"},
   {"field": "company_name", "label": "Your company name"},
-  {"field": "staffing_need", "label": "The job, hours and dates you need filled"}
+  {"field": "staffing_need", "label": "The job, hours and dates you need filled"},
+  {"field": "care_need", "label": "The kind of care needed (home care or a care home)", "sensitive": true},
+  {"field": "debt_overview", "label": "The debts and arrears you choose to list", "sensitive": true}
  ],
  "never_shared_default": ["Your income", "Your account balances", "Your transactions"],
  "partners": [
@@ -37,7 +39,7 @@
                       "household", "income", "balances", "transactions", "energy_use", "chosen_works",
                       "company_number", "open_invoices", "travel_dates", "destination", "birth_year",
                       "investor_profile", "family_situation", "vehicle", "commute", "company_name",
-                      "staffing_need"],
+                      "staffing_need", "care_need", "debt_overview"],
    "value_share": {"model": "revenue_share", "pct": 0, "note": "KBC's own service"},
    "vetting": ["Regulated by the NBB and FSMA", "GDPR controller for your data"],
    "sla_hours": 0, "integration": "KBC core services"
@@ -242,6 +244,94 @@
    "sla_hours": 1, "integration": "KBC Developer Portal API"
   },
   {
+   "id": "kube_esg", "name": "Kube ESG", "kind": "partner",
+   "ecosystems": ["Energy and sustainability", "International business", "Agriculture and horticulture"],
+   "catalogue_ids": ["kube-esg"],
+   "blurb": "ESG and CO2 reporting for small businesses, ready for the supplier checks of large buyers.",
+   "allowed_fields": ["first_name", "email", "company_name", "company_number"],
+   "value_share": {"model": "subscription", "amount_eur": 5, "note": "KBC earns per active subscription per month"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed"],
+   "rating": 4.2, "outcome_rate": 0.76,
+   "sla_hours": 48, "integration": "KBC Developer Portal API"
+  },
+  {
+   "id": "ipex", "name": "IPEX", "kind": "partner",
+   "ecosystems": ["Administration and documents"],
+   "catalogue_ids": ["registered-email-ipex"],
+   "blurb": "Registered e-mail with legal proof of sending and delivery.",
+   "allowed_fields": ["first_name", "email"],
+   "value_share": {"model": "fee_per_completed_step", "amount_eur": 1, "note": "per registered e-mail sent"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "Qualified eIDAS trust service"],
+   "rating": 4.3, "outcome_rate": 0.98,
+   "sla_hours": 1, "integration": "KBC Developer Portal API"
+  },
+  {
+   "id": "mobit", "name": "Mobit", "kind": "partner",
+   "ecosystems": ["Mobility"],
+   "catalogue_ids": ["shared-bicycles-mobit"],
+   "blurb": "Shared bikes without a fixed station, in Flemish and Brussels cities.",
+   "allowed_fields": ["first_name", "email", "region", "commute"],
+   "value_share": {"model": "lead_fee", "amount_eur": 5, "note": "per new subscriber"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed"],
+   "rating": 4.1, "outcome_rate": 0.74,
+   "sla_hours": 24, "integration": "KBC Partner Hub"
+  },
+  {
+   "id": "blue_bike", "name": "Blue-bike", "kind": "partner",
+   "ecosystems": ["Mobility"],
+   "catalogue_ids": ["shared-bicycles-blue-bike"],
+   "blurb": "Shared bikes at train stations, for the last kilometres of your commute.",
+   "allowed_fields": ["first_name", "email", "region", "commute"],
+   "value_share": {"model": "lead_fee", "amount_eur": 5, "note": "per new subscriber"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed"],
+   "rating": 4.4, "outcome_rate": 0.79,
+   "sla_hours": 24, "integration": "KBC Partner Hub"
+  },
+  {
+   "id": "carefinder", "name": "CareFinder (illustrative)", "kind": "partner",
+   "ecosystems": ["Health and wellbeing", "Family and protection"],
+   "catalogue_ids": [],
+   "blurb": "Finds care homes and home-care services near your parent, with prices and waiting lists. Illustrative partner.",
+   "allowed_fields": ["first_name", "email", "region", "care_need"],
+   "value_share": {"model": "fee_per_completed_step", "amount_eur": 40, "note": "per care search completed, paid by KBC, never by the care home"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "No commission from care providers"],
+   "rating": 4.3, "outcome_rate": 0.7,
+   "sla_hours": 48, "integration": "KBC Partner Hub + application status webhooks"
+  },
+  {
+   "id": "budget_coach", "name": "Debt counselling service (illustrative)", "kind": "partner",
+   "ecosystems": ["Everyday banking and payments"],
+   "catalogue_ids": [],
+   "blurb": "A recognised, non-profit debt counselling service (CAW-type). Free and confidential. Illustrative partner.",
+   "allowed_fields": ["first_name", "email", "region", "household", "debt_overview"],
+   "value_share": {"model": "lead_fee", "amount_eur": 0, "note": "No fee either way: KBC earns nothing and pays nothing per referral"},
+   "vetting": ["Recognised debt counselling service", "Data processing agreement signed", "Non-profit: no commercial offers to customers"],
+   "rating": 4.6, "outcome_rate": 0.64,
+   "sla_hours": 48, "integration": "KBC Partner Hub"
+  },
+  {
+   "id": "notary_network", "name": "Notary (KBC network, illustrative)", "kind": "partner",
+   "ecosystems": ["Family and protection", "Wealth and estate planning", "Business"],
+   "catalogue_ids": [],
+   "blurb": "A notary near you for cohabitation contracts, marriage settlements and business transfers. Illustrative partner.",
+   "allowed_fields": ["first_name", "email", "family_situation", "property_address", "company_name", "company_number"],
+   "value_share": {"model": "lead_fee", "amount_eur": 0, "note": "Notary fees are set by law; no commission to KBC"},
+   "vetting": ["Appointed notary", "Data processing agreement signed", "Bound by professional secrecy"],
+   "rating": 4.5, "outcome_rate": 0.88,
+   "sla_hours": 72, "integration": "KBC Partner Hub + application status webhooks"
+  },
+  {
+   "id": "family_mediator", "name": "Family mediator (illustrative)", "kind": "partner",
+   "ecosystems": ["Family and protection"],
+   "catalogue_ids": [],
+   "blurb": "A federally accredited family mediator for separations. Illustrative partner.",
+   "allowed_fields": ["first_name", "email", "family_situation"],
+   "value_share": {"model": "lead_fee", "amount_eur": 0, "note": "No commission: KBC earns nothing from a separation"},
+   "vetting": ["Accredited by the Federal Mediation Commission", "Data processing agreement signed", "Bound by professional secrecy"],
+   "rating": 4.4, "outcome_rate": 0.71,
+   "sla_hours": 72, "integration": "KBC Partner Hub"
+  },
+  {
    "id": "kbc_private_banker", "name": "Your KBC private banker", "kind": "advisor",
    "ecosystems": ["Wealth and estate planning", "Investing", "Pensions"],
    "catalogue_ids": ["private-banker-advice"],
@@ -269,7 +359,9 @@
   "energy_upgrade/quotes": ["impact_us_today", "setle"],
   "first_employee/flex_workers": ["nowjobs"],
   "mobility/leasing": ["movesmart"],
-  "mobility/car_sharing": ["cambio"]
+  "mobility/car_sharing": ["cambio"],
+  "side_job/e_invoicing": ["billit", "soluz_io"],
+  "move_house/commute": ["cambio", "mobit", "blue_bike"]
  },
  "advisor_steps": {
   "retire_well/private_banker": "kbc_private_banker",

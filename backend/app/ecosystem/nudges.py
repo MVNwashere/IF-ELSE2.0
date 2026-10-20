@@ -35,7 +35,7 @@ from ..engine.features import fmt_date, fmt_eur
 from ..schemas import Customer, DeclaredSignalRow, KateAction, Transaction
 from . import signals, store
 from .context import PROPERTY_SEARCH, TRAVEL_MERCHANTS, CustomerContext, build_context
-from .intent import detect
+from .intent import detect_with_suppressed
 from .registry import registry
 
 log = logging.getLogger(__name__)
@@ -492,8 +492,12 @@ def _day(customer: Customer, txs: list[Transaction], balance: float, day: dt.dat
     if hit is not None:
         return hit
     ctx = build_context(customer, txs, balance, day)
-    detected = {pid: d for pid, d in detect(ctx, decl)}
+    kept, suppressed = detect_with_suppressed(ctx, decl)
+    detected = dict(kept)
     out = _card_candidates(ctx, detected) + _intent_candidates(ctx, detected) + _signal_candidates(ctx)
+    # same rule as the journeys: in hard times nothing pushes a commercial goal (urgent alerts still go through)
+    held = {pid for pid, _ in suppressed}
+    out = [c for c in out if c.tier == "urgent" or c.playbook_id not in held]
     # one candidate per key per day (a card and a signal may describe the same deadline: keep the first, the card
     # is evaluated first only when signals gave nothing)
     seen: dict[str, Cand] = {}
@@ -534,8 +538,10 @@ def _journey_candidates(conn, customer_id: int) -> list[Cand]:
     grants = store.grants(conn, customer_id)
     for row in store.goals(conn, customer_id):
         if row["status"] == "cancelled":
-            continue
+            continue                       # stopped by the customer
         g = service.goal_model(conn, row)
+        if g.paused:
+            continue                       # paused by the customer: no journey nudges until they pick it up again
         mine = [r for r in grants if r["goal_id"] == g.goal_id]
         by_step = {r["step_id"]: r for r in mine}
         last = max([dt.date.fromisoformat(r["granted_on"]) for r in mine] + [g.created_on])

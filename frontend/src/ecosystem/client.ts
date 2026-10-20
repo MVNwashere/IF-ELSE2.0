@@ -2,7 +2,7 @@
 import { api, call } from "../api";
 import { MOCK } from "../data";
 import { mockEco } from "./mock";
-import type { ConsentsResponse, EcosystemOverview, Goal, GoalsResponse, SourcesResponse, StepDecision } from "./types";
+import type { ConsentsResponse, EcosystemOverview, Goal, GoalsResponse, SimMode, SourcesResponse, StallAnswer, StepDecision } from "./types";
 
 const withAsOf = (path: string, asOf?: string) => (asOf ? `${path}?as_of=${encodeURIComponent(asOf)}` : path);
 
@@ -25,6 +25,18 @@ export const eco = {
   connectSource: (sourceId: string, playbookId: string, asOf?: string): Promise<SourcesResponse> =>
     MOCK ? mockEco.connectSource(sourceId, playbookId)
       : call<SourcesResponse>("POST", withAsOf(`/api/me/sources/${encodeURIComponent(sourceId)}/connect`, asOf), { playbook_id: playbookId }),
+  // households: share a goal, accept an invitation (the mock engine has no second customer: no-ops there)
+  invite: (goalId: number, username: string, asOf?: string): Promise<Goal | null> =>
+    MOCK ? Promise.resolve(null)
+      : call<Goal>("POST", withAsOf(`/api/me/goals/${encodeURIComponent(goalId)}/household`, asOf), { username }),
+  answerInvite: (goalId: number, accept: boolean, asOf?: string): Promise<unknown> =>
+    MOCK ? Promise.resolve(null) : call("POST", withAsOf(`/api/me/household/${encodeURIComponent(goalId)}`, asOf), { accept }),
+  // "still want this?": keep, pause, resume or stop a stalled journey
+  stall: (goalId: number, answer: StallAnswer, asOf?: string): Promise<unknown> =>
+    MOCK ? Promise.resolve(null) : call("POST", withAsOf(`/api/me/goals/${encodeURIComponent(goalId)}/stall`, asOf), { answer }),
+  // console demo switch: how a simulated partner answers
+  simulatePartner: (partnerId: string, mode: SimMode): Promise<unknown> =>
+    MOCK ? Promise.resolve(null) : call("POST", `/api/ecosystem/partners/${encodeURIComponent(partnerId)}/simulate`, { mode }),
   disconnectSource: (sourceId: string, asOf?: string): Promise<SourcesResponse> =>
     MOCK ? mockEco.disconnectSource(sourceId)
       : call<SourcesResponse>("POST", withAsOf(`/api/me/sources/${encodeURIComponent(sourceId)}/disconnect`, asOf)),

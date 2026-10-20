@@ -28,7 +28,8 @@ def _clamp(conn, customer_id: int, as_of: dt.date | None) -> tuple[dt.date, dt.d
     if not rng:
         raise HTTPException(status_code=404, detail="No data for customer")
     lo, hi = rng[0], max(rng[1], DEMO_TODAY)
-    at = hi if as_of is None else min(max(as_of, lo), hi)
+    top = max(hi, db.future_end(customer_id) or hi)   # Lotte's simulated life timeline
+    at = hi if as_of is None else min(max(as_of, lo), top)
     return lo, at
 
 

@@ -10,6 +10,11 @@ const QUICK = [
   { label: "Sara", username: "sara" },
   { label: "Jan", username: "jan" },
   { label: "Marc", username: "marc" },
+  { label: "Tom", username: "tom" },
+  { label: "Els", username: "els" },
+  { label: "Amir", username: "amir" },
+  { label: "Pieter", username: "pieter" },
+  { label: "Nina", username: "nina" },
   { label: "KBC console", username: "advisor" },
 ];
 
@@ -32,7 +37,7 @@ export default function Login({ onLogin, error }: Props) {
           onSubmit={(e) => { e.preventDefault(); void submit(); }}
         >
           <div>
-            <h1>KBC Adaptive Home</h1>
+            <h1>KBC Takes Care</h1>
             <p>One app that composes itself around your life. Persona sets the stage, moments fill it.</p>
           </div>
           <div>

@@ -27,7 +27,7 @@ SCORE = {                         # raw-score contributions, capped at 1.0 per p
     "freelancer_base_strong": 0.4, # ≥2 clients or VAT payments
     "freelancer_base_weak": 0.2,   # a single invoice payer
     "freelancer_share": 0.6,       # × invoice share of income over 180 days
-    "investor_age_salary": 0.6,    # round 2: 45–66 with a salary
+    "investor_age_salary": 0.6,    # 45–66 with a salary
     "investor_wealth": 0.3,        # a balance of 10+ months of spending
     "investor_pension": 0.1,       # already saving for the pension
     "retiree_pension": 0.8,
@@ -134,7 +134,7 @@ def _score_freelancer(f: Features) -> tuple[float, list[str]]:
 
 
 def _score_investor(f: Features) -> tuple[float, list[str]]:
-    """Round 2: the mid-career customer whose questions are pension, wealth and the next generation."""
+    """The mid-career customer whose questions are pension, wealth and the next generation."""
     s, ev = 0.0, []
     if INVESTOR_MIN_AGE <= f.age < RETIREE_AGE and f.has_salary and not f.has_pension:
         s += SCORE["investor_age_salary"]

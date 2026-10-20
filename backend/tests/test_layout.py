@@ -297,7 +297,7 @@ def test_cashflow_card_triggers_stress_boost():
     assert "AdvisorContact" in _components(lay)
 
 
-# ---- v2: customisation --------------------------------------------------------
+# ---- customisation ------------------------------------------------------------
 
 
 def test_pinned_tile_keeps_its_slot_while_the_rest_adapts():

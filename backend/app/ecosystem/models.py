@@ -120,6 +120,19 @@ class Step(BaseModel):
     alternatives: list[PartnerOption] = Field(default_factory=list)   # >1 when the customer can pick a partner
     source_hint: SourceHint | None = None    # a data source that would make this step more accurate
     booking: str = ""                        # advisor steps: the booked meeting
+    fallback: FallbackOffer | None = None    # the partner declined or didn't answer: who can do it instead
+    joint: bool = False                      # shared household goal: every member approves before data leaves KBC
+    approved_by: list[str] = Field(default_factory=list)   # first names of members who approved (joint steps)
+    waiting_for: list[str] = Field(default_factory=list)   # first names of members whose approval is still needed
+
+
+class FallbackOffer(BaseModel):
+    """A partner rejected the lead or missed its SLA. KBC proposes the next-ranked vetted partner; nothing is
+    shared with it until the customer approves again (a fresh consent grant)."""
+    reason: Literal["rejected", "timeout", "failed"]
+    message: str
+    partner_id: str | None = None            # None: no other vetted partner for this step
+    partner_name: str | None = None
 
 
 class FeeDisclosure(BaseModel):
@@ -141,6 +154,8 @@ class PartnerOption(BaseModel):
     chosen: bool = False
     fee: FeeDisclosure
     data_shared: list[DataField] = Field(default_factory=list)
+    demoted: bool = False                    # repeatedly missed its SLA: ranked below the partners that answer
+    tried: bool = False                      # already declined or timed out for this step
 
 
 class SourceHint(BaseModel):
@@ -198,6 +213,31 @@ class Goal(BaseModel):
     next_goal: str | None = None             # playbook id the engine suggests after this one
     next_goal_title: str | None = None
     measured: list[MeasuredOutcome] = Field(default_factory=list)   # realised vs estimated (journey step 5)
+    role: Literal["owner", "member"] = "owner"   # member: a household member the owner shared the goal with
+    household: list[HouseholdMember] = Field(default_factory=list)
+    paused: bool = False                     # paused by the customer: no nudges, no stall prompts
+    stall: StallPrompt | None = None         # no progress for a month: one gentle "still want this?"
+
+
+class HouseholdMember(BaseModel):
+    first_name: str
+    role: Literal["owner", "member"]
+    status: Literal["invited", "active"]
+    you: bool = False
+
+
+class StallPrompt(BaseModel):
+    since: dt.date                           # last progress
+    days: int
+    question: str
+    options: list[Literal["keep", "pause", "stop"]] = Field(default_factory=lambda: ["keep", "pause", "stop"])
+
+
+class HouseholdInvite(BaseModel):
+    goal_id: int
+    title: str
+    icon: str
+    from_name: str
 
 
 class GoalCandidate(BaseModel):
@@ -230,6 +270,7 @@ class GoalsResponse(BaseModel):
     goals: list[Goal]
     holdings: list[ProductRef]
     playbooks: list[PlaybookSummary]         # every goal a customer can state themselves
+    invitations: list[HouseholdInvite] = Field(default_factory=list)   # goals a household member shared with you
 
 
 # ---- consent passport -------------------------------------------------------------------------------------------
@@ -302,6 +343,33 @@ class StepDecisionRequest(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+USERNAME_PATTERN = r"^[a-z0-9_]{2,40}$"
+
+
+class HouseholdInviteRequest(BaseModel):
+    username: str = Field(pattern=USERNAME_PATTERN)
+
+    model_config = {"extra": "forbid"}
+
+
+class HouseholdAnswerRequest(BaseModel):
+    accept: bool
+
+    model_config = {"extra": "forbid"}
+
+
+class StallAnswerRequest(BaseModel):
+    answer: Literal["keep", "pause", "resume", "stop"]
+
+    model_config = {"extra": "forbid"}
+
+
+class PartnerSimRequest(BaseModel):
+    mode: Literal["done", "late", "reject", "fail", "timeout"]
+
+    model_config = {"extra": "forbid"}
+
+
 SOURCE_ID_PATTERN = r"^[a-z0-9_]{2,40}$"
 
 
@@ -316,7 +384,8 @@ class PartnerWebhook(BaseModel):
     """What a partner POSTs to /api/partners/{partner_id}/webhook. Signed, see webhooks.py."""
     event_id: str = Field(pattern=EVENT_ID_PATTERN)
     ref: str = Field(pattern=r"^[a-z0-9_-]{6,80}$")
-    status: Literal["in_progress", "done", "failed", "deleted"]   # deleted: data erased after revoke/expiry
+    # deleted: data erased after revoke/expiry; rejected: the partner declines the lead (result = the reason)
+    status: Literal["in_progress", "done", "failed", "rejected", "deleted"]
     result: str = Field(default="", max_length=300)
 
     model_config = {"extra": "forbid"}
@@ -345,6 +414,16 @@ class PartnerRow(BaseModel):
     completed: int
     fees_eur: float
     avg_response_s: float | None = None
+    # live scorecard from the partner calls: first answer time, SLA misses, rejections, done / answered
+    calls: int = 0
+    sla_misses: int = 0
+    rejections: int = 0
+    failures: int = 0
+    late_answers: int = 0
+    outcome_rate_live: float | None = None
+    sla_hours: int = 0
+    demoted: bool = False
+    sim_mode: str = "done"                   # demo: how the simulated partner answers
 
 
 class EventRow(BaseModel):
@@ -407,7 +486,7 @@ class EcosystemOverview(BaseModel):
 
 class WebhookContract(BaseModel):
     url: str = Field(pattern=r"^https://[A-Za-z0-9.-]{3,120}(/[A-Za-z0-9._~/-]{0,200})?$", max_length=330)
-    events: list[Literal["in_progress", "done", "failed", "deleted"]] = Field(min_length=1, max_length=4)
+    events: list[Literal["in_progress", "done", "failed", "rejected", "deleted"]] = Field(min_length=1, max_length=5)
 
     model_config = {"extra": "forbid"}
 

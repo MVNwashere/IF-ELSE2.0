@@ -112,7 +112,7 @@ export interface KateAction {
 export interface KateTurn { role: "user" | "kate"; text: string }
 export interface KateReply { reply: string; actions: KateAction[]; quick_replies: string[]; source: "rules" | "llm" }
 export interface Milestone { date: string; label: string }
-export interface TimelineResponse { min_date: string; max_date: string; milestones: Milestone[] }
+export interface TimelineResponse { min_date: string; max_date: string; milestones: Milestone[]; today?: string | null }
 export interface LoginResponse { role: "customer" | "advisor"; username: string }
 export interface AdvisorOverview {
   customers_scored: number;

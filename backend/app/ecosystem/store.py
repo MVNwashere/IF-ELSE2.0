@@ -86,6 +86,38 @@ CREATE TABLE IF NOT EXISTS eco_sources (
   disconnected_on TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_eco_sources_customer ON eco_sources(customer_id);
+CREATE TABLE IF NOT EXISTS eco_partner_calls (
+  id INTEGER PRIMARY KEY,
+  partner_id TEXT NOT NULL,
+  ref TEXT NOT NULL UNIQUE,
+  customer_id INTEGER NOT NULL,
+  goal_id INTEGER NOT NULL,
+  step_id TEXT NOT NULL,
+  sent_at TEXT NOT NULL,
+  sent_on TEXT NOT NULL,
+  first_answer_at TEXT,
+  outcome TEXT CHECK (outcome IN ('done','rejected','failed','timeout')),
+  closed_at TEXT,
+  late INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS ix_eco_calls_partner ON eco_partner_calls(partner_id);
+CREATE TABLE IF NOT EXISTS eco_members (
+  goal_id INTEGER NOT NULL REFERENCES eco_goals(id) ON DELETE CASCADE,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  status TEXT NOT NULL CHECK (status IN ('invited','active')),
+  invited_on TEXT NOT NULL,
+  accepted_on TEXT,
+  PRIMARY KEY (goal_id, customer_id)
+);
+CREATE INDEX IF NOT EXISTS ix_eco_members_customer ON eco_members(customer_id);
+CREATE TABLE IF NOT EXISTS eco_approvals (
+  goal_id INTEGER NOT NULL REFERENCES eco_goals(id) ON DELETE CASCADE,
+  step_id TEXT NOT NULL,
+  customer_id INTEGER NOT NULL,
+  partner_id TEXT NOT NULL,
+  at TEXT NOT NULL,
+  PRIMARY KEY (goal_id, step_id, customer_id)
+);
 CREATE TABLE IF NOT EXISTS eco_shown (
   customer_id INTEGER NOT NULL,
   playbook_id TEXT NOT NULL,
@@ -99,11 +131,21 @@ _MIGRATIONS = (
     ("eco_steps", "partner_id", "TEXT"),      # the partner the customer picked among the step's alternatives
     ("eco_steps", "done_on", "TEXT"),         # simulated completion date (time travel aware)
     ("eco_grants", "deleted_at", "TEXT"),     # partner confirmed deletion after revoke/expiry (signed webhook)
+    ("eco_steps", "tried_partners", "TEXT"),  # JSON list: partners that rejected or timed out on this step
+    ("eco_steps", "fallback", "TEXT"),        # JSON: why the last partner dropped out and who is proposed instead
+    ("eco_goals", "paused_on", "TEXT"),       # the customer paused the journey
+    ("eco_goals", "stall_prompted_on", "TEXT"),  # first time the "still want this?" prompt was shown
+    ("eco_goals", "stall_answer", "TEXT"),    # keep / pause / stop: then never again
 )
 _ALTER = {
     ("eco_steps", "partner_id"): "ALTER TABLE eco_steps ADD COLUMN partner_id TEXT",
     ("eco_steps", "done_on"): "ALTER TABLE eco_steps ADD COLUMN done_on TEXT",
     ("eco_grants", "deleted_at"): "ALTER TABLE eco_grants ADD COLUMN deleted_at TEXT",
+    ("eco_steps", "tried_partners"): "ALTER TABLE eco_steps ADD COLUMN tried_partners TEXT",
+    ("eco_steps", "fallback"): "ALTER TABLE eco_steps ADD COLUMN fallback TEXT",
+    ("eco_goals", "paused_on"): "ALTER TABLE eco_goals ADD COLUMN paused_on TEXT",
+    ("eco_goals", "stall_prompted_on"): "ALTER TABLE eco_goals ADD COLUMN stall_prompted_on TEXT",
+    ("eco_goals", "stall_answer"): "ALTER TABLE eco_goals ADD COLUMN stall_answer TEXT",
 }
 
 
@@ -116,6 +158,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
     cols = {
         "eco_steps": {r[1] for r in conn.execute("PRAGMA table_info(eco_steps)")},
         "eco_grants": {r[1] for r in conn.execute("PRAGMA table_info(eco_grants)")},
+        "eco_goals": {r[1] for r in conn.execute("PRAGMA table_info(eco_goals)")},
     }
     for table, column, _ in _MIGRATIONS:
         if column not in cols[table]:
@@ -153,6 +196,32 @@ def goal(conn, customer_id: int, goal_id: int) -> sqlite3.Row | None:
     return conn.execute("SELECT * FROM eco_goals WHERE id = ? AND customer_id = ?", (goal_id, customer_id)).fetchone()
 
 
+def goal_for(conn, customer_id: int, goal_id: int) -> sqlite3.Row | None:
+    """The goal if this customer owns it or is an active household member of it (no IDOR either way)."""
+    return conn.execute(
+        "SELECT * FROM eco_goals WHERE id = ? AND (customer_id = ? OR id IN "
+        "(SELECT goal_id FROM eco_members WHERE customer_id = ? AND status = 'active'))",
+        (goal_id, customer_id, customer_id)).fetchone()
+
+
+def shared_goals(conn, customer_id: int, as_of: dt.date | None = None) -> list[sqlite3.Row]:
+    """Goals another customer shared with this one (accepted invitations)."""
+    rows = conn.execute("SELECT g.* FROM eco_goals g JOIN eco_members m ON m.goal_id = g.id "
+                        "WHERE m.customer_id = ? AND m.status = 'active' ORDER BY g.id", (customer_id,)).fetchall()
+    return [r for r in rows if as_of is None or r["created_on"] <= as_of.isoformat()]
+
+
+def set_goal_pause(conn, goal_id: int, paused_on: dt.date | None) -> None:
+    conn.execute("UPDATE eco_goals SET paused_on = ? WHERE id = ?",
+                 (paused_on.isoformat() if paused_on else None, goal_id))
+
+
+def set_stall(conn, goal_id: int, *, prompted_on: dt.date | None = None, answer: str | None = None) -> None:
+    conn.execute("UPDATE eco_goals SET stall_prompted_on = COALESCE(?, stall_prompted_on), "
+                 "stall_answer = COALESCE(?, stall_answer) WHERE id = ?",
+                 (prompted_on.isoformat() if prompted_on else None, answer, goal_id))
+
+
 def set_goal_status(conn, goal_id: int, status: str) -> None:
     conn.execute("UPDATE eco_goals SET status = ? WHERE id = ?", (status, goal_id))
 
@@ -174,6 +243,11 @@ def update_step(conn, goal_id: int, step_id: str, *, status: str | None = None, 
     )
 
 
+def set_step_fallback(conn, goal_id: int, step_id: str, tried: list[str], fallback: dict | None) -> None:
+    conn.execute("UPDATE eco_steps SET tried_partners = ?, fallback = ?, updated_at = ? WHERE goal_id = ? AND step_id = ?",
+                 (json.dumps(tried), json.dumps(fallback) if fallback else None, now(), goal_id, step_id))
+
+
 def set_step_done_on(conn, goal_id: int, step_id: str, done_on: dt.date) -> None:
     conn.execute("UPDATE eco_steps SET done_on = ? WHERE goal_id = ? AND step_id = ?",
                  (done_on.isoformat(), goal_id, step_id))
@@ -192,6 +266,11 @@ def delete_customer_goals(conn, customer_id: int) -> None:
     conn.execute("DELETE FROM eco_grants WHERE customer_id = ?", (customer_id,))
     conn.execute("DELETE FROM eco_sources WHERE customer_id = ?", (customer_id,))
     conn.execute("DELETE FROM eco_events WHERE customer_id = ?", (customer_id,))
+    # closed calls stay: they are the partner's track record (scorecard, demotion); open ones are dropped
+    conn.execute("DELETE FROM eco_partner_calls WHERE customer_id = ? AND outcome IS NULL", (customer_id,))
+    conn.executemany("DELETE FROM eco_members WHERE goal_id = ?", [(i,) for i in ids])
+    conn.executemany("DELETE FROM eco_approvals WHERE goal_id = ?", [(i,) for i in ids])
+    conn.execute("DELETE FROM eco_members WHERE customer_id = ?", (customer_id,))
     conn.execute("DELETE FROM eco_goals WHERE customer_id = ?", (customer_id,))
 
 
@@ -274,6 +353,106 @@ def confirm_deletion(conn, customer_id: int, goal_id: int, step_id: str, partner
         (now(), customer_id, goal_id, step_id, partner_id),
     )
     return cur.rowcount
+
+
+# ---- partner calls (the live scorecard) -------------------------------------------------------------------------
+
+
+def insert_call(conn, partner_id: str, ref: str, customer_id: int, goal_id: int, step_id: str,
+                sent_on: dt.date) -> None:
+    conn.execute("INSERT INTO eco_partner_calls (partner_id, ref, customer_id, goal_id, step_id, sent_at, sent_on) "
+                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                 (partner_id, ref, customer_id, goal_id, step_id, now(), sent_on.isoformat()))
+
+
+def call(conn, ref: str) -> sqlite3.Row | None:
+    return conn.execute("SELECT * FROM eco_partner_calls WHERE ref = ?", (ref,)).fetchone()
+
+
+def answer_call(conn, ref: str, outcome: str | None) -> None:
+    """The first answer sets the response time; a final answer (done/rejected/failed) closes the call."""
+    conn.execute("UPDATE eco_partner_calls SET first_answer_at = COALESCE(first_answer_at, ?) WHERE ref = ?",
+                 (now(), ref))
+    if outcome:
+        conn.execute("UPDATE eco_partner_calls SET outcome = ?, closed_at = ? WHERE ref = ? AND outcome IS NULL",
+                     (outcome, now(), ref))
+
+
+def close_call_timeout(conn, ref: str) -> None:
+    conn.execute("UPDATE eco_partner_calls SET outcome = 'timeout', closed_at = ? WHERE ref = ? AND outcome IS NULL",
+                 (now(), ref))
+
+
+def mark_call_late(conn, ref: str) -> None:
+    conn.execute("UPDATE eco_partner_calls SET late = 1, first_answer_at = COALESCE(first_answer_at, ?) "
+                 "WHERE ref = ?", (now(), ref))
+
+
+def open_calls(conn) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM eco_partner_calls WHERE outcome IS NULL").fetchall()
+
+
+def calls(conn) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM eco_partner_calls").fetchall()
+
+
+# ---- households ---------------------------------------------------------------------------------------------------
+
+
+def invite_member(conn, goal_id: int, customer_id: int, on: dt.date) -> None:
+    conn.execute("INSERT OR IGNORE INTO eco_members (goal_id, customer_id, status, invited_on) "
+                 "VALUES (?, ?, 'invited', ?)", (goal_id, customer_id, on.isoformat()))
+
+
+def answer_invite(conn, goal_id: int, customer_id: int, accept: bool, on: dt.date) -> int:
+    if accept:
+        cur = conn.execute("UPDATE eco_members SET status = 'active', accepted_on = ? "
+                           "WHERE goal_id = ? AND customer_id = ? AND status = 'invited'",
+                           (on.isoformat(), goal_id, customer_id))
+    else:
+        cur = conn.execute("DELETE FROM eco_members WHERE goal_id = ? AND customer_id = ? AND status = 'invited'",
+                           (goal_id, customer_id))
+    return cur.rowcount
+
+
+def members(conn, goal_id: int) -> list[sqlite3.Row]:
+    return conn.execute("SELECT m.*, c.first_name FROM eco_members m JOIN customers c ON c.id = m.customer_id "
+                        "WHERE m.goal_id = ? ORDER BY m.customer_id", (goal_id,)).fetchall()
+
+
+def invitations(conn, customer_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT g.*, c.first_name AS from_name FROM eco_members m JOIN eco_goals g ON g.id = m.goal_id "
+        "JOIN customers c ON c.id = g.customer_id WHERE m.customer_id = ? AND m.status = 'invited' "
+        "AND g.status != 'cancelled'", (customer_id,)).fetchall()
+
+
+def approve_joint(conn, goal_id: int, step_id: str, customer_id: int, partner_id: str) -> None:
+    conn.execute("INSERT OR REPLACE INTO eco_approvals (goal_id, step_id, customer_id, partner_id, at) "
+                 "VALUES (?, ?, ?, ?, ?)", (goal_id, step_id, customer_id, partner_id, now()))
+
+
+def joint_approvals(conn, goal_id: int, step_id: str) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM eco_approvals WHERE goal_id = ? AND step_id = ?", (goal_id, step_id)).fetchall()
+
+
+def clear_approvals(conn, goal_id: int, step_id: str) -> None:
+    conn.execute("DELETE FROM eco_approvals WHERE goal_id = ? AND step_id = ?", (goal_id, step_id))
+
+
+def shared_grants(conn, customer_id: int) -> list[sqlite3.Row]:
+    """Grants on goals shared with this customer (either household member can see and revoke them)."""
+    return conn.execute("SELECT gr.* FROM eco_grants gr JOIN eco_members m ON m.goal_id = gr.goal_id "
+                        "WHERE m.customer_id = ? AND m.status = 'active' ORDER BY gr.id DESC",
+                        (customer_id,)).fetchall()
+
+
+def grant_for(conn, grant_id: int, customer_id: int) -> sqlite3.Row | None:
+    """A grant this customer owns, or one on a goal shared with them."""
+    return conn.execute(
+        "SELECT * FROM eco_grants WHERE id = ? AND (customer_id = ? OR goal_id IN "
+        "(SELECT goal_id FROM eco_members WHERE customer_id = ? AND status = 'active'))",
+        (grant_id, customer_id, customer_id)).fetchone()
 
 
 # ---- inbound data sources ----------------------------------------------------------------------------------------

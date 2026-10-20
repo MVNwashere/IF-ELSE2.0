@@ -13,6 +13,7 @@ interface Props {
   onHide: (playbookId: string) => void;
   onPlaybooks: () => void;
   onPassport: () => void;
+  onAnswerInvite?: (goalId: number, accept: boolean) => void;
 }
 
 function GoalTile({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
@@ -23,7 +24,8 @@ function GoalTile({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
       <span className="eco-goal-icon" aria-hidden="true">{goal.icon}</span>
       <span className="eco-goal-text">
         <b>{goal.title}</b>
-        <span>{goal.status === "completed" ? "Completed 🎉" : `${goal.progress.done} of ${goal.progress.total} steps done`}</span>
+        <span>{goal.status === "completed" ? "Completed 🎉" : goal.paused ? "Paused" : `${goal.progress.done} of ${goal.progress.total} steps done`}
+          {goal.role === "member" ? " · shared with you" : ""}</span>
         {next && (
           <span className={`eco-next ${waiting ? "waiting" : ""}`}>
             {waiting && <i className="eco-spin" aria-hidden="true" />}
@@ -64,7 +66,7 @@ function CandidateCard({ c, busy, onStart, onHide }: { c: GoalCandidate; busy: b
   );
 }
 
-export default function GoalsStrip({ data, hidden, busy, onOpenGoal, onStart, onHide, onPlaybooks, onPassport }: Props) {
+export default function GoalsStrip({ data, hidden, busy, onOpenGoal, onStart, onHide, onPlaybooks, onPassport, onAnswerInvite }: Props) {
   const candidates = data.candidates.filter((c) => !hidden.has(c.playbook_id));
   return (
     <section className="eco-strip" aria-label="Your goals">
@@ -72,6 +74,16 @@ export default function GoalsStrip({ data, hidden, busy, onOpenGoal, onStart, on
         <h2>Your goals</h2>
         <button type="button" className="link" onClick={onPassport}>Who sees my data?</button>
       </div>
+      {onAnswerInvite && (data.invitations ?? []).map((i) => (
+        <div key={i.goal_id} className="eco-candidate">
+          <h3><span aria-hidden="true">{i.icon}</span> {i.from_name} shared “{i.title}” with you</h3>
+          <p className="eco-why">Join to follow the steps together. Steps that share data with a partner will need your OK too.</p>
+          <div className="eco-cand-actions">
+            <button type="button" className="btn-primary" disabled={busy} onClick={() => onAnswerInvite(i.goal_id, true)}>Join</button>
+            <button type="button" className="btn-ghost" disabled={busy} onClick={() => onAnswerInvite(i.goal_id, false)}>No thanks</button>
+          </div>
+        </div>
+      ))}
       {data.goals.map((g) => <GoalTile key={g.goal_id} goal={g} onOpen={() => onOpenGoal(g.goal_id)} />)}
       <AnimatePresence initial={false}>
         {candidates.map((c) => (

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { eur } from "../format";
 import { eco } from "./client";
-import type { EcosystemOverview, EventRow, FunnelRow, LearningRow, OutcomeSummary, PartnerRow, RuleRow, WinTotals } from "./types";
+import type { EcosystemOverview, EventRow, FunnelRow, LearningRow, OutcomeSummary, PartnerRow, RuleRow, SimMode, WinTotals } from "./types";
 import "./eco.css";
 import NudgeStatsPanel from "../nudges/NudgeStatsPanel";
 
@@ -104,10 +104,12 @@ function Outcomes({ o }: { o: OutcomeSummary }) {
   );
 }
 
-function Partners({ rows }: { rows: PartnerRow[] }) {
+const SIM_MODES: SimMode[] = ["done", "late", "reject", "fail", "timeout"];
+
+function Partners({ rows, onSim }: { rows: PartnerRow[]; onSim?: (partnerId: string, mode: SimMode) => void }) {
   return (
     <table className="ec-table">
-      <thead><tr><th>Partner</th><th>Value share</th><th>Leads</th><th>Completed</th><th>Fees paid</th><th>Avg. response</th></tr></thead>
+      <thead><tr><th>Partner</th><th>Value share</th><th>Leads</th><th>Completed</th><th>Fees paid</th><th>Avg. response</th><th>SLA missed</th><th>Rejected</th><th>Live outcome</th><th>Demo</th></tr></thead>
       <tbody>
         {rows.map((p) => (
           <tr key={p.partner_id}>
@@ -117,6 +119,15 @@ function Partners({ rows }: { rows: PartnerRow[] }) {
             <td>{nf.format(p.completed)}</td>
             <td>{eur(p.fees_eur)}</td>
             <td>{p.avg_response_s == null ? "—" : `${p.avg_response_s.toFixed(1)} s`}</td>
+            <td>{nf.format(p.sla_misses ?? 0)}{p.demoted ? <div className="ec-sub">ranked lower</div> : null}</td>
+            <td>{nf.format(p.rejections ?? 0)}</td>
+            <td>{p.outcome_rate_live == null ? "—" : `${Math.round(p.outcome_rate_live * 100)}%`}</td>
+            <td>
+              <select aria-label={`How ${p.name} answers in the demo`} value={p.sim_mode ?? "done"}
+                onChange={(e) => onSim?.(p.partner_id, e.target.value as SimMode)}>
+                {SIM_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -211,8 +222,12 @@ export default function EcosystemConsole({ username, onLogout, onSwitchCustomer 
               )}
               <NudgeStatsPanel />
               <section className="ec-card">
-                <h2>Partner network</h2>
-                <Partners rows={data.partner_rows} />
+                <h2>Partner network · live scorecard</h2>
+                <Partners rows={data.partner_rows} onSim={(pid, mode) => {
+                  void eco.simulatePartner(pid, mode).catch((e) => setError(e instanceof Error ? e.message : String(e)));
+                }} />
+                <p className="ec-sub">Demo: choose how a simulated partner answers. A partner that misses its SLA twice is ranked
+                  below partners that answer (never by fee); the customer is offered the next partner and approves again.</p>
               </section>
               <section className="ec-card">
                 <h2>Triple win · realised so far</h2>

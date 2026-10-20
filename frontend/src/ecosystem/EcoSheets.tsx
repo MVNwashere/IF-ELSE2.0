@@ -40,6 +40,16 @@ export default function EcoSheets({ sheet, goals, asOf, setSheet, startGoal, not
             void goals.connectSource(sourceId, goal.playbook_id).then((r) => { if (r) notify("Connected with your OK. Revoke it any time in your passport."); });
           }}
           onStartNext={(pid) => startGoal(pid)}
+          onInvite={(username) => {
+            void goals.invite(goal.goal_id, username).then((r) => { if (r) notify(`Invitation sent to ${username}`); });
+          }}
+          onStall={(answer) => {
+            void goals.answerStall(goal.goal_id, answer).then((r) => {
+              if (!r) return;
+              notify(answer === "keep" ? "Okay, we keep going" : answer === "pause" ? "Paused. No reminders." : answer === "resume" ? "Welcome back" : "Goal stopped");
+              if (answer === "stop") close();
+            });
+          }}
         />
       );
     }

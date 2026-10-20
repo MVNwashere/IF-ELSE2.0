@@ -2,12 +2,13 @@
 
 - `holdings`: the products the customer has at `as_of`, derived from transactions where possible (time travel
   must not show a 2022 mortgage in 2021), mapped onto KBC catalogue items.
-- `values`: the data fields a partner may receive (only through a consent grant, see consent.py).
+- `values`: the data fields a partner may receive (only through a consent grant, see service.py).
 - `vars`: numbers used to fill in step results. Illustrative and derived from the customer's own data.
 """
 from __future__ import annotations
 
 import datetime as dt
+import re
 from dataclasses import dataclass, field
 
 from ..engine.cards import gen_late_client, gen_new_payee
@@ -38,6 +39,61 @@ FUEL = ("q8", "shell", "totalenergies", "esso", "lukoil", "dats 24")
 CAR_LEASE = ("lease", "arval", "athlon", "ayvens", "leaseplan")
 ESTATE = ("nalatenschap", "erfenis", "succession", "héritage")
 SUBCONTRACTORS = ("onderaanneming", "onderaannemer", "sous-traitance", "freelance")
+INSURER_REFUND = ("schadevergoeding", "schadeuitkering", "indemnisation", "schadegeval")
+
+# ---- detectors for the life-event and business goals ---------------------------------------------------------------
+KBO_REGISTRATION = ("kbo", "ondernemingsloket", "guichet d'entreprises")
+SIDE_JOB = ("bijberoep", "complémentaire", "complementaire")
+FOREIGN_CLIENT = re.compile(r"\((DE|FR|NL|UK|US|LU|ES|IT)\)$")
+EU_COUNTRIES = ("DE", "FR", "NL", "LU", "ES", "IT")   # reverse charge applies to EU business clients (verify)
+CARE = ("woonzorgcentrum", "wzc ", "thuiszorg", "thuisverpleging", "familiehulp", "maison de repos", "aide familiale",
+        "soins à domicile")
+CARE_HOME = ("woonzorgcentrum", "wzc ", "maison de repos")
+RENT_DEPOSIT = ("huurwaarborg", "garantie locative")
+REMOVALS = ("verhuisfirma", "verhuizingen", "verhuizing", "déménagement", "demenagement")
+NEW_CONTRACT = ("nieuw contract", "nouveau contrat")
+BUSINESS_TRANSFER = ("bedrijfsrevisor", "(waardering)", "(overdracht)", "overname", "cession", "transmission",
+                     "réviseur")
+BNPL = ("klarna", "alma", "afterpay", "riverty", "in3")
+FAILED_DEBIT = ("storno", "geweigerde domiciliëring", "rejet domiciliation")
+BAILIFF = ("gerechtsdeurwaarder", "deurwaarder", "huissier")
+FARM_AUCTION = ("belorta", "veiling", "réa ")
+FARM_SUPPLIER = ("aveve", "agrofront", "boerenbond", "arvesta", "landbouwmachines")
+EV_CHARGING = ("allego", "shell recharge", "ionity", "fastned", "tesla supercharger", "blue corner", "chargepoint",
+               "electra")
+BONUS = ("eindejaarspremie", "13de maand", "bonus", "prime de fin d'année")
+PARTNER_CONTRIBUTION = ("bijdrage huur", "bijdrage", "contribution loyer")
+WEDDING = ("(huwelijk)", "trouwzaal", "trouwfeest", "weddingplanner", "mariage")
+JEWELLER = ("juwelier", "bijouterie")
+SEPARATION = ("echtscheiding", "scheiding", "divorce", "séparation")
+
+
+def has_any(t: Transaction, keywords: tuple[str, ...]) -> bool:
+    cp = t.counterparty.lower()
+    return any(k in cp for k in keywords)
+
+
+# the provider name starts the counterparty ("Klarna", "Alma (…)") and no number follows it: "Salma" and the
+# student restaurant "Alma 2 Leuven" are not buy-now-pay-later
+_BNPL_RE = re.compile(r"^(" + "|".join(BNPL) + r")\b(?!\s*\d)")
+
+
+def is_bnpl(t: Transaction) -> bool:
+    """A buy-now-pay-later instalment."""
+    return t.amount < 0 and bool(_BNPL_RE.search(t.counterparty.lower()))
+
+
+def foreign_country(t: Transaction) -> str | None:
+    """'Northwind GmbH (DE)' → 'DE' for client payments; refunds and other categories don't count."""
+    if t.category != "invoice_income" or t.amount <= 0:
+        return None
+    m = FOREIGN_CLIENT.search(t.counterparty.strip())
+    return m.group(1) if m else None
+
+
+def landlord(t: Transaction) -> str:
+    """The landlord of a rent payment, without the '(…)' note."""
+    return t.counterparty.split(" (")[0].strip().lower()
 
 
 def is_garage(t: Transaction) -> bool:
@@ -286,8 +342,38 @@ def build_context(customer: Customer, all_txs: list[Transaction], balance_today:
         "commute": f"Commutes from {customer.city}, a few car trips a week",
         "company_name": f"{customer.first_name} {customer.last_name} Consultancy",
         "staffing_need": "1 flexible worker, about 2 days a week",
+        "care_need": _care_need(txs, as_of),
+        "debt_overview": _debt_overview(txs, as_of),
     }
     return ctx
+
+
+def _care_need(txs: list[Transaction], as_of: dt.date) -> str:
+    """'Residential care since 1 Aug 2026, about €1,850 a month', from the customer's own care payments."""
+    care = sorted((t for t in txs if t.amount < 0 and has_any(t, CARE)), key=lambda t: t.date)
+    if not care:
+        return "No care payments seen yet"
+    recent = [t for t in care if (as_of - t.date).days <= 120] or care[-1:]
+    monthly = -sum(t.amount for t in recent) / max(1.0, (recent[-1].date - recent[0].date).days / 30.4 + 1)
+    kind = "Residential care" if any(has_any(t, CARE_HOME) for t in recent) else "Care at home"
+    return f"{kind} since {fmt_date(care[0].date)}, about €{_eur(monthly)} a month"
+
+
+def _debt_overview(txs: list[Transaction], as_of: dt.date) -> str:
+    """Buy-now-pay-later instalments, bounced direct debits and bailiff payments in the last 90 days."""
+    lo = as_of - dt.timedelta(days=90)
+    recent = [t for t in txs if t.date > lo]
+    bnpl = [t for t in recent if is_bnpl(t)]
+    failed = [t for t in recent if has_any(t, FAILED_DEBIT)]
+    bailiff = [t for t in recent if t.amount < 0 and has_any(t, BAILIFF)]
+    parts = []
+    if bnpl:
+        parts.append(f"{len(bnpl)} buy-now-pay-later instalments (€{_eur(-sum(t.amount for t in bnpl))})")
+    if failed:
+        parts.append(f"{len(failed)} bounced direct debit{'s' if len(failed) != 1 else ''}")
+    if bailiff:
+        parts.append(f"bailiff payments of €{_eur(-sum(t.amount for t in bailiff))}")
+    return ("Last 3 months: " + ", ".join(parts)) if parts else "No arrears seen in the last 3 months"
 
 
 

@@ -1,4 +1,4 @@
-"""Core engine round 2: measured outcomes, inbound data sources, partner alternatives and fee transparency,
+"""Ecosystem platform: measured outcomes, inbound data sources, partner alternatives and fee transparency,
 deletion webhooks, partner onboarding manifests, advisor handoff and the learning loop."""
 from __future__ import annotations
 

@@ -348,6 +348,7 @@ class TimelineResponse(BaseModel):
     min_date: dt.date
     max_date: dt.date
     milestones: list[Milestone]
+    today: dt.date | None = None   # after today the life timeline is simulated
 
 
 # ----------------------------------------------------------------------------------

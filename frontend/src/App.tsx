@@ -134,7 +134,7 @@ export default function App() {
   }, [apply, asOf, showToast, label]);
 
   const onLayoutReset = useCallback(() => {
-    showToast("Back to your adaptive home");
+    showToast("Back to your home");
     void apply(() => data.layoutReset(asOf ?? undefined));
   }, [apply, asOf, showToast]);
 
