@@ -126,6 +126,12 @@ Each adds 0.6 to one persona, with evidence "You told Kate on … that …":
 | `retiring` | retiree |
 | `studying` | student |
 
+**Profile facts and corrections** (see [Customer profile](#customer-profile-profile)). A stated fact adds the same
+0.6, from the day it was saved, with evidence "You told us …": children ≥ 1 → young_family; work self-employed →
+freelancer (an employee with a side business → half of that); student → student; retired → retiree. A persona the
+customer rejected ("That's not me") scores 0 whatever the transactions say; if nothing is left, the general profile
+is the fallback.
+
 The recommender has its own, separate persona model with nine codes (see the feed section).
 
 ## Legacy cards and ranker (`engine/cards.py`, `engine/ranker.py`)
@@ -274,45 +280,105 @@ it proposes instead:
    proposing Tax reserve.
 2. **Better hero.** The customer pinned a hero, but another hero now scores at least 0.25 higher.
 
-## Kate (`engine/kate.py`)
+## Customer profile (`profile/`)
+
+One page with everything KBC knows and uses about the customer (`GET /api/me/profile`, `ui/ProfileSheet.tsx`, opened
+from Personalise or by Kate). Three layers, and what the data may be used for:
+
+| Layer | Content | The customer can |
+|---|---|---|
+| What you told us | Facts (below) with their source ("You told Kate on …" / "You entered this") and what each is used for; life changes declared to Kate | Edit, delete, "Forget everything I told Kate" |
+| What we worked out | Persona mix with evidence (marked when part of it comes from a stated fact); goals KBC suggests, with evidence | "That's not me" / "Not for me" (corrections), undo |
+| What it may be used for | One switch per purpose (below), with what changes when it is off | Switch on or off |
+| Who else sees it | Partners with access and outside sources, summarised | Open the consent passport |
+
+**Facts** (`profile/fields.py`) are closed vocabularies only: enums, small integers, booleans, sets of enums. There
+is no free text, so nothing typed into a chat (or a prompt injection) can be stored and replayed into a model later.
+Special categories of personal data (health, beliefs, politics, sexual orientation, union membership) have no field.
+
+| Field | Values | Used by the engine |
+|---|---|---|
+| `partner` | single, partner, married | Kate, advisor |
+| `children` | 0–12 | Persona (≥ 1 → young_family) |
+| `cares_for_relative` | yes/no | Kate, advisor |
+| `employment` | employee, self_employed, employee_side_job, student, job_seeker, retired | Persona |
+| `housing` | renting, mortgage, own, with_parents | Kate, advisor |
+| `risk_appetite` | careful, balanced, adventurous | Kate, advisor |
+| `contact_channel` | app, phone, branch | Kate, advisor |
+| `avoid_topics` | investing, insurance, credit | Feed: non-core, non-urgent cards whose title is on the topic leave the feed (counted in `hidden_count`). Goals: investing holds back `first_investment`, `retire_well`; insurance `travel`; credit `ev_switch`, `mobility`. Kate. |
+
+**Purposes** (`profile_permissions`; `personalise_offers` is the older `customers.consent_personalization` column):
+
+| Purpose | Default | When off |
+|---|---|---|
+| `personalise_offers` | on | Commercial cards are gated (as before) |
+| `detect_life_events` | on | No goal candidates and no intent nudges; goals the customer starts still work |
+| `kate_memory` | on | Kate proposes no saves; `PUT …/facts/{key}` with `via: "kate"` returns 403 |
+| `kate_ai` | **off** | Kate uses rules only and nothing leaves KBC. Off by default because the AI mode sends data to an outside provider |
+| `advisor_view` | on | `GET /api/advisor/profile/{username}` returns 403 (the attempt is still audited) |
+
+**Corrections** (`profile_corrections`): `persona` + a persona id, or `goal` + a playbook id. Stamped with the effective
+date like declared signals. Every change to facts, corrections and permissions is written to `audit_log` with the
+field or purpose name, never the value.
+
+## Kate (`engine/kate.py`, `engine/kate_agent.py`)
 
 Kate answers from the same data the home screen is built from: the `HomeResponse` (with the recommender feed), the
-`Features`, and from the ecosystem the customer's goals, upcoming deadlines and forecasts. She states no fact the
-engine did not compute.
+`Features`, from the ecosystem the customer's goals, upcoming deadlines, forecasts and consents, and the customer's
+profile. She states no fact the engine did not compute.
 
 **Entry points:** the Kate tab (a proactive opener), "Ask Kate" on every card (the card is the context), the
 `KateTile` on the home screen, and Kate nudges (see [ECOSYSTEM.md](ECOSYSTEM.md)).
 
-**Intents (deterministic, checked in this order):**
+**Two modes.** The rules (below) always work and need nothing outside KBC. The AI mode runs only when it is configured
+(`KATE_LLM=openrouter` and `OPENROUTER_API_KEY`) **and** the customer allowed `kate_ai`. When it is configured but not
+allowed, the rules fallback offers a "Let Kate use AI" button. Any error, timeout or failed check in AI mode → the
+rules answer. `KateReply.source` says `rules` or `llm`.
+
+**Rules: intents, checked in this order:**
 
 | Intent | Examples | Typical proposal |
 |---|---|---|
 | Opener (empty message) | A detected goal ("I noticed something…"), the focus card, or the top feed card | `start_goal`, `open_card` |
+| Sensitive details | Health, beliefs, … | None: "I won't keep it" |
 | Deadlines and forecasts | "What's coming up?", "When is my VAT due?", "Will I owe social contributions?" | `start_goal` / `open_goal` |
 | Why a goal was detected | "Why do you think so?" | `start_goal` |
+| Data access | "Who has my data?", "Stop sharing with Setle" | `open_passport`, `revoke_consent` |
+| What KBC knows | "What do you know about me?" | `open_profile` |
+| Forget | "Forget what I said about my kids", "forget everything" | `forget_fact`, `forget_kate_facts` |
+| Permissions | "Stop remembering things", "don't use AI" (whole words only) | `set_permission` |
 | Style | "Make the text bigger", "dark mode", "hide amounts", "reset look" | `set_style`, `reset_style` |
+| Corrections | "No offers about investing", "I'm not a freelancer", "not interested in buying a house" | `update_profile` (avoid_topics), `correct_inference` |
 | Life changes | "We're expecting", "I'm going freelance" | `declare` (and the matching goal) |
 | Goals | "We want to buy a house", "I'm behind on payments" (hard moments start with empathy) | `start_goal` / `open_goal` |
 | Tiles | "Pin my subscriptions", "hide the scam shield" | `pin_tile`, `hide_tile` |
 | About a card | Why, what should I do, coverage, remind me later, "that wasn't me" | `snooze_card`, `add_tile` |
-| General | Persona and layout ("why does my app look like this?"), balance and spending, subscriptions, next income, runway, scams, advisor | `pin_tile` |
-| Fallback | Anything else | Quick replies |
+| General | Persona and layout, balance and spending, subscriptions, next income, runway, scams, advisor | `pin_tile` |
+| Facts mentioned | "We have two kids", "I rent", "I'm retired" (explicit phrases only), alone or next to any answer above | `update_profile` |
+| Fallback | Anything else | Quick replies (and "Let Kate use AI" when available) |
+
+**AI mode** (`kate_agent.py`): a model on OpenRouter (`KATE_MODEL`, default `anthropic/claude-sonnet-5.5`; requests
+ask for providers that don't collect data) answers with tools, in up to 6 rounds within 45 s.
+
+- **Reads:** `get_money_overview`, `get_feed`, `get_card`, `get_subscriptions`, `get_coming_up`, `get_goals`,
+  `get_profile`, `get_data_access`, `get_home_setup`. They return what the engine already computed, with amounts
+  pre-formatted. The model sees the first name, never the last name, ids or raw transactions.
+- **Proposals:** `propose_profile_update`, `propose_forget`, `propose_correction`, `propose_permission`,
+  `propose_tile`, `propose_style`, `propose_card_action`, `propose_goal`, `propose_life_change`, `propose_open`,
+  `propose_revoke_access`, and `set_quick_replies`. Arguments are validated against the same registries as the
+  endpoints (an invalid one returns an error to the model, not an action); `kate_memory` off blocks saves; at most 3.
+- **Grounding:** the final text must be plain (no links, markup or code; `**` is stripped), at most 1,100 characters,
+  and every number in it must appear in a tool result, the snapshot or the customer's own words. One repair round,
+  then the rules answer.
+- **Injection:** the system prompt says the snapshot and tool results are data. Counterparty and partner names only
+  reach the model as JSON values in tool results; saved facts are enums.
 
 **Proposals, not actions.** Kate returns at most 3 `KateAction`s: `pin_tile`, `hide_tile`, `add_tile`,
-`snooze_card`, `dismiss_card`, `set_style`, `reset_style`, `declare`, `open_card`, `start_goal`, `open_goal`. The app
-shows each as a button. When the customer taps it, the app calls the regular validated endpoint (layout-prefs, style,
-feedback, declare, or the ecosystem goals API). Kate herself cannot change anything, so there is no new write path to
-secure.
-
-**Optional LLM layer** (`KATE_LLM=gemini`, needs `pip install google-genai`; uses `GEMINI_API_KEY`, or Vertex AI with
-`GCP_PROJECT`):
-
-- It may only rephrase the rules answer. The rules still decide the actions.
-- Input is a grounded JSON context (persona mix, focus card, feed, balance, income, spending, tiles), the last 6
-  turns, the message and the draft answer. The system prompt says the context is data, not instructions.
-- The output is accepted only if it is at most 1,100 characters, contains no links, markup or code fences, and
-  **every number in it also appears in the context or the draft**.
-- Any error, timeout (4 s) or failed check → the deterministic answer. `KateReply.source` says `rules` or `llm`.
+`snooze_card`, `dismiss_card`, `set_style`, `reset_style`, `declare`, `open_card`, `start_goal`, `open_goal`,
+`update_profile`, `forget_fact`, `forget_kate_facts`, `correct_inference`, `set_permission`, `open_profile`,
+`open_passport`, `revoke_consent`. The app shows each as a button. When the customer taps it, the app calls the
+regular validated endpoint (layout-prefs, style, feedback, declare, profile, or the ecosystem goals and consents API).
+Kate herself cannot change anything, so there is no new write path to secure.
 
 ## Time travel
 
@@ -328,7 +394,7 @@ panel uses them as ticks on the time slider.
 
 All contracts are Pydantic models in `schemas.py`, mirrored in `frontend/src/api.ts`. Customer endpoints take the
 customer from the session; there are no customer ids in customer URLs. Mutations accept `?as_of=` and return a fresh
-`HomeResponse`.
+`HomeResponse` (profile mutations return the `ProfileResponse`).
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
@@ -345,6 +411,13 @@ customer from the session; there are no customer ids in customer URLs. Mutations
 | POST | `/api/me/suggestion` | `{component, decision: accept\|dismiss}` | `HomeResponse` |
 | POST | `/api/me/declare` | `{signal, state: set\|clear}` | `HomeResponse` |
 | POST | `/api/me/kate` | `{message ≤ 500, card_key?, history ≤ 12 turns}` | `KateReply {reply, actions, quick_replies, source}` |
+| GET | `/api/me/profile` | – | `ProfileResponse` |
+| PUT | `/api/me/profile/facts/{key}` | `{value, via: you\|kate}` | `ProfileResponse` (422 invalid value, 403 `via: kate` with memory off) |
+| DELETE | `/api/me/profile/facts/{key}` | – | `ProfileResponse` |
+| POST | `/api/me/profile/forget-kate` | – | `ProfileResponse` (deletes every fact saved from a chat) |
+| POST | `/api/me/profile/corrections` | `{kind: persona\|goal, target, state: set\|clear}` | `ProfileResponse` |
+| PUT | `/api/me/profile/permissions/{purpose}` | `{allowed}` | `ProfileResponse` |
+| GET | `/api/advisor/profile/{username}` | – (advisor role) | `ProfileResponse`, or 403 when the customer didn't allow `advisor_view` |
 | GET | `/api/me/customer-state[/{domain}]` | – | Customer State (see [CUSTOMER-STATE.md](CUSTOMER-STATE.md)) |
 | GET | `/api/advisor/overview` | – (advisor role) | Persona distribution, card volume and scoring time projected to 2.3M customers |
 
@@ -373,9 +446,10 @@ traversal. The OpenAPI docs are switched off.
 | Headers | CSP `default-src 'self'` (no inline scripts, `frame-ancestors 'none'`), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, a restrictive `Permissions-Policy`. |
 | Output | The frontend renders text nodes only; there is no `dangerouslySetInnerHTML`. Unknown component names are skipped. |
 | Untrusted text | Counterparty names are cleaned and capped before they reach card text, and reach the LLM only as quoted JSON data. |
-| LLM | Text only, validated or discarded (see Kate). It cannot add actions, components or numbers. |
+| LLM | Only with the customer's `kate_ai` permission. Read tools over computed data; proposals validated against the registries; text validated or discarded (see Kate). It cannot change anything or add numbers. |
+| Profile | Facts are closed vocabularies, validated against the registry; no field for special categories of personal data. |
 | Kate rate limit | 30 messages per minute per user. |
-| Audit | Declared signals and advisor overview views are written to `audit_log`. |
+| Audit | Declared signals, profile changes (field or purpose name only), advisor overview views and advisor profile looks (allowed or refused) are written to `audit_log`. |
 | Data and secrets | Synthetic data only; `ground_truth` never leaves the server. Secrets come from environment variables (placeholders in `.env.example`; `.env` is gitignored). The app does not load `.env` itself. |
 
 ## Frontend (`frontend/src/`)
@@ -394,6 +468,8 @@ React 19 + TypeScript + Vite, with Framer Motion for the layout morphs. In devel
 | Edit home | `Phone.tsx` (edit mode), `ui/GallerySheet.tsx`, `ui/SuggestionBanner.tsx` | Move tiles up and down (pins them at that slot), pin, unpin, hide, "+ Add tile" from the gallery, accept or dismiss a suggestion. |
 | Personalise | `ui/PersonaliseSheet.tsx`, `privacy.tsx` | Style settings with Auto, "Reset all to Auto". Hidden amounts show as `€ ••••` and are revealed for 8 seconds on tap. |
 | Kate | `ui/KateSheet.tsx` | Chat with quick replies and action buttons. A tapped action runs through the same handlers as the rest of the app. |
+| My profile | `ui/ProfileSheet.tsx`, `data.ts` (`profileData`) | The three layers and the purpose switches; every change reloads the home screen. Opened from Personalise or by Kate. |
+| Advisor profile view | `ecosystem/AdvisorProfilePanel.tsx` | In the ecosystem console: one demo customer's profile, or a notice when they haven't shared it. |
 | Accounts | `accounts/` | Tapping the hero opens an accounts screen. Until the backend sends `accounts` on the hero (see [COMPONENT-PROPS.md](COMPONENT-PROPS.md)), it derives clearly labelled demo accounts and bookings from the home data. |
 | Explain mode | `Phone.tsx` | A header with the feed persona mix and the theme explanation; a badge with its explanation on every section. |
 
@@ -411,6 +487,9 @@ Details: [ECOSYSTEM.md](ECOSYSTEM.md).
 
 ## Tests and tools
 
-Run `py -3.12 -m pytest` from `backend/`; there is one test file per engine module plus `test_api.py`.
+Run `py -3.12 -m pytest` from `backend/`; there is one test file per engine module plus `test_api.py` and
+`test_profile.py`. `test_kate.py` drives the AI mode with a scripted fake model (no network).
+`py -3.12 -m scripts.evaluate_kate` runs scripted conversations against the rules, or with `--ai` against the
+configured model.
 `py -3.12 -m scripts.evaluate` measures persona and legacy card accuracy against the injected ground truth, plus
 scoring throughput.

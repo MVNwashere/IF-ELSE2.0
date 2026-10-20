@@ -172,6 +172,11 @@ goal-specific signal (`buy_home`, `energy_upgrade`, `first_employee`, `first_inv
 `side_job`), `first_investment` waits too. `detect_with_suppressed()` returns what was held back and why; nudges
 follow the same rule.
 
+**The customer's profile.** `service.withheld_goals()` applies the profile (see the customer profile in
+[CUSTOMER-APP.md](CUSTOMER-APP.md)) to candidates and intent nudges: with `detect_life_events` off there are none at
+all; otherwise goals the customer rejected ("Not for me") and goals on a topic in `avoid_topics` are left out. Goals the
+customer starts themselves are never blocked.
+
 ## 7. Journeys, consent passport and data minimisation
 
 Step state machine (`service.py`):

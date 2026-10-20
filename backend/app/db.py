@@ -11,8 +11,8 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Iterator
 
-from .schemas import (Customer, DeclaredSignalRow, FeedbackRow, LayoutPrefRow, Prefs, StylePrefs,
-                      SuggestionDismissal, Transaction)
+from .schemas import (CorrectionRow, Customer, DeclaredSignalRow, FeedbackRow, LayoutPrefRow, Prefs,
+                      ProfileFactRow, StylePrefs, SuggestionDismissal, Transaction, default_permissions)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DB_PATH = os.path.abspath(os.path.join(HERE, "..", "kbc.db"))
@@ -86,6 +86,28 @@ CREATE TABLE IF NOT EXISTS suggestion_dismissals (
 CREATE TABLE IF NOT EXISTS visits (
   customer_id INTEGER PRIMARY KEY REFERENCES customers(id),
   last_visit TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS profile_facts (
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  key TEXT NOT NULL,
+  value TEXT NOT NULL,
+  source TEXT NOT NULL CHECK (source IN ('you','kate')),
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (customer_id, key)
+);
+CREATE TABLE IF NOT EXISTS profile_corrections (
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  kind TEXT NOT NULL CHECK (kind IN ('persona','goal')),
+  target TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (customer_id, kind, target)
+);
+CREATE TABLE IF NOT EXISTS profile_permissions (
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  purpose TEXT NOT NULL,
+  allowed INTEGER NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (customer_id, purpose)
 );
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY,
@@ -225,6 +247,13 @@ def get_prefs(conn: sqlite3.Connection, customer_id: int) -> Prefs:
     dismissed = conn.execute(
         "SELECT component, created_at FROM suggestion_dismissals WHERE customer_id = ?", (customer_id,)
     ).fetchall()
+    facts = conn.execute(
+        "SELECT key, value, source, updated_at FROM profile_facts WHERE customer_id = ? ORDER BY key", (customer_id,)
+    ).fetchall()
+    corrections = conn.execute(
+        "SELECT kind, target, created_at FROM profile_corrections WHERE customer_id = ? ORDER BY created_at, target",
+        (customer_id,),
+    ).fetchall()
     return Prefs(
         feedback=[
             FeedbackRow(card_key=r["card_key"], card_type=r["card_type"], decision=r["decision"],
@@ -239,7 +268,24 @@ def get_prefs(conn: sqlite3.Connection, customer_id: int) -> Prefs:
         dismissed_suggestions=[SuggestionDismissal(component=r["component"],
                                                    created_at=dt.date.fromisoformat(r["created_at"][:10]))
                                for r in dismissed],
+        facts=[ProfileFactRow(key=r["key"], value=json.loads(r["value"]), source=r["source"],
+                              updated_at=dt.date.fromisoformat(r["updated_at"][:10])) for r in facts],
+        corrections=[CorrectionRow(kind=r["kind"], target=r["target"],
+                                   created_at=dt.date.fromisoformat(r["created_at"][:10])) for r in corrections],
+        permissions=get_permissions(conn, customer_id),
     )
+
+
+def get_permissions(conn: sqlite3.Connection, customer_id: int) -> dict[str, bool]:
+    """Every purpose with its default filled in. personalise_offers lives on the customer row (older column)."""
+    out = default_permissions()
+    for r in conn.execute("SELECT purpose, allowed FROM profile_permissions WHERE customer_id = ?", (customer_id,)):
+        if r["purpose"] in out:
+            out[r["purpose"]] = bool(r["allowed"])
+    row = conn.execute("SELECT consent_personalization FROM customers WHERE id = ?", (customer_id,)).fetchone()
+    if row:
+        out["personalise_offers"] = bool(row["consent_personalization"])
+    return out
 
 
 def get_user(conn: sqlite3.Connection, username: str) -> sqlite3.Row | None:
@@ -332,6 +378,51 @@ def dismiss_suggestion(conn: sqlite3.Connection, customer_id: int, component: st
 
 def set_consent(conn: sqlite3.Connection, customer_id: int, consent: bool) -> None:
     conn.execute("UPDATE customers SET consent_personalization = ? WHERE id = ?", (1 if consent else 0, customer_id))
+
+
+def set_fact(conn: sqlite3.Connection, customer_id: int, key: str, value, source: str, at: dt.date) -> None:
+    """`value` must already be validated against the field registry (profile/fields.py)."""
+    conn.execute(
+        "INSERT INTO profile_facts (customer_id, key, value, source, updated_at) VALUES (?, ?, ?, ?, ?) "
+        "ON CONFLICT(customer_id, key) DO UPDATE SET value = excluded.value, source = excluded.source, "
+        "updated_at = excluded.updated_at",
+        (customer_id, key, json.dumps(value), source, at.isoformat()),
+    )
+
+
+def delete_facts(conn: sqlite3.Connection, customer_id: int, key: str | None = None,
+                 source: str | None = None) -> int:
+    """Delete one fact (key), every fact from one source, or (neither) all of them. Returns the rows deleted."""
+    sql, args = "DELETE FROM profile_facts WHERE customer_id = ?", [customer_id]
+    if key is not None:
+        sql, args = sql + " AND key = ?", args + [key]
+    if source is not None:
+        sql, args = sql + " AND source = ?", args + [source]
+    return conn.execute(sql, args).rowcount
+
+
+def set_correction(conn: sqlite3.Connection, customer_id: int, kind: str, target: str, state: str,
+                   at: dt.date) -> None:
+    if state == "clear":
+        conn.execute("DELETE FROM profile_corrections WHERE customer_id = ? AND kind = ? AND target = ?",
+                     (customer_id, kind, target))
+        return
+    conn.execute(
+        "INSERT INTO profile_corrections (customer_id, kind, target, created_at) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(customer_id, kind, target) DO UPDATE SET created_at = excluded.created_at",
+        (customer_id, kind, target, at.isoformat()),
+    )
+
+
+def set_permission(conn: sqlite3.Connection, customer_id: int, purpose: str, allowed: bool) -> None:
+    if purpose == "personalise_offers":
+        set_consent(conn, customer_id, allowed)
+        return
+    conn.execute(
+        "INSERT INTO profile_permissions (customer_id, purpose, allowed, updated_at) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(customer_id, purpose) DO UPDATE SET allowed = excluded.allowed, updated_at = excluded.updated_at",
+        (customer_id, purpose, 1 if allowed else 0, dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")),
+    )
 
 
 def touch_visit(conn: sqlite3.Connection, customer_id: int, at: dt.date) -> None:

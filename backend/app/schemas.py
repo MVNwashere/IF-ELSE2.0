@@ -10,7 +10,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr, field_validator
 
 # ----------------------------------------------------------------------------------
 # Vocabularies
@@ -76,6 +76,17 @@ Accent = Literal["blue", "teal", "purple", "amber", "navy"]
 # Things a customer can tell Kate about themselves. Each maps to one persona (persona.py).
 DeclaredSignal = Literal["expecting_baby", "going_freelance", "retiring", "studying"]
 
+# The customer profile (profile/fields.py): facts the customer told us, and what each use of their data needs.
+ProfileFactKey = Literal["partner", "children", "cares_for_relative", "employment", "housing", "risk_appetite",
+                         "contact_channel", "avoid_topics"]
+PROFILE_FACT_KEYS: tuple[str, ...] = ProfileFactKey.__args__  # type: ignore[attr-defined]
+FactValue = StrictBool | StrictInt | StrictStr | list[StrictStr]
+FactSource = Literal["you", "kate"]
+Purpose = Literal["personalise_offers", "detect_life_events", "kate_memory", "kate_ai", "advisor_view"]
+PURPOSES: tuple[str, ...] = Purpose.__args__  # type: ignore[attr-defined]
+CorrectionKind = Literal["persona", "goal"]
+CORRECTION_TARGET_PATTERN = r"^[a-z_]{2,40}$"
+
 CARD_KEY_PATTERN = r"^[a-z0-9_:\-]{1,80}$"
 
 # ----------------------------------------------------------------------------------
@@ -138,6 +149,27 @@ class SuggestionDismissal(BaseModel):
     created_at: dt.date
 
 
+class ProfileFactRow(BaseModel):
+    """A fact the customer stated (in the profile form, or by confirming Kate's proposal). Validated against the
+    field registry (profile/fields.py) before it is stored."""
+    key: ProfileFactKey
+    value: FactValue
+    source: FactSource
+    updated_at: dt.date
+
+
+class CorrectionRow(BaseModel):
+    """"That's not me": an inference the customer rejected. persona → a Persona; goal → a playbook id."""
+    kind: CorrectionKind
+    target: str = Field(pattern=CORRECTION_TARGET_PATTERN)
+    created_at: dt.date
+
+
+def default_permissions() -> dict[str, bool]:
+    # kate_ai sends data to an external model: off until the customer says yes
+    return {p: p != "kate_ai" for p in PURPOSES}
+
+
 class Prefs(BaseModel):
     """Everything the customer has told us. Read from DB, passed into the pure engine."""
     feedback: list[FeedbackRow] = Field(default_factory=list)
@@ -146,6 +178,16 @@ class Prefs(BaseModel):
     style: StylePrefs = Field(default_factory=StylePrefs)
     declared: list[DeclaredSignalRow] = Field(default_factory=list)
     dismissed_suggestions: list[SuggestionDismissal] = Field(default_factory=list)
+    facts: list[ProfileFactRow] = Field(default_factory=list)
+    corrections: list[CorrectionRow] = Field(default_factory=list)
+    permissions: dict[str, bool] = Field(default_factory=default_permissions)
+
+    def fact(self, key: str):
+        """The stated value for `key`, or None."""
+        return next((f.value for f in self.facts if f.key == key), None)
+
+    def allows(self, purpose: str) -> bool:
+        return self.permissions.get(purpose, purpose != "kate_ai")
 
 
 # ----------------------------------------------------------------------------------
@@ -398,7 +440,9 @@ class DeclareRequest(BaseModel):
 # ---- Kate (conversational assistant) ------------------------------------------------
 
 KateActionKind = Literal["pin_tile", "hide_tile", "add_tile", "snooze_card", "dismiss_card",
-                         "set_style", "declare", "open_card", "reset_style", "start_goal", "open_goal"]
+                         "set_style", "declare", "open_card", "reset_style", "start_goal", "open_goal",
+                         "update_profile", "forget_fact", "forget_kate_facts", "correct_inference", "set_permission",
+                         "open_profile", "open_passport", "revoke_consent"]
 
 
 class KateAction(BaseModel):
@@ -413,6 +457,13 @@ class KateAction(BaseModel):
     signal: DeclaredSignal | None = None
     playbook_id: str | None = Field(default=None, pattern=r"^[a-z_]{2,40}$")   # start_goal / open_goal
     goal_id: int | None = Field(default=None, ge=1)                            # open_goal
+    fact_key: ProfileFactKey | None = None                                     # update_profile / forget_fact
+    fact_value: FactValue | None = None                                        # update_profile
+    correction_kind: CorrectionKind | None = None                              # correct_inference
+    target: str | None = Field(default=None, pattern=CORRECTION_TARGET_PATTERN)
+    purpose: Purpose | None = None                                             # set_permission
+    allowed: bool | None = None
+    grant_id: int | None = Field(default=None, ge=1)                           # revoke_consent
 
 
 class KateTurn(BaseModel):
@@ -435,6 +486,99 @@ class KateReply(BaseModel):
 
 class ConsentRequest(BaseModel):
     consent_personalization: bool
+
+
+# ---- Customer profile: what KBC knows and may use -------------------------------------------------------------
+
+
+class FactUpdateRequest(BaseModel):
+    value: FactValue
+    via: FactSource = "you"      # "kate": the customer confirmed Kate's proposal
+
+
+class CorrectionRequest(BaseModel):
+    kind: CorrectionKind
+    target: str = Field(pattern=CORRECTION_TARGET_PATTERN)
+    state: Literal["set", "clear"] = "set"
+
+
+class PermissionRequest(BaseModel):
+    allowed: bool
+
+
+class FieldOption(BaseModel):
+    value: str
+    label: str
+
+
+class ProfileField(BaseModel):
+    """One profile field: what it is, what the customer said (if anything), and what it is used for."""
+    key: ProfileFactKey
+    label: str
+    category: Literal["household", "work", "home", "money", "contact"]
+    kind: Literal["enum", "int", "bool", "set"]
+    hint: str
+    options: list[FieldOption] = Field(default_factory=list)
+    min: int | None = None
+    max: int | None = None
+    used_for: list[str] = Field(default_factory=list)
+    value: FactValue | None = None
+    value_label: str | None = None
+    source: FactSource | None = None
+    updated_on: dt.date | None = None
+
+
+class DeclaredView(BaseModel):
+    signal: DeclaredSignal
+    label: str
+    created_on: dt.date
+
+
+class InferredPersona(BaseModel):
+    persona: Persona
+    label: str
+    weight_pct: int
+    evidence: list[str]
+    from_you: bool = False        # part of the weight comes from something the customer told us
+
+
+class InferredGoal(BaseModel):
+    playbook_id: str
+    title: str
+    evidence: list[str]
+
+
+class CorrectionView(BaseModel):
+    kind: CorrectionKind
+    target: str
+    label: str
+    created_on: dt.date
+
+
+class PermissionView(BaseModel):
+    purpose: Purpose
+    label: str
+    description: str
+    when_off: str
+    allowed: bool
+
+
+class DataAccessSummary(BaseModel):
+    partners_with_access: int = 0
+    fields_shared: int = 0
+    sources_connected: int = 0
+
+
+class ProfileResponse(BaseModel):
+    as_of: dt.date
+    first_name: str
+    fields: list[ProfileField]
+    declared: list[DeclaredView]
+    personas: list[InferredPersona]
+    goals: list[InferredGoal]            # goals KBC thinks fit (empty while detect_life_events is off)
+    corrections: list[CorrectionView]
+    permissions: list[PermissionView]
+    data_access: DataAccessSummary
 
 
 class AdvisorOverview(BaseModel):

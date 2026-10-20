@@ -80,6 +80,26 @@ SCAM_TIPS = [
 ]
 SCAM_HOTLINE = "Card Stop 078 170 170"
 
+# What Kate advises per card type (rules answer, and the agent's get_card tool)
+CARD_ADVICE: dict[str, str] = {
+    "insurance_renewal": "Compare the coverage, not just the price. You can switch before the renewal date; "
+                         "check your current policy's terms first.",
+    "vat_reserve": "Move the amount to a separate account now, so it's there when the return is due.",
+    "price_increase": "Check whether you still use it. If not, cancelling before the next payment saves the full amount.",
+    "duplicate_charge": "If only one purchase was yours, contact the merchant first. If that doesn't work, "
+                        "we can dispute the charge for you.",
+    "runway": "Look at the next few days of spending, and move non-urgent payments until after your income arrives.",
+    "cashflow_squeeze": "Your spending rose faster than usual. Look at the biggest categories this month first.",
+    "idle_cash": "Money you won't need soon can work for you. A savings account keeps it available.",
+    "life_event": "A good moment to review your budget, savings and insurance for the new situation.",
+    "scam_awareness": "KBC never asks for your card code or PIN. When in doubt, hang up and call us.",
+    "pension_savings": "Pension savings can give a tax reduction if you deposit before 31 December. "
+                       "The benefit depends on your situation.",
+    "late_client": "A friendly reminder usually works. Mention the invoice number and the original due date.",
+    "protection_gap": "Check whether your current insurance covers your whole family. An advisor can go through it with you.",
+    "new_payee": "If you don't recognise this payment, call Card Stop right away: " + SCAM_HOTLINE + ".",
+}
+
 # Affinity table: component -> persona -> 0..1
 AFFINITY: dict[str, dict[str, float]] = {
     "BalanceHero":        {"student": 0.4, "young_professional": 0.9, "young_family": 0.5, "freelancer": 0.4, "investor": 0.85, "retiree": 0.4},
