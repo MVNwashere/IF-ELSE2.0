@@ -33,6 +33,7 @@ from .engine.persona import dominant
 from .profile import service as profile_service
 from .profile.api import router as profile_router
 from .profile.fields import avoided, offer_topics
+from .recommender.compose import compose_home
 from .recommender.feed import recommend
 from .schemas import (
     HERO_COMPONENTS, AdvisorOverview, ConsentRequest, DeclareRequest, FeedbackRequest, FeedPersona, HomeResponse, KateReply,
@@ -129,7 +130,9 @@ def _load_and_build(customer_id: int, as_of: dt.date | None, touch: bool = True)
         if touch:
             db.touch_visit(conn, customer_id, effective)
         state = get_state(conn, customer_id, effective, balance_reference=DEMO_TODAY)
+        moments = home.feed.cards   # the engine's cards that need action today
         home.feed, personas = recommend(customer, state, prefs)
+        compose_home(home, moments, state, features.balance_eur)
         enrich_feed(home.feed, ecosystem_service.relevant_playbooks(conn, customer, txs, balance_today, effective,
                                                                prefs.declared))
         home.feed_personas = [FeedPersona.model_validate(persona) for persona in personas]

@@ -6,6 +6,7 @@ import { addDays, daysBetween, longDate, PERSONA_LABEL, pct } from "../format";
 import { nudgeApi } from "../nudges/client";
 import { NUDGE_REPLAY_EVENT, NUDGE_RESET_EVENT } from "../nudges/types";
 import { STORAGE_KEY } from "./store";
+import { ADVISOR, DEMO_PERSONAS } from "../personas";
 
 interface Props {
   username: string | null;
@@ -24,18 +25,7 @@ interface Props {
   onLogout: () => void;
 }
 
-const DEMO = [
-  { username: "lotte", hint: "time travel 2018 → 2026" },
-  { username: "sara", hint: "freelancer + young mother" },
-  { username: "jan", hint: "retiree, 71" },
-  { username: "marc", hint: "the 52-year-old investor" },
-  { username: "tom", hint: "employee with a side business" },
-  { username: "els", hint: "kids at uni + mother in care" },
-  { username: "amir", hint: "newcomer, 4 months of data" },
-  { username: "pieter", hint: "SME owner, clients abroad" },
-  { username: "nina", hint: "BNPL and bounced debits" },
-  { username: "advisor", hint: "KBC ecosystem console" },
-];
+const DEMO = [...DEMO_PERSONAS, ADVISOR];
 
 export default function ControlPanel(p: Props) {
   const tl = p.timeline;
@@ -140,7 +130,7 @@ export default function ControlPanel(p: Props) {
                   {t.label}
                 </button>
               ))}
-              <button className="pbtn small" onClick={() => setSlider(totalDays)}>Today</button>
+              <button className="pbtn small" onClick={() => setSlider(todayIdx)}>Today</button>
             </div>
           </div>
         </section>

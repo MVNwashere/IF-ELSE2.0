@@ -34,12 +34,14 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 }
 
 function Funnel({ rows }: { rows: FunnelRow[] }) {
+  // one scale for the whole table, so bars compare goals with each other; most-detected goals first
+  const max = Math.max(1, ...rows.map((r) => r.detected));
+  const sorted = [...rows].sort((a, b) => b.detected - a.detected || a.title.localeCompare(b.title));
   return (
     <table className="ec-table">
       <thead><tr><th>Goal</th><th>Detected</th><th>Started</th><th>Steps done</th><th>Completed</th><th>At 2.3M customers</th></tr></thead>
       <tbody>
-        {rows.map((r) => {
-          const max = Math.max(1, r.detected);
+        {sorted.map((r) => {
           const cell = (n: number) => (
             <td><span className="ec-num">{nf.format(n)}</span><span className="ec-bar"><i style={{ width: `${Math.min(100, (n / max) * 100)}%` }} /></span></td>
           );
@@ -207,7 +209,9 @@ export default function EcosystemConsole({ username, onLogout, onSwitchCustomer 
             <Stat label="KBC building blocks in the catalogue" value={nf.format(data.catalogue_items)} />
             <Stat label="Ecosystems" value={nf.format(data.ecosystems)} />
             <Stat label="Building blocks used by goals" value={nf.format(data.building_blocks_used)} />
-            <Stat label="Vetted partners" value={nf.format(data.partners)} sub={`portfolio scored in ${data.scoring_ms.toFixed(0)} ms`} />
+            <Stat label="Vetted partners" value={nf.format(data.partners)} sub={data.customers_scored
+              ? `${nf.format(data.customers_scored)} customers scored · ${nf.format(Math.round(data.scoring_ms / data.customers_scored))} ms each`
+              : `portfolio scored in ${(data.scoring_ms / 1000).toFixed(1)} s`} />
           </div>
           <div className="ec-grid">
             <div className="ec-main">

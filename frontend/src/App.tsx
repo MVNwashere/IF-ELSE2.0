@@ -7,6 +7,7 @@ import { data, MOCK, profileData } from "./data";
 import ControlPanel from "./demo/ControlPanel";
 import { STORAGE_KEY as DEMO_STORAGE_KEY } from "./demo/store";
 import Login from "./Login";
+import { DEMO_PERSONAS } from "./personas";
 import EcosystemConsole from "./ecosystem/EcosystemConsole";
 import Phone from "./Phone";
 import PhoneScaler from "./PhoneScaler";
@@ -26,6 +27,19 @@ function clearClientStorage(): void {
   } catch { /* storage blocked */ }
 }
 
+function OpeningPhone({ name }: { name: string }) {
+  const person = DEMO_PERSONAS.find((p) => p.username === name);
+  return (
+    <div className="phone-bezel">
+      <div className="phone phone-switching" role="status" aria-live="polite">
+        <span className="switch-ball" aria-hidden="true" />
+        <b>{person ? `Opening ${person.name}'s app…` : "Opening the app…"}</b>
+        {person && <span>{person.hint}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [checked, setChecked] = useState(false);
@@ -37,6 +51,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const reqSeq = useRef(0);
+  // the customer being opened from the demo panel: show their phone loading instead of the login form in between
+  const [switching, setSwitching] = useState<string | null>(null);
   // Session generation: bumped whenever the signed-in customer changes or goes away. A response that resolves for an
   // older generation is dropped, so the previous customer's data can never render for the next one.
   const gen = useRef(0);
@@ -114,6 +130,7 @@ export default function App() {
   const switchCustomer = useCallback(async (username: string) => {
     resetClient();
     setSession(null);
+    setSwitching(username);
     const g = gen.current;
     setBusy(true);
     try {
@@ -122,7 +139,7 @@ export default function App() {
       if (g !== gen.current) return;
       setSession(s);
       if (s.role !== "advisor") await loadAll(null);
-    } catch (e) { if (g === gen.current) fail(e); } finally { if (g === gen.current) setBusy(false); }
+    } catch (e) { if (g === gen.current) fail(e); } finally { if (g === gen.current) { setBusy(false); setSwitching(null); } }
   }, [session, loadAll, fail, resetClient]);
 
   const logout = useCallback(async () => {
@@ -295,7 +312,7 @@ export default function App() {
         {!checked ? null : (
           <PhoneScaler>
             {!session || !home ? (
-              <Login onLogin={login} error={error} />
+              (switching || session) && !error ? <OpeningPhone name={switching ?? session?.username ?? ""} /> : <Login onLogin={login} error={error} />
             ) : (
               <Phone
                 key={session.username}

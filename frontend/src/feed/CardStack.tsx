@@ -26,11 +26,15 @@ interface Props {
   savedGrid?: TileGridPrefs | null;
   onSaveGrid?: (prefs: TileGridPrefs) => void;
   onPlaceTile?: (tile: GridTile) => void;
+  hideKeys?: Set<string>;                    // cards shown in Today: not repeated on the wall
+  openKey?: string | null;                   // open this card's details (from Today)
+  onOpened?: () => void;
+  generation?: string;
 }
 
 type DetailCard = Pick<CardT, "card_key" | "card_type" | "title" | "body" | "evidence" | "details">;
 
-export default function CardStack({ cards, asOf, onFeedback, onCta, onAskKate, personalTiles = [], editing = false, onEditing = () => {}, initialPins = [], resetVersion = 0, savedGrid = null, onSaveGrid = () => {}, onPlaceTile }: Props) {
+export default function CardStack({ cards, asOf, onFeedback, onCta, onAskKate, personalTiles = [], editing = false, onEditing = () => {}, initialPins = [], resetVersion = 0, savedGrid = null, onSaveGrid = () => {}, onPlaceTile, hideKeys, openKey = null, onOpened, generation }: Props) {
   const [active, setActive] = useState<{ title: string; body: string; card?: DetailCard } | null>(null);
   const [target, setTarget] = useState(0);
   const [monthly, setMonthly] = useState(0);
@@ -47,9 +51,15 @@ export default function CardStack({ cards, asOf, onFeedback, onCta, onAskKate, p
     }
   }, [active?.card?.card_key]);
   useEffect(() => { setActive(null); }, [asOf]);
+  useEffect(() => {
+    if (!openKey) return;
+    const card = cards.find((c) => c.card_key === openKey);
+    if (card) setActive({ title: card.title, body: card.body, card });
+    onOpened?.();
+  }, [openKey, cards, onOpened]);
   const monthsToTarget = planner?.kind === "savings" && monthly > 0
     ? Math.ceil(Math.max(0, target - planner.current) / monthly) : null;
-  const cardTiles: GridTile[] = cards.map((c) => ({
+  const cardTiles: GridTile[] = cards.filter((c) => !hideKeys?.has(c.card_key)).map((c) => ({
     id: `card:${c.card_key}`, cardKey: c.card_key, title: maskText(c.title, masked),
     description: maskText(c.body, masked), span: wideTile(c) ? 2 : 1, eligible: true,
     content: <RecommendationTile card={c} onOpen={() => setActive({ title: c.title, body: c.body, card: c })} />,
@@ -60,7 +70,7 @@ export default function CardStack({ cards, asOf, onFeedback, onCta, onAskKate, p
   return (
     <>
       <HomeTileGrid tiles={tiles} editing={editing} onEditing={onEditing} initialPins={initialPins} resetVersion={resetVersion}
-        saved={savedGrid} onSave={onSaveGrid} onPlace={onPlaceTile} />
+        saved={savedGrid} onSave={onSaveGrid} onPlace={onPlaceTile} generation={generation} />
       {active && phone && createPortal(
         <Sheet title={maskText(active.title, masked)} onClose={() => setActive(null)} full>
           <div className="feed-detail">
@@ -73,6 +83,10 @@ export default function CardStack({ cards, asOf, onFeedback, onCta, onAskKate, p
                 onOpen={() => document.querySelector(".feed-detail-metrics")?.scrollIntoView({ behavior: "smooth", block: "nearest" })} />
                 : <p>{maskText(active.body, masked)}</p>;
             })()}
+            {active.card?.evidence.length ? <div className="feed-why">
+              <h3>Why you're seeing this</h3>
+              <ul>{active.card.evidence.map((line, i) => <li key={i}>{maskText(line, masked)}</li>)}</ul>
+            </div> : null}
             {Array.isArray(active.card?.details?.products) && (active.card.details.products as ProductRef[]).length > 0 && (
               <ProductChips products={active.card.details.products as ProductRef[]} />
             )}
@@ -95,10 +109,6 @@ export default function CardStack({ cards, asOf, onFeedback, onCta, onAskKate, p
               <small>Estimate only. No transfer is scheduled.</small>
             </div>)}
             {typeof active.card?.details.methodology === "string" && <p>{maskText(active.card.details.methodology, masked)}</p>}
-            {active.card?.evidence.length ? <>
-              <h3>Why you're seeing this</h3>
-              <ul>{active.card.evidence.map((line, i) => <li key={i}>{maskText(line, masked)}</li>)}</ul>
-            </> : null}
             {Array.isArray(related) && related.length > 0 && <>
               <h3>Related cards</h3>
               <div className="feed-related">

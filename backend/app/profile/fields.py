@@ -103,6 +103,33 @@ TOPIC_WORDS: dict[str, tuple[str, ...]] = {   # matched on a card's title
 }
 
 
+CHILD_BENEFIT_PER_CHILD_EUR = 178.0   # Groeipakket base amount, used only to propose a number to confirm
+
+
+def suggestions(f) -> dict[str, tuple[FactValue, str]]:
+    """Profile values the customer's own transactions point to: key → (value, the reason in plain words). They are
+    shown as proposals ("We think: 1 child · Confirm") and only stored when the customer confirms. `f`: Features."""
+    out: dict[str, tuple[FactValue, str]] = {}
+    if f.has_child_signals:
+        n = max(1, round(f.child_benefit_monthly_eur / CHILD_BENEFIT_PER_CHILD_EUR)) if f.child_benefit_monthly_eur else 1
+        out["children"] = (min(n, 12), "You receive child benefit or pay for childcare")
+    if f.has_pension and not f.has_salary:
+        out["employment"] = ("retired", "Your pension is paid into your account")
+    elif f.has_invoice_income and f.has_salary:
+        out["employment"] = ("employee_side_job", "You receive a salary and invoice clients")
+    elif f.has_invoice_income:
+        out["employment"] = ("self_employed", "Clients pay your invoices")
+    elif f.has_student_signals:
+        out["employment"] = ("student", "Student job or tuition payments")
+    elif f.has_salary:
+        out["employment"] = ("employee", "You receive a monthly salary")
+    if f.has_mortgage:
+        out["housing"] = ("mortgage", "You pay off a home loan")
+    elif f.has_rent:
+        out["housing"] = ("renting", "You pay rent every month")
+    return out
+
+
 class FactError(ValueError):
     pass
 

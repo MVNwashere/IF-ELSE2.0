@@ -51,7 +51,10 @@ export default function RoadmapSheet({ candidate, busy, onStart, onNotNow, onClo
               <span className="roadmap-number">{i + 1}</span>
               <div><span className="roadmap-provider">{step.provider.name}{step.already_held ? " · Already in place" : ""}</span>
                 <h4>{safe(step.title)}</h4><p>{safe(step.description)}</p>
-                {step.data_shared.length > 0 && <small>With your permission: {step.data_shared.map((field) => field.label).join(", ")}.</small>}
+                {step.data_shared.length > 0 && <span className="roadmap-data" aria-label={`Shared with your permission: ${step.data_shared.map((f) => f.label).join(", ")}`}>
+                  <span className="roadmap-data-lock" aria-hidden="true">🔒 Shares, with your OK</span>
+                  {step.data_shared.map((field) => <span key={field.field} className={`roadmap-chip${field.sensitive ? " sensitive" : ""}`}>{field.label.replace(/^Your /, "")}</span>)}
+                </span>}
               </div>
             </li>
           ))}

@@ -17,11 +17,14 @@ import ProfileSheet from "./ui/ProfileSheet";
 import KateSheet, { useKateChat } from "./ui/KateSheet";
 import PersonaliseSheet from "./ui/PersonaliseSheet";
 import CardStack from "./feed/CardStack";
+import TodaySection, { TODAY_MAX_URGENT } from "./feed/TodaySection";
 import type { GridTile } from "./feed/tileGrid";
 import { data } from "./data";
 import { eco } from "./ecosystem/client";
 import EcoSheets, { type EcoSheet } from "./ecosystem/EcoSheets";
 import GoalsScreen from "./ecosystem/GoalsScreen";
+import GoalCelebration from "./ecosystem/GoalCelebration";
+import type { Goal } from "./ecosystem/types";
 import { useGoals } from "./ecosystem/useGoals";
 import "./ecosystem/eco.css";
 import NudgeLayer, { NudgeBell } from "./nudges/NudgeLayer";
@@ -90,6 +93,18 @@ export default function Phone(p: Props) {
   }, []);
   const goals = useGoals(asOf, home.customer.first_name, notify);
   const [ecoSheet, setEcoSheetRaw] = useState<EcoSheet | null>(null);
+
+  // A goal that completes while the customer watches gets its moment (not on load, not when time travel replays it).
+  const [celebrating, setCelebrating] = useState<Goal | null>(null);
+  const goalStatus = useRef<{ asOf: string; status: Map<number, string> } | null>(null);
+  useEffect(() => {
+    const list = goals.data?.goals;
+    if (!list) return;
+    const before = goalStatus.current?.asOf === asOf ? goalStatus.current.status : null;
+    const done = before ? list.find((g) => g.status === "completed" && before.get(g.goal_id) === "active") : undefined;
+    if (done) setCelebrating(done);
+    goalStatus.current = { asOf, status: new Map(list.map((g) => [g.goal_id, g.status])) };
+  }, [goals.data, asOf]);
   useEffect(() => {
     if (!ecoSheet) return;
     const close = (event: KeyboardEvent) => { if (event.key === "Escape") setEcoSheetRaw(null); };
@@ -217,6 +232,16 @@ export default function Phone(p: Props) {
   const HeroC = heroSection ? resolve(heroSection.component) : null;
   const accounts = useMemo(() => accountsFor(home, heroSection), [home, heroSection]);
 
+  // Today: the urgent moments (not the "Coming up" overview, which stays a wall tile) and the goal KBC noticed.
+  const todayCards = useMemo(() => home.feed.cards
+    .filter((c) => c.stage === "urgent" && c.card_type !== "core_coming_up").slice(0, TODAY_MAX_URGENT), [home.feed.cards]);
+  const todayKeys = useMemo(() => new Set(todayCards.map((c) => c.card_key)), [todayCards]);
+  const noticed = goals.data?.candidates.find((c) => !goals.hidden.has(c.playbook_id)
+    && !goals.data?.goals.some((g) => g.playbook_id === c.playbook_id && g.status !== "cancelled")) ?? null;
+  const [detailKey, setDetailKey] = useState<string | null>(null);
+  const clearDetail = useCallback(() => setDetailKey(null), []);
+  const generation = `${home.customer.first_name}|${home.as_of}`;
+
   // A different customer or hero means the tile we zoomed from is gone: close.
   const heroKey = `${home.customer.first_name}|${heroSection?.component ?? ""}`;
   useEffect(() => { setZoom(null); }, [heroKey]);
@@ -317,7 +342,11 @@ export default function Phone(p: Props) {
                   <AccountLogo account={accounts.accounts[0]} />
                 </motion.div>
               )}
+              <TodaySection hero={heroSection} urgent={todayCards} noticed={noticed} ctx={ctx}
+                onDetails={(card) => setDetailKey(card.card_key)} onAskKate={(key) => openKate(key)} onCta={onCta}
+                onPreviewGoal={(candidate) => setEcoSheet({ kind: "roadmap", candidate })} />
               <CardStack cards={home.feed.cards} caughtUp={home.feed.caught_up} hiddenCount={home.feed.hidden_count}
+                hideKeys={todayKeys} openKey={detailKey} onOpened={clearDetail} generation={generation}
                 asOf={asOf} onFeedback={p.onFeedback} onCta={onCta} onAskKate={(key) => openKate(key)}
                 personalTiles={personalTiles} editing={editing} onEditing={setEditing}
                 initialPins={initialPins} resetVersion={gridReset}
@@ -353,6 +382,12 @@ export default function Phone(p: Props) {
             </AnimatePresence>
 
             <NudgeLayer nudges={nudges} reduceMotion={theme.reduce_motion} onRun={runNudge} />
+
+            <AnimatePresence>
+              {celebrating && <GoalCelebration key={celebrating.goal_id} goal={celebrating} onClose={() => setCelebrating(null)}
+                onOpen={() => { setEcoSheet({ kind: "journey", goalId: celebrating.goal_id }); setCelebrating(null); }}
+                onStartNext={(pid) => { setCelebrating(null); void startGoal(pid); }} />}
+            </AnimatePresence>
 
             <nav className="bottom-nav" aria-label="Main navigation">
               <button type="button" className={sheet !== "kate" && tab === "home" ? "active" : ""} onClick={() => { setTab("home"); setSheet(null); setEcoSheetRaw(null); }}><NAV_ICONS.home />Home</button>

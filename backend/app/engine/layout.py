@@ -12,7 +12,6 @@ from __future__ import annotations
 import datetime as dt
 from collections import defaultdict
 from dataclasses import dataclass, field
-from statistics import median
 from typing import Callable
 
 from ..schemas import (
@@ -33,6 +32,7 @@ from ..schemas import (
     Transaction,
 )
 from app.engine.features import fmt_date, fmt_eur
+from .cards import gen_late_client
 
 # ----------------------------------------------------------------------------------
 # Tuning knobs
@@ -421,47 +421,43 @@ def _props_split_bills(c: Ctx) -> dict:
 
 
 def _props_invoice_tracker(c: Ctx) -> dict:
-    """Clients = distinct invoice payers in the last 180 days.
-    'Unpaid' heuristic: a client whose usual gap between invoices (median, or 45 days if only one
-    invoice) has been exceeded by more than 25 % since their last payment is counted as an open invoice
-    worth their average invoice amount."""
+    """What may be open comes from the same late-payer detector as the "late client" card and the "Get paid on
+    time" goal (cards.gen_late_client), so the three always show one amount. `recent` = the last payments received."""
     f: Features = c["features"]
     as_of: dt.date = c["as_of"]
-    since = as_of - dt.timedelta(days=180)
-    by_client: dict[str, list[Transaction]] = defaultdict(list)
-    for t in c["txs"]:
-        if t.category == "invoice_income" and since <= t.date <= as_of:
-            by_client[t.counterparty].append(t)
-    clients = []
-    unpaid = 0
-    unpaid_eur = 0.0
-    for name, ts in by_client.items():
-        ts.sort(key=lambda t: t.date)
-        total = sum(t.amount for t in ts)
-        avg = total / len(ts)
-        gaps = [(b.date - a.date).days for a, b in zip(ts, ts[1:])]
-        usual_gap = median(gaps) if gaps else 45
-        if (as_of - ts[-1].date).days > usual_gap * 1.25:
-            unpaid += 1
-            unpaid_eur += avg
-        clients.append({"name": name, "eur": _r(total), "last_date": ts[-1].date.isoformat()})
-    clients.sort(key=lambda x: x["eur"], reverse=True)
+    late = gen_late_client(f, c["customer"], c["txs"], as_of)
+    d = late[0].details if late else None
+    paid = sorted((t for t in c["txs"] if t.category == "invoice_income" and t.amount > 0 and t.date <= as_of),
+                  key=lambda t: (t.date, t.id), reverse=True)
     return {
-        "unpaid": unpaid,
-        "unpaid_eur": _r(unpaid_eur),
+        "unpaid": d["missed"] if d else 0,
+        "unpaid_eur": _r(d["open_eur"]) if d else 0.0,
         "paid_quarter_eur": _r(f.quarter_invoice_income_eur),
-        "clients": clients[:4],
+        "open": [{"name": d["client"], "eur": _r(d["open_eur"]), "last_date": d["last_date"],
+                  "days": d["days_since_last"]}] if d else [],
+        "recent": [{"name": t.counterparty, "eur": _r(t.amount), "date": t.date.isoformat()} for t in paid[:3]],
     }
 
 
+SAVINGS_BUFFER_MONTHS = (3, 6, 12)
+SAVINGS_MILESTONE_EUR = 5000.0
+
+
 def _props_savings_goal(c: Ctx) -> dict:
+    """What was put aside in the last 12 months, against the next milestone still ahead: 3, 6 or 12 months of
+    spending for a rainy-day fund, the next €5.000 for child savings. The target is never just the amount saved."""
     f: Features = c["features"]
     as_of: dt.date = c["as_of"]
     since = as_of - dt.timedelta(days=365)
     transfers = [-t.amount for t in c["txs"] if t.category == "savings_transfer" and t.amount < 0 and since <= t.date <= as_of]
     saved = sum(transfers)
     monthly = saved / 12 if transfers else 0.0
-    target = monthly * 12 if monthly > 0 else max(1000.0, round(f.monthly_spend_avg_90d * 3, -2))
+    spend = max(f.monthly_spend_avg_90d, 500.0)
+    if f.has_child_signals:
+        target = (saved // SAVINGS_MILESTONE_EUR + 1) * SAVINGS_MILESTONE_EUR
+    else:
+        target = next((round(spend * m, -2) for m in SAVINGS_BUFFER_MONTHS if round(spend * m, -2) > saved),
+                      (saved // SAVINGS_MILESTONE_EUR + 1) * SAVINGS_MILESTONE_EUR)
     return {
         "goal_label": "Child savings" if f.has_child_signals else "Rainy-day fund",
         "saved_eur": _r(saved),

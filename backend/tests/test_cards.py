@@ -209,8 +209,8 @@ def test_late_client_fires_for_a_steady_payer_who_stopped():
     cards = cards_for(customer(), b.txs, 3000, END, {"late_client"})
     assert len(cards) == 1
     card = cards[0]
-    assert card.title.startswith("Brouwerij Het Anker usually pays every ~")
-    assert "98 days ago" in card.title and card.eur_impact == 650
+    assert card.title == "Brouwerij Het Anker hasn't paid in 98 days"
+    assert card.details["typical_eur"] == 650 and card.eur_impact == card.details["open_eur"] == 650 * card.details["missed"]
     assert not card.commercial and card.family == "anomaly" and card.cta.action == "invoice_reminder"
     # still paying → nothing; a fortnight past the usual date is not "late" yet
     assert cards_for(customer(), freelancer_with_retainer(END).txs, 3000, END, {"late_client"}) == []

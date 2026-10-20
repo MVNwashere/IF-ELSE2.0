@@ -1,4 +1,5 @@
 // The Goals tab: what's in motion and every goal available to start. Tap a goal for its roadmap.
+import { useState } from "react";
 import { maskText, useEur, useMasked } from "../privacy";
 import { hours, useWinLine } from "./bits";
 import type { Goal, GoalCandidate, GoalsResponse, PlaybookSummary } from "./types";
@@ -12,6 +13,8 @@ interface Props {
   onAnswerInvite?: (goalId: number, accept: boolean) => void;   // a household member shared a goal with you
 }
 
+const AREAS = ["Work and business", "Home", "Family", "Money and safety", "Getting around"];
+
 function nextStep(goal: Goal) {
   return goal.steps.find((s) => s.status === "in_progress")
     ?? goal.steps.find((s) => s.status === "proposed" || s.status === "blocked");
@@ -21,13 +24,21 @@ export default function GoalsScreen({ data, hidden, busy = false, onOpenGoal, on
   const masked = useMasked();
   const eur = useEur();
   const winLine = useWinLine();
+  const [area, setArea] = useState<string>("All");
   if (!data) return <div className="gs-empty">Loading your goals…</div>;
 
   const live = data.goals.filter((g) => g.status === "active");
   const achieved = data.goals.filter((g) => g.status === "completed");
   const suggested = data.candidates.filter((c) => !hidden.has(c.playbook_id) && !live.some((g) => g.playbook_id === c.playbook_id));
   const taken = new Set([...data.goals.filter((g) => g.status !== "cancelled").map((g) => g.playbook_id), ...suggested.map((c) => c.playbook_id)]);
-  const explore = data.playbooks.filter((p) => !taken.has(p.playbook_id));
+  const notTaken = data.playbooks.filter((p) => !taken.has(p.playbook_id));
+  // open goals the customer may want; goals a stated rule says don't fit today wait, folded, with the reason
+  const explore = notTaken.filter((p) => p.fit !== "unlikely");
+  const unlikely = notTaken.filter((p) => p.fit === "unlikely");
+  const areas = ["All", ...AREAS.filter((a) => explore.some((p) => p.area === a))];
+  const inArea = area === "All" || !areas.includes(area) ? explore : explore.filter((p) => p.area === area);
+  // the whole list stays short (one line per goal); a chosen life area shows what each goal does
+  const compact = inArea === explore && explore.length > 6;
   const done = data.goals.reduce((n, g) => n + g.progress.done, 0);
   const total = data.goals.reduce((n, g) => n + g.progress.total, 0);
   const saved = data.goals.reduce((n, g) => n + g.outcome.customer_eur, 0);
@@ -93,14 +104,13 @@ export default function GoalsScreen({ data, hidden, busy = false, onOpenGoal, on
         })}
       </section>}
 
-      <section className="gs-section" aria-label="Available goals">
-        <h3>Available goals</h3>
-        {suggested.length + explore.length === 0 && <p className="gs-empty">You’ve started every goal we offer. Nice work.</p>}
+      {suggested.length > 0 && <section className="gs-section" aria-label="Suggested for you">
+        <h3>Suggested for you</h3>
         {suggested.map((c) => (
           <button type="button" key={c.playbook_id} className="gs-option suggested" onClick={() => onPreview(c)}>
             <span className="gs-icon" aria-hidden="true">{c.icon}</span>
             <span className="gs-option-body">
-              <span className="gs-badge">Suggested for you</span>
+              <span className="gs-badge">KBC noticed</span>
               <b>{maskText(c.title, masked)}</b>
               <span>{maskText(c.why_now, masked)}</span>
               <small>{winLine(c.potential) ? `${winLine(c.potential)} · ` : ""}{steps(c.playbook_id, c.steps_preview.length)} steps</small>
@@ -108,17 +118,38 @@ export default function GoalsScreen({ data, hidden, busy = false, onOpenGoal, on
             <span className="gs-chevron" aria-hidden="true">›</span>
           </button>
         ))}
-        {explore.map((p) => (
-          <button type="button" key={p.playbook_id} className="gs-option" onClick={() => onPreview(p)}>
+      </section>}
+
+      <section className="gs-section" aria-label="Explore goals">
+        <div className="gs-section-head"><h3>Explore goals</h3><span>{explore.length}</span></div>
+        {explore.length + unlikely.length === 0 && <p className="gs-empty">You’ve started every goal we offer. Nice work.</p>}
+        {areas.length > 2 && <div className="gs-areas" role="tablist" aria-label="Life areas">
+          {areas.map((a) => (
+            <button key={a} type="button" role="tab" aria-selected={area === a || (a === "All" && !areas.includes(area))}
+              className={area === a || (a === "All" && !areas.includes(area)) ? "on" : ""} onClick={() => setArea(a)}>{a}</button>
+          ))}
+        </div>}
+        {inArea.map((p) => (
+          <button type="button" key={p.playbook_id} className={`gs-option${compact ? " compact" : ""}`} onClick={() => onPreview(p)}>
             <span className="gs-icon" aria-hidden="true">{p.icon}</span>
             <span className="gs-option-body">
               <b>{p.title}</b>
-              <span>{p.tagline}</span>
-              <small>{p.steps} steps</small>
+              {!compact && <span>{p.tagline}</span>}
+              <small>{p.steps} steps{compact && p.area ? ` · ${p.area}` : ""}</small>
             </span>
             <span className="gs-chevron" aria-hidden="true">›</span>
           </button>
         ))}
+        {unlikely.length > 0 && <details className="gs-later">
+          <summary>Probably not for you right now ({unlikely.length})</summary>
+          {unlikely.map((p) => (
+            <button type="button" key={p.playbook_id} className="gs-option quiet" onClick={() => onPreview(p)}>
+              <span className="gs-icon" aria-hidden="true">{p.icon}</span>
+              <span className="gs-option-body"><b>{p.title}</b><span>{p.fit_reason}</span></span>
+              <span className="gs-chevron" aria-hidden="true">›</span>
+            </button>
+          ))}
+        </details>}
       </section>
 
       {achieved.length > 0 && <section className="gs-section" aria-label="Achieved">

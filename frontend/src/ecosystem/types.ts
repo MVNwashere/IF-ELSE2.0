@@ -129,7 +129,13 @@ export interface GoalCandidate {
   potential: WinTotals;
 }
 
-export interface PlaybookSummary { playbook_id: string; title: string; icon: string; tagline: string; ecosystems: string[]; steps: number }
+export type GoalFit = "suggested" | "open" | "unlikely";
+export interface PlaybookSummary {
+  playbook_id: string; title: string; icon: string; tagline: string; ecosystems: string[]; steps: number;
+  area?: string;              // life area, for grouping
+  fit?: GoalFit;              // how well the goal matches the customer today (backend ecosystem/fit.py)
+  fit_reason?: string;
+}
 
 export interface GoalsResponse {
   as_of: string;
@@ -211,6 +217,7 @@ export interface EcosystemOverview {
   projection: Record<string, number>;
   assumptions: string[];
   scoring_ms: number;
+  customers_scored?: number;
   learning?: LearningRow[];
   rules?: RuleRow[];
   outcomes?: OutcomeSummary;

@@ -557,6 +557,10 @@ class ProfileField(BaseModel):
     value_label: str | None = None
     source: FactSource | None = None
     updated_on: dt.date | None = None
+    # what the transactions suggest when the customer hasn't said anything yet: a proposal to confirm, never stored
+    suggested_value: FactValue | None = None
+    suggested_label: str | None = None
+    suggested_reason: str | None = None
 
 
 class DeclaredView(BaseModel):

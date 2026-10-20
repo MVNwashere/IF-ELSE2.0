@@ -2,7 +2,7 @@ import { categoryLabel } from "../format";
 import { maskFrac, useEur, useMasked } from "../privacy";
 import { arr, num, str, type SectionProps } from "./types";
 
-interface Cat { category: string; eur: number }
+interface Cat { category: string; label?: string; eur: number }
 
 export default function FamilyBudgetHero({ props }: SectionProps) {
   const eur = useEur();
@@ -33,7 +33,7 @@ export default function FamilyBudgetHero({ props }: SectionProps) {
       </div>
       {cats.length > 0 && (
         <div className="tags">
-          {cats.map((c) => <span key={c.category}>{categoryLabel(c.category)} {eur(c.eur)}</span>)}
+          {cats.map((c) => <span key={c.category}>{c.label ?? categoryLabel(c.category)} {eur(c.eur)}</span>)}
         </div>
       )}
     </div>

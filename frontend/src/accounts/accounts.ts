@@ -1,8 +1,8 @@
 // The accounts behind the hero tile.
 // The backend may send them as `accounts` inside the hero section's props (see docs/COMPONENT-PROPS.md).
 // Until it does, we derive a few clearly labelled demo accounts from data the home screen already has.
-import type { HomeResponse, Persona, Section } from "../api";
-import { arr, num, str } from "../components/types";
+import type { HomeResponse, Section } from "../api";
+import { arr, str } from "../components/types";
 
 export type AccountKind = "current" | "savings" | "reserve" | "child" | "business" | "joint";
 
@@ -88,49 +88,13 @@ export function hash(s: string): number {
   return x >>> 0;
 }
 
-function between(seed: string, lo: number, hi: number, step = 10): number {
-  return lo + (hash(seed) % (Math.floor((hi - lo) / step) + 1)) * step;
-}
-
-interface Template { id: string; kind: AccountKind; name: string; lo: number; hi: number }
-
-const EXTRA: Record<Persona, Template[]> = {
-  student: [
-    { id: "savings", kind: "savings", name: "Savings account", lo: 150, hi: 1800 },
-  ],
-  young_professional: [
-    { id: "savings", kind: "savings", name: "Savings account", lo: 1500, hi: 12000 },
-    { id: "holiday", kind: "savings", name: "Holiday fund", lo: 200, hi: 2500 },
-  ],
-  young_family: [
-    { id: "child_savings", kind: "child", name: "Child savings", lo: 300, hi: 4000 },
-    { id: "savings", kind: "savings", name: "Savings account", lo: 1500, hi: 9000 },
-  ],
-  freelancer: [
-    { id: "tax_reserve", kind: "reserve", name: "Tax reserve", lo: 600, hi: 3200 },
-    { id: "savings", kind: "savings", name: "Savings account", lo: 1500, hi: 9000 },
-  ],
-  investor: [
-    { id: "pension", kind: "savings", name: "Pension savings", lo: 9000, hi: 30000 },
-    { id: "savings", kind: "savings", name: "Savings account", lo: 4000, hi: 15000 },
-  ],
-  retiree: [
-    { id: "savings", kind: "savings", name: "Savings account", lo: 6000, hi: 28000 },
-    { id: "term", kind: "savings", name: "Term account", lo: 5000, hi: 20000 },
-  ],
-};
-
-const PRIMARY: Record<string, { kind: AccountKind; name: string }> = {
-  FamilyBudgetHero: { kind: "joint", name: "Family account" },
-  TaxReserveHero: { kind: "business", name: "Business account" },
-};
-
-function primaryBalance(hero: Section, seed: string): number {
-  const p = hero.props;
-  if (typeof p.balance_eur === "number" && Number.isFinite(p.balance_eur)) return p.balance_eur;
-  // A freelancer's business account holds a share of what was invoiced this quarter.
-  const invoiced = Math.round((num(p.quarter_income_eur) * 0.25) / 10) * 10;
-  return Math.max(between(`${seed}|primary`, 900, 4500), invoiced);
+/** The primary account's balance: the backend fills `balance_eur` on every hero tile from the same Customer State the
+ * cards use, so the ball and the feed always agree. */
+function primaryBalance(home: HomeResponse, hero: Section): number {
+  if (typeof hero.props.balance_eur === "number") return hero.props.balance_eur;
+  // older snapshots: the "Your money" card carries the same current-account figure
+  const money = home.feed.cards.find((c) => c.card_type === "core_money")?.details.metrics;
+  return Array.isArray(money) && typeof money[0]?.value === "number" ? money[0].value : 0;
 }
 
 /** The accounts behind the current hero tile, or null when the home screen has no hero. */
@@ -143,32 +107,14 @@ export function accountsFor(home: HomeResponse, hero: Section | undefined): Acco
   }
 
   const seed = `${home.customer.first_name}|${home.as_of.slice(0, 7)}`;
-  const top = [...home.persona_mix].sort((a, b) => b.weight - a.weight).slice(0, 2).map((p) => p.persona);
-  const personas: Persona[] = top.length > 0 ? top : ["young_professional"];
-
-  const main = PRIMARY[hero.component] ?? { kind: "current" as const, name: "Current account" };
+  // Only accounts the bank actually sees: no made-up savings or reserve pots next to the real balance.
   const accounts: Account[] = [{
     id: "main",
-    kind: main.kind,
-    name: main.name,
+    kind: "current",
+    name: "Current account",
     last4: String(1000 + (hash(`${seed}|main`) % 9000)),
-    balance_eur: primaryBalance(hero, seed),
+    balance_eur: primaryBalance(home, hero),
   }];
-
-  for (const persona of personas) {
-    for (const t of EXTRA[persona]) {
-      if (accounts.length >= MAX_ACCOUNTS || accounts.some((a) => a.id === t.id)) continue;
-      // The tax-reserve account must agree with the number on the tax-reserve tile.
-      const reserve = hero.component === "TaxReserveHero" && t.id === "tax_reserve" ? num(hero.props.reserve_eur, -1) : -1;
-      accounts.push({
-        id: t.id,
-        kind: t.kind,
-        name: t.name,
-        last4: String(1000 + (hash(`${seed}|${t.id}`) % 9000)),
-        balance_eur: reserve >= 0 ? reserve : between(`${seed}|${t.id}`, t.lo, t.hi),
-      });
-    }
-  }
 
   return { accounts, total_eur: accounts.reduce((t, a) => t + a.balance_eur, 0), illustrative: true };
 }

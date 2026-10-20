@@ -95,20 +95,84 @@ def _card(card_type: str, title: str, body: str, *, family: str = "forecast", st
                 commercial=commercial, due_date=due, eur_impact=impact, confidence=confidence)
 
 
+CATEGORY_NAMES = {"vat_payment": "VAT", "social_contribution": "Social contributions", "savings_transfer": "Savings",
+                  "insurance_car": "Car insurance", "insurance_home": "Home insurance",
+                  "insurance_family": "Family insurance", "mortgage": "Home loan"}
+UPCOMING_DAYS = 30
+CHANGE_TITLES = {"SUBSCRIPTION_PRICE_CHANGED": "A subscription changed price",
+                 "UNUSUALLY_LARGE_TRANSACTION": "An unusually large payment",
+                 "INCOME_DISAPPEARED": "An income stopped", "SALARY_CHANGED": "Your salary changed",
+                 "FOREIGN_SPENDING_APPEARED": "New spending abroad"}
+
+
+def category_name(category: str) -> str:
+    return CATEGORY_NAMES.get(category, category.replace("_", " ").capitalize())
+
+
+def entity_name(state: CustomerState, pattern) -> str:
+    """The counterparty as the bank statement spells it ("FOD Financiën", not the normalised "fod financiën")."""
+    wanted = set(pattern.evidence.transaction_ids)
+    found = [t for t in state.observations.transactions if t.id in wanted]
+    return max(found, key=lambda t: (t.date, t.id)).counterparty if found else pattern.entity.title()
+
+
+def upcoming_items(state: CustomerState, days: int = UPCOMING_DAYS) -> list[dict]:
+    """The one list of expected payments the whole home screen uses (Coming up, hero tiles, Today)."""
+    patterns = {p.id: p for p in state.patterns}
+    out = []
+    for flow in sorted(state.cash_flow.upcoming_outflows, key=lambda f: (f.date, f.pattern_id)):
+        if not 0 <= (flow.date - state.as_of).days <= days:
+            continue
+        p = patterns.get(flow.pattern_id)
+        out.append({"date": flow.date.isoformat(), "name": entity_name(state, p) if p else "Expected payment",
+                    "category": p.category if p else "other", "amount": round(abs(flow.amount), 2)})
+    return out
+
+
+def coming_up_card(state: CustomerState, items: list[dict], lowest: float | None) -> Card:
+    nxt = items[0]
+    due = dt.date.fromisoformat(nxt["date"])
+    total = round(sum(i["amount"] for i in items), 2)
+    low = lowest is not None and lowest < 0
+    return _card("core_coming_up", "Coming up",
+                 f"{len(items)} payment{'s' if len(items) != 1 else ''} in the next {UPCOMING_DAYS} days, "
+                 f"{fmt_eur(total)} in total. Next: {fmt_eur(nxt['amount'])} to {nxt['name']} on {due:%d %b}.",
+                 family="deadline", stage="urgent" if low else "soon" if (due-state.as_of).days <= 3 else "info",
+                 due=due, evidence=["Projected from observed recurring payments; dates and amounts are estimates"],
+                 details={"kind": "core", "items": items, "total": total, "horizon_days": UPCOMING_DAYS,
+                          "metrics": [{"label": f"{dt.date.fromisoformat(i['date']):%d %b} · {i['name']}", "value": i["amount"]}
+                                      for i in items[:5]],
+                          "related": ["core_money", "core_spending"]})
+
+
+def balance_dip_card(state: CustomerState, lowest: float, low_date: dt.date | None) -> Card:
+    when = f" around {low_date:%d %b}" if low_date else ""
+    about = f"{'−' if lowest < 0 else ''}{fmt_eur(round(lowest, -1))}"   # fmt_eur drops the sign
+    return _card("core_unusual", "Your balance may dip below zero",
+                 f"With the payments coming up, your current account may drop to about {about}{when}. "
+                 "Move money in or spread a payment.",
+                 family="anomaly", stage="urgent", due=low_date,
+                 evidence=["Projected from your balance, expected payments and usual day-to-day spending"],
+                 details={"kind": "core", "low_date": low_date.isoformat() if low_date else None,
+                          "metrics": [{"label": "Today", "value": state.financial_position.current_balance or 0},
+                                      {"label": "Lowest point", "value": round(lowest, 2)}],
+                          "related": ["core_coming_up", "core_spending"]})
+
+
 def _core_cards(customer: Customer, state: CustomerState, personas: list[dict]) -> list[Card]:
     age = state.as_of.year - customer.birth_year
     position, cash = state.financial_position, state.cash_flow
     products = _products(customer, state)
     out: list[Card] = []
     if position.current_balance is not None:
-        available = age < 26 or age >= 67
+        available = age < 26 or age >= 67 or position.known_savings is None
         amount = position.current_balance if available else position.total_liquid_balance
         if amount is not None:
             label = "Available to spend" if age < 26 else "Your money"
-            breakdown = [{"label": "Current accounts", "value": position.current_balance}]
+            breakdown = [{"label": "Current account", "value": position.current_balance}]
             if position.known_savings is not None and age >= 18:
                 breakdown.append({"label": "Savings", "value": position.known_savings})
-            out.append(_card("core_money", label, f"{fmt_eur(amount)} across known accounts" if not available
+            out.append(_card("core_money", label, f"{fmt_eur(amount)} across your accounts" if not available
                              else f"{fmt_eur(amount)} in your current account", family="opportunity",
                              evidence=["Known EUR account balances in Customer State"],
                              details={"kind": "core", "metrics": breakdown, "related": ["core_spending", "core_goals", "core_health"]}))
@@ -119,37 +183,40 @@ def _core_cards(customer: Customer, state: CustomerState, personas: list[dict]) 
         categories: dict[str, float] = defaultdict(float)
         for signal in month_signals:
             categories[signal.category] += -signal.amount
-        top = sorted(categories.items(), key=lambda x: -x[1])[:4]
-        out.append(_card("core_spending", "Spending this month", f"{fmt_eur(spent)} spent so far this month",
-                         evidence=[f"{len(month_signals)} EUR expenses booked this month"],
-                         details={"kind": "core", "metrics": [{"label": k.replace("_", " ").title(), "value": round(v, 2)} for k, v in top],
+        top = sorted(categories.items(), key=lambda x: -x[1])[:6]
+        out.append(_card("core_spending", "Spending this month", f"{fmt_eur(spent)} spent so far in {state.as_of:%B}",
+                         evidence=[f"{len(month_signals)} EUR expenses booked since 1 {state.as_of:%B}"],
+                         details={"kind": "core", "total": spent,
+                                  "metrics": [{"label": category_name(k), "value": round(v, 2)} for k, v in top],
                                   "related": ["core_money", "core_coming_up", "core_health"]}))
-    upcoming = sorted(cash.upcoming_outflows, key=lambda flow: flow.date)[:5]
+    upcoming = upcoming_items(state)
     if upcoming:
-        next_flow = upcoming[0]
-        low = cash.lowest_projected_balance is not None and cash.lowest_projected_balance < 0
-        out.append(_card("core_coming_up", "Coming up", f"Next expected payment: {fmt_eur(abs(next_flow.amount))} on {next_flow.date:%d %b}",
-                         family="deadline", stage="urgent" if low else "soon" if (next_flow.date-state.as_of).days <= 3 else "info",
-                         due=next_flow.date, evidence=["Projected from observed recurring payments; dates and amounts are estimates"],
-                         details={"kind": "core", "metrics": [{"label": f.date.strftime("%d %b"), "value": abs(f.amount)} for f in upcoming],
-                                  "related": ["core_money", "core_spending"]}))
+        out.append(coming_up_card(state, upcoming, cash.lowest_projected_balance))
     recent_changes = [c for c in state.changes + state.events if 0 <= (state.as_of-c.detected_at).days <= RECENT_DAYS]
-    unusual = [c for c in recent_changes if c.type in ("SUBSCRIPTION_PRICE_CHANGED", "UNUSUALLY_LARGE_TRANSACTION",
-                                                       "INCOME_DISAPPEARED", "SALARY_CHANGED", "FOREIGN_SPENDING_APPEARED")]
+    unusual = [c for c in recent_changes if c.type in CHANGE_TITLES]
     high_risks = [r for r in state.risks if r.severity == "high"]
-    if unusual or high_risks:
+    if high_risks and cash.lowest_projected_balance is not None:
+        out.append(balance_dip_card(state, cash.lowest_projected_balance, cash.lowest_projected_date))
+    elif unusual or high_risks:
         event = unusual[-1] if unusual else None
-        title = "Unusual activity" if event is None else event.type.replace("_", " ").title()
-        body = "Your projected balance may fall below zero. Review upcoming payments." if high_risks else (
-            f"A change involving {event.entity} was detected. Check the details." if event else "Review this change.")
+        title = "Unusual activity" if event is None else CHANGE_TITLES[event.type]
+        body = (f"A change involving {event.entity.title()} on {event.detected_at:%d %b}. Check that it's right."
+                if event else "Review this change.")
         out.append(_card("core_unusual", title, body, family="anomaly", stage="urgent" if high_risks else "soon",
-                         evidence=["A recent Customer State change or risk"] + ([event.id] if event else []),
-                         details={"kind": "core", "related": ["core_coming_up", "core_spending"]}))
+                         evidence=["A recent change in your transactions"],
+                         details={"kind": "core", "change_id": event.id if event else None,
+                                  "related": ["core_coming_up", "core_spending"]}))
     insurance = [p for p in state.recurring_payments.items if "insurance" in p.category]
     if age >= 18 and (insurance or any("insurance" in p for p in products)):
-        out.append(_card("core_insurance", "Insurance", f"{len(insurance)} recurring insurance payment{'s' if len(insurance) != 1 else ''} found",
+        yearly = round(sum(abs(p.monthly_amount) * 12 for p in insurance), 2)
+        out.append(_card("core_insurance", "Insurance",
+                         f"{len(insurance)} insurance contract{'s' if len(insurance) != 1 else ''}, about {fmt_eur(yearly)} a year"
+                         if insurance else "Your insurance products at KBC",
                          family="protection", evidence=["Observed insurance payments and held products"],
-                         details={"kind": "core", "metrics": [{"label": p.entity, "value": p.amount} for p in insurance[:5]],
+                         details={"kind": "core", "total": yearly,
+                                  "metrics": [{"label": f"{entity_name(state, p)} · {category_name(p.category)}",
+                                               "value": round(abs(p.monthly_amount) * 12, 2)} for p in insurance[:5]],
+                                  "metric_note": "per year",
                                   "related": ["core_coming_up", "core_money"]}))
     out.append(_card("core_goals", "Your goals", "Try a savings target and see how long it could take.",
                      family="opportunity", evidence=["An example target you can change in the planner"],
@@ -241,7 +308,9 @@ def _eligible_catalogue(item: dict, customer: Customer, state: CustomerState, pe
         "FM-05": category("childcare"),
         "FM-10": has_child,
         "HM-01": category("rent") and not mortgage,
-        "HM-03": category("rent") and not mortgage,
+        # buying only makes sense with some buffer behind you; investing only once the buffer is in place
+        "HM-03": category("rent") and not mortgage and (cash.cash_buffer_months or 0) >= 2,
+        "SV-07": (cash.cash_buffer_months or 0) >= 3,
         "HM-07": any(c.type == "CATEGORY_SPENDING_INCREASED" and c.entity == "utilities" for c in state.changes),
         "HM-10": "car_insurance" in products or "car_loan" in products,
         "TR-07": state.as_of.month in (5, 6, 7, 8),

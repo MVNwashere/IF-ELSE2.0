@@ -12,6 +12,14 @@ export const ICONS: Record<string, () => React.JSX.Element> = {
   insurance: () => (<svg {...common}><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>),
   budget: () => (<svg {...common}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" /></svg>),
   pension: () => (<svg {...common}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>),
+  calendar: () => (<svg {...common}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4M7.5 14h3" /></svg>),
+  alert: () => (<svg {...common}><path d="M12 3 2 20h20z" /><path d="M12 10v4M12 17.5h.01" /></svg>),
+  cart: () => (<svg {...common}><path d="M3 4h2l2.4 11h10.2L20 8H6.2" /><circle cx="9" cy="19.5" r="1.3" /><circle cx="17" cy="19.5" r="1.3" /></svg>),
+  trend: () => (<svg {...common}><path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" /></svg>),
+  book: () => (<svg {...common}><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4 21V5M8 7h7" /></svg>),
+  tag: () => (<svg {...common}><path d="M3 12V4h8l10 10-8 8z" /><circle cx="7.5" cy="8.5" r="1.3" /></svg>),
+  sparkle: () => (<svg {...common}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" /></svg>),
+  home: () => (<svg {...common}><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></svg>),
 };
 
 export function Icon({ name }: { name: string }) {

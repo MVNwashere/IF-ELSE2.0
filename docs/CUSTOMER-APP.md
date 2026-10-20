@@ -33,9 +33,20 @@ SQLite (synthetic) ─► transactions ≤ as_of ─► features ─► persona 
 
 1. `engine/pipeline.py` computes features, the persona mix, legacy cards and the layout plan (sections, theme,
    explanations, suggestions, gallery).
-2. `main.py` then replaces `home.feed` with the recommender's feed, built from Customer State
-   (`customer_state.get_state` → `recommender.recommend`), and `ecosystem/links.py` links feed cards to goal
-   journeys.
+2. `main.py` builds the recommender's feed from Customer State (`customer_state.get_state` →
+   `recommender.recommend`) and merges it with the engine's cards in `recommender/compose.py`, then
+   `ecosystem/links.py` links feed cards to goal journeys.
+
+**One home, one number per fact (`recommender/compose.py`).** The engine's cards are the moments that need action
+(VAT due, a payment that may be a scam, a late client, an insurance renewal); the recommender adds the overview and
+catalogue cards. The merge:
+
+| Rule | What it does |
+|---|---|
+| Moments first | Cards sort by stage (urgent, soon, the rest), then engine moments, then core overview cards, then catalogue tips and seasonal reminders (pension savings, scam season). At most 8 cards. |
+| One source per fact | Upcoming payments come from Customer State only (`feed.upcoming_items`, next 30 days, with counterparty names); hero tiles get `balance_eur` and their bills, spending and income from Customer State. With a `TaxReserveHero`, the expected VAT payment uses the reserve amount and the balance forecast moves with it. |
+| No duplicates | Tiles that repeat a card leave the layout (`UpcomingBills` next to "Coming up", `SpendingByCategory` next to "Spending this month", an empty `SavingsGoal` next to the buffer card). The VAT card leaves when the VAT hero shows it; a suspicious payment replaces the generic scam tips and explains the spending jump; "Your money" leaves when it only repeats the ball; the €1.000 example planner leaves when a real buffer or savings plan is shown. |
+| Tiles follow the feed | `KateTile` opens on the merged feed's top card; `AdvisorContact` names a suspicious payment when there is one. |
 
 Design rules:
 
@@ -158,9 +169,9 @@ score = persona_fit × (0.40·urgency + 0.30·impact + 0.20·confidence + 0.10·
 Then: commercial cards need consent; dismissed or accepted card keys are hidden, snoozed ones for 7 days; urgent
 service cards come first; at most 1 commercial card per 3 shown, 2 per family, 7 in total.
 
-**Where this output is used.** The ranked legacy feed is not what the customer sees. It feeds the layout planner
-(cash-flow stress, the Kate tile boost) and `GET /api/advisor/overview`. The visible feed comes from the
-recommender.
+**Where this output is used.** The ranked legacy cards feed the layout planner (cash-flow stress, the Kate tile
+boost) and `GET /api/advisor/overview`, and they are the "moments" that `recommender/compose.py` merges into the
+visible feed next to the recommender's cards.
 
 ## For You feed (`backend/app/recommender/feed.py`)
 
@@ -189,7 +200,7 @@ card body uses it; example figures from the spec are never shown.
 |---|---|
 | Filter | Drop dismissed or accepted card keys, snoozed ones (7 days), and commercial cards without consent |
 | Score | Core: a fixed priority (money 1.0, spending and coming up 0.82, others 0.48, a few raised per persona). Catalogue: 0.22 + 0.38 × persona fit. Times 0.35 if the customer said "less like this" for that type. Plus 1.2 for urgent, 0.12 for soon |
-| Select | At most 7 cards, 4 core, 2 commercial and no more than 1 commercial per 3 shown |
+| Select | At most 7 cards, 4 core, 2 commercial and no more than 1 commercial per 3 shown (before the merge with the engine's moments, see above) |
 
 `rank_explanation` is the card's first two evidence lines. `Feed.hidden_count` is the number of eligible cards left
 out. Each card's `details` carries metrics, an optional savings planner, and the related cards to show in the detail

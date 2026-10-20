@@ -1,5 +1,12 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+// Lotte's first For you tile today (the merged home leads with what happened; "Your money" is the KBC ball now)
+const FIRST = 'card:life_event:first_invoice-2026-10-16';
+const FIRST_TITLE = 'Your first invoice got paid';
+/** The slot of the last free spot: "+ Add row" appends two after the automatic area, which grows with the tiles. */
+const lastFreeSlot = async (page: Page) =>
+  (await page.locator('.home-tile-grid > [data-slot]').filter({ has: page.locator('.grid-free') }).last().getAttribute('data-slot'))!;
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/**', (route) => { throw new Error(`Unexpected backend request: ${route.request().url()}`); });
 });
@@ -68,7 +75,7 @@ test('preferences persist per customer and local state can reset', async ({ page
   await expect(page.locator('.phone.dark')).toHaveCount(0);
   await expect(page.locator('.phone h1')).toContainText('Jan');
   await page.getByRole('button', { name: 'Reset demo', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Demo customers' })).toBeVisible();
 });
 
 test('resetting a pending journey cancels its local completion', async ({ page }) => {
@@ -95,8 +102,9 @@ test('home previews the complete roadmap without creating a goal until approval'
   const feed = await page.locator('.feed-head').boundingBox();
   expect(balance!.y).toBeLessThan(feed!.y);
   await expect(page.locator('.goals-tile')).toHaveCount(0);
-  await expect(page.locator('[data-card-key="core:money"] .tile-main-value')).toHaveText('€5.500');
-  await expect(page.locator('[data-card-key="core:coming_up"] .tile-description')).toContainText('01 Nov');
+  // the KBC ball shows the current account; "Coming up" names who gets paid when
+  await expect(page.locator('.account-balance')).toHaveText('€5.500');
+  await expect(page.locator('[data-card-key="core:coming_up"] .tile-list')).toContainText('1 Nov');
   await expect(page.locator('.recommendation-grid > .tile-wide').first()).toBeVisible();
   await expect(page.locator('.recommendation-grid > .recommendation-cell:not(.tile-wide)').first()).toBeVisible();
   await page.screenshot({ path: 'test-results/for-you-tiles.png', animations: 'disabled' });
@@ -159,7 +167,8 @@ async function dragTile(page: Page, from: Locator, to: Locator) {
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 12, a.y + a.height / 2 + 12, { steps: 3 });
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 10 });
+  // tiles hug their content, so a tall target's centre can sit under the bottom navigation: aim near its top
+  await page.mouse.move(b.x + b.width / 2, b.y + Math.min(b.height / 2, 40), { steps: 10 });
   await page.mouse.up();
 }
 
@@ -171,26 +180,27 @@ test('one editable grid mixes personal tiles and recommendations and preserves p
   await expect(page.getByText('View accounts', { exact: true })).toHaveCount(0);
   await expect(page.locator('.grid-free, .grid-state, .grid-remove')).toHaveCount(0);
   await page.getByRole('button', { name: 'Edit tiles', exact: true }).click();
-  const money = page.locator('[data-tile-id="card:core:money"]');
+  const money = page.locator(`[data-tile-id="${FIRST}"]`);
   await expect(money.locator('.grid-remove')).toHaveCount(1);
   await expect(page.getByRole('button', { name: /^(Move|Make wide|Make compact|Keep) / })).toHaveCount(0);
   await dragTile(page, money, page.locator('.home-tile-grid > [data-slot="1"]'));
   await expect(money).toHaveAttribute('data-slot', '1');
   await expect(money).toHaveClass(/user-pinned/);
-  await page.getByRole('button', { name: 'Remove Your money', exact: true }).click();
+  await page.getByRole('button', { name: `Remove ${FIRST_TITLE}`, exact: true }).click();
   await expect(money).toHaveCount(0);
   await page.getByRole('button', { name: '+ Add row', exact: true }).click();
-  await page.getByRole('button', { name: 'Fill free spot 13', exact: true }).click();
-  await page.getByRole('button', { name: 'Place Your money', exact: true }).click();
-  await expect(money).toHaveAttribute('data-slot', '12');
+  const added = await lastFreeSlot(page);
+  await page.locator('.grid-free').last().click();
+  await page.getByRole('button', { name: `Place ${FIRST_TITLE}`, exact: true }).click();
+  await expect(money).toHaveAttribute('data-slot', added);
   await page.getByRole('button', { name: 'Done editing', exact: true }).click();
   await expect(page.locator('.grid-free')).toHaveCount(0);
   await page.reload();
-  await expect(money).toHaveAttribute('data-slot', '12');
+  await expect(money).toHaveAttribute('data-slot', added);
   await page.locator('aside.panel').getByRole('button', { name: 'Jan', exact: true }).click();
   await expect(page.locator('.user-pinned')).toHaveCount(0);
   await page.locator('aside.panel').getByRole('button', { name: 'Lotte', exact: true }).click();
-  await expect(money).toHaveAttribute('data-slot', '12');
+  await expect(money).toHaveAttribute('data-slot', added);
   await page.getByRole('button', { name: 'Edit tiles', exact: true }).click();
   await page.getByRole('button', { name: 'Reset to adaptive', exact: true }).click();
   await expect(page.locator('.user-pinned')).toHaveCount(0);
@@ -201,19 +211,42 @@ test('removed recommendations stay removed and can be placed again in a free spo
   await page.goto('/');
   await page.locator('aside.panel').getByRole('button', { name: 'Lotte', exact: true }).click();
   await page.getByRole('button', { name: 'Edit tiles', exact: true }).click();
-  await page.getByRole('button', { name: 'Remove Your money', exact: true }).click();
-  await expect(page.locator('[data-tile-id="card:core:money"]')).toHaveCount(0);
+  await page.getByRole('button', { name: `Remove ${FIRST_TITLE}`, exact: true }).click();
+  await expect(page.locator(`[data-tile-id="${FIRST}"]`)).toHaveCount(0);
   await expect(page.locator('.home-tile-grid > [data-slot="0"] .recommendation-tile')).toBeVisible();
   await page.reload();
-  await expect(page.locator('[data-tile-id="card:core:money"]')).toHaveCount(0);
+  await expect(page.locator(`[data-tile-id="${FIRST}"]`)).toHaveCount(0);
   await page.getByRole('button', { name: 'Edit tiles', exact: true }).click();
   await page.getByRole('button', { name: '+ Add row', exact: true }).click();
-  await page.getByRole('button', { name: 'Fill free spot 13', exact: true }).click();
-  await page.getByRole('button', { name: 'Place Your money', exact: true }).click();
-  await expect(page.locator('[data-tile-id="card:core:money"]')).toHaveAttribute('data-slot', '12');
+  const added = await lastFreeSlot(page);
+  await page.locator('.grid-free').last().click();
+  await page.getByRole('button', { name: `Place ${FIRST_TITLE}`, exact: true }).click();
+  await expect(page.locator(`[data-tile-id="${FIRST}"]`)).toHaveAttribute('data-slot', added);
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('kbc-demo-v1')!));
-  expect(state.customers.lotte.tileGrid.slotCount).toBe(14);
+  expect(state.customers.lotte.tileGrid.slotCount).toBe(Number(added) + 1);   // the new row ends the wall
   await page.locator('.phone-scroll:not([hidden])').evaluate((el) => { el.scrollTop = 0; });
   await page.screenshot({ path: 'test-results/editable-grid.png', animations: 'disabled' });
   await page.getByRole('button', { name: 'Done editing', exact: true }).click();
+});
+
+test('reaching a goal shows what it delivered', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('aside.panel').getByRole('button', { name: 'Sara', exact: true }).click();
+  // Today puts the goal KBC noticed under the ball
+  await expect(page.locator('.today-noticed')).toContainText('Get paid on time');
+  await page.getByRole('button', { name: 'Goals', exact: true }).click();
+  await page.locator('.gs-option.suggested').first().click();
+  await page.getByRole('button', { name: 'Approve & start', exact: true }).click();
+  for (let i = 0; i < 4; i++) {
+    await page.locator('.eco-step').getByRole('button', { name: /approve/i }).first().click();
+    await page.getByRole('button', { name: /^(Go ahead|Approve & share with .+)$/ }).click();
+  }
+  const moment = page.locator('.celebrate');
+  await expect(moment).toBeVisible({ timeout: 15_000 });
+  await expect(moment).toContainText('Goal reached');
+  await expect(moment).toContainText('Get paid on time');
+  await page.waitForTimeout(600);
+  await page.locator('.phone').screenshot({ path: 'test-results/goal-reached.png' });
+  await moment.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(moment).toHaveCount(0);
 });

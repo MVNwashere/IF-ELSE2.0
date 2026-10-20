@@ -150,6 +150,10 @@ export interface ProfileField {
   value_label: string | null;
   source: "you" | "kate" | null;
   updated_on: string | null;
+  /** What the transactions point to while nothing is set: shown as a proposal, stored only when confirmed. */
+  suggested_value?: FactValue | null;
+  suggested_label?: string | null;
+  suggested_reason?: string | null;
 }
 export interface InferredPersona { persona: Persona; label: string; weight_pct: number; evidence: string[]; from_you: boolean }
 export interface InferredGoal { playbook_id: string; title: string; evidence: string[] }

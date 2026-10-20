@@ -66,7 +66,7 @@ def test_home_response_shape(client):
     assert home["layout"]["sections"][0]["size"] == "hero"
     assert home["layout"]["sections"][1]["component"] == "ForYouFeed"
     assert abs(sum(p["weight"] for p in home["persona_mix"]) - 1) < 1e-6
-    assert len(home["feed"]["cards"]) <= 7
+    assert len(home["feed"]["cards"]) <= 8
 
 
 def test_as_of_is_clamped(client):
@@ -106,7 +106,10 @@ def test_home_feed_uses_customer_state_and_catalogue(client):
     _login(client, "sara")
     home = client.get("/api/me/home").json()
     assert {p["code"] for p in home["feed_personas"]} >= {"PAR", "SELF"}
-    assert any(c["card_type"] == "core_money" for c in home["feed"]["cards"])
+    assert any(c["card_type"].startswith("core_") for c in home["feed"]["cards"])
+    # the KBC ball shows the current account, so "Your money" would only repeat it
+    assert home["layout"]["sections"][0]["props"]["balance_eur"] > 0
+    assert not any(c["card_type"] == "core_money" for c in home["feed"]["cards"])
     assert any(c["card_type"].startswith("catalog_") for c in home["feed"]["cards"])
     assert all(c["details"].get("related_cards") is not None for c in home["feed"]["cards"])
 
@@ -192,11 +195,13 @@ def _as(client: TestClient, username: str) -> None:
 def test_pin_at_position_survives_time_travel(client):
     _as(client, "lotte")
     h = client.post("/api/me/layout-prefs", json={"component": "ScamShield", "state": "pinned", "position": 1}).json()
-    comps = [s["component"] for s in h["layout"]["sections"]]
-    assert comps[3] == "ScamShield"
+    def tile_position(sections):
+        comps = [s["component"] for s in sections]
+        return comps[comps.index("ForYouFeed") + 1:].index("ScamShield")
+    # position 1 = the second tile; it can only move up, when a tile ahead of it repeats a feed card and is dropped
+    assert tile_position(h["layout"]["sections"]) <= 1
     for day in ["2019-03-01", "2022-06-01", "2024-06-01"]:
-        comps = [s["component"] for s in client.get(f"/api/me/home?as_of={day}").json()["layout"]["sections"]]
-        assert comps[3] == "ScamShield", day
+        assert tile_position(client.get(f"/api/me/home?as_of={day}").json()["layout"]["sections"]) <= 1, day
     client.post("/api/me/layout-reset")
 
 

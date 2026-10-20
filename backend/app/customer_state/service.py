@@ -11,7 +11,7 @@ from .metrics import calculate
 from .models import CustomerState
 from .patterns import detect, transaction_events
 
-ALGORITHM_VERSION = "customer-state-1"
+ALGORITHM_VERSION = "customer-state-2"
 DOMAINS = frozenset({"financial_position", "income", "expenses", "cash_flow", "savings", "debt", "spending",
                      "recurring_payments", "subscriptions", "patterns", "changes", "events", "inferences",
                      "risks", "opportunities"})

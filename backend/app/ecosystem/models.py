@@ -262,6 +262,9 @@ class PlaybookSummary(BaseModel):
     tagline: str
     ecosystems: list[str]
     steps: int
+    area: str = ""                                                 # life area, for grouping (ecosystem/fit.py)
+    fit: Literal["suggested", "open", "unlikely"] = "open"
+    fit_reason: str = ""
 
 
 class GoalsResponse(BaseModel):
@@ -476,6 +479,7 @@ class EcosystemOverview(BaseModel):
     projection: dict[str, float]             # 2.3M projection of the triple win, with the assumptions spelled out
     assumptions: list[str]
     scoring_ms: float
+    customers_scored: int = 0                 # how many synthetic customers scoring_ms covers
     learning: list[LearningRow] = Field(default_factory=list)
     rules: list[RuleRow] = Field(default_factory=list)
     outcomes: OutcomeSummary = Field(default_factory=OutcomeSummary)

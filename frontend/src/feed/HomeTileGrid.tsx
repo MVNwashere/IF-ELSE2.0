@@ -13,6 +13,7 @@ interface Props {
   saved: TileGridPrefs | null;               // the arrangement as stored (null: never arranged)
   onSave: (prefs: TileGridPrefs) => void;     // persist a new arrangement
   onPlace?: (tile: GridTile) => void;         // a tile was placed (the home may need to load its data)
+  generation?: string;                         // changes when the home is recomposed: the tiles animate in again
 }
 
 type Drag = { id: string; slot: number; x: number; y: number; dx: number; dy: number; scale: number; active: boolean; over: number | null };
@@ -20,32 +21,30 @@ type Drag = { id: string; slot: number; x: number; y: number; dx: number; dy: nu
 const DRAG_START_PX = 6;
 const EDGE_SCROLL_PX = 64;
 
-/** Tiles are whole multiples of a square unit: half the grid width wide, as many units tall as the content needs. */
-function TileCell({ unit, gap, span, attrs, children }: {
-  unit: number; gap: number; span: 1 | 2; attrs: HTMLAttributes<HTMLDivElement> & Record<string, unknown>; children: ReactNode;
+/** Masonry: rows are ROW_PX tall and every tile spans just enough of them for its content plus the gap, so a short
+ * tile never stretches into empty space next to a tall one. Width is one or two columns. */
+const ROW_PX = 4;
+
+function TileCell({ gap, span, index, attrs, children }: {
+  gap: number; span: 1 | 2; index: number; attrs: HTMLAttributes<HTMLDivElement> & Record<string, unknown>; children: ReactNode;
 }) {
   const content = useRef<HTMLDivElement>(null);
-  const [rows, setRows] = useState(1);
+  const [rows, setRows] = useState(30);
   useLayoutEffect(() => {
     const el = content.current;
-    if (!el || !unit) return;
-    const measure = () => {
-      el.style.height = "auto"; // the natural height, not the height stretched to the cell
-      const natural = el.offsetHeight;
-      el.style.height = "";
-      setRows(Math.max(1, Math.ceil((natural + gap) / (unit + gap) - 0.01)));
-    };
+    if (!el) return;
+    const measure = () => setRows(Math.max(1, Math.ceil((el.offsetHeight + gap) / ROW_PX)));
     measure();
-    const watch = new MutationObserver(measure);
-    watch.observe(el, { childList: true, subtree: true, characterData: true });
-    return () => watch.disconnect();
-  }, [unit, gap, span]);
-  return <div {...attrs} style={{ gridColumn: `span ${span}`, gridRow: `span ${rows}`, ...attrs.style }}>
+    const resize = new ResizeObserver(measure);
+    resize.observe(el);
+    return () => resize.disconnect();
+  }, [gap, span]);
+  return <div {...attrs} style={{ gridColumn: `span ${span}`, gridRow: `span ${rows}`, ["--i" as string]: index, ...attrs.style }}>
     <div ref={content} className="grid-cell-body">{children}</div>
   </div>;
 }
 
-export default function HomeTileGrid({ tiles, editing, onEditing, initialPins, resetVersion, saved, onSave, onPlace }: Props) {
+export default function HomeTileGrid({ tiles, editing, onEditing, initialPins, resetVersion, saved, onSave, onPlace, generation }: Props) {
   const [prefs, setPrefs] = useState<TileGridPrefs>(() => {
     if (saved) return structuredClone(saved);
     let initial = emptyGrid();
@@ -59,19 +58,10 @@ export default function HomeTileGrid({ tiles, editing, onEditing, initialPins, r
   const [drag, setDrag] = useState<Drag | null>(null);
   const [message, setMessage] = useState("");
   const grid = useRef<HTMLDivElement>(null);
-  const [unit, setUnit] = useState({ size: 0, gap: 10 });
+  const [gap, setGap] = useState(10);
   useLayoutEffect(() => {
     const el = grid.current;
-    if (!el) return;
-    const update = () => {
-      const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
-      const size = (el.clientWidth - gap) / 2;
-      setUnit((u) => (u.size === size && u.gap === gap ? u : { size, gap }));
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => observer.disconnect();
+    if (el) setGap(parseFloat(getComputedStyle(el).columnGap) || 0);
   }, []);
   const phone = document.querySelector<HTMLElement>(".phone");
   const save = (next: TileGridPrefs) => {
@@ -154,12 +144,12 @@ export default function HomeTileGrid({ tiles, editing, onEditing, initialPins, r
       <div className="feed-head"><h2>For you</h2><button type="button" className="grid-edit-button" onClick={() => onEditing(!editing)}>{editing ? "Done editing" : "Edit tiles"}</button></div>
       <span className="sr-only" role="status">{message}</span>
       {editing && <p className="grid-edit-hint">Drag tiles to rearrange them. Tap a free spot to add a tile.</p>}
-      <div ref={grid} className={`recommendation-grid home-tile-grid${editing ? " grid-editing" : ""}${drag?.active ? " grid-dragging" : ""}`}
-        style={{ gridAutoRows: unit.size ? `${unit.size}px` : undefined }}>
-        {shown.map((cell) => {
+      <div ref={grid} key={generation} className={`recommendation-grid home-tile-grid${editing ? " grid-editing" : ""}${drag?.active ? " grid-dragging" : ""}`}
+        style={{ gridAutoRows: `${ROW_PX}px` }}>
+        {shown.map((cell, index) => {
           const dragging = drag?.active && drag.id === cell.id;
           return (
-            <TileCell key={cell.id} unit={unit.size} gap={unit.gap} span={cell.span} attrs={{
+            <TileCell key={cell.id} gap={gap} span={cell.span} index={index} attrs={{
               className: `recommendation-cell section${cell.span === 2 ? " tile-wide" : ""}${cell.pinned ? " user-pinned" : ""}${dragging ? " grid-dragged" : ""}${drag?.active && drag.over === cell.slot ? " grid-drop" : ""}`,
               "data-tile-id": cell.id, "data-slot": cell.slot, "data-card-key": cell.tile?.cardKey,
               onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => startDrag(e, cell),
@@ -181,7 +171,7 @@ export default function HomeTileGrid({ tiles, editing, onEditing, initialPins, r
         })}
       </div>
       {editing && <div className="grid-edit-footer">
-        <button type="button" className="btn-ghost" onClick={() => save({ ...prefs, slotCount: prefs.slotCount + 2 })}>+ Add row</button>
+        <button type="button" className="btn-ghost" onClick={() => save({ ...prefs, slotCount: Math.max(prefs.slotCount, ...cells.map((c) => c.slot + c.span)) + 2 })}>+ Add row</button>
       </div>}
       {filling !== null && phone && createPortal(<Sheet title="Fill this spot" onClose={() => setFilling(null)}>
         <p className="ps-intro">Choose a tile for position {filling + 1}.</p>

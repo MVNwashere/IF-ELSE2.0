@@ -39,9 +39,16 @@ export function composeGrid(tiles: GridTile[], prefs: TileGridPrefs): GridCell[]
     if (!prefs.hidden.includes(id)) occupy(id, place.slot, place.span, true, tiles.find((t) => t.id === id));
   }
   const candidates = tiles.filter((t) => t.eligible && !used.has(t.id) && !prefs.hidden.includes(t.id));
-  for (let slot = 0; slot < prefs.slotCount; slot++) {
+  // Every suggested tile gets a place: the automatic area grows with them (a fixed 12-slot area silently dropped
+  // tiles). Slots past it, up to the stored slotCount ("+ Add row"), stay free for the customer's own choices.
+  const need = taken.size + candidates.reduce((n, t) => n + t.span, 0);
+  let auto = Math.max(AUTO_SLOTS, need + (need % 2));
+  for (let slot = 0; slot < Math.max(auto, prefs.slotCount); slot++) {
+    // a wide tile can't start on an odd slot: grow by a row rather than leave a tile out
+    if (slot === auto - 1 && (candidates.length > 1 || candidates.some((t) => t.span === 2))) auto += 2;
     if (taken.has(slot)) continue;
-    const index = slot >= AUTO_SLOTS ? -1 : candidates.findIndex((t) => slot + t.span <= prefs.slotCount && fits(slot, t.span, taken));
+    const total = Math.max(auto, prefs.slotCount);
+    const index = slot >= auto ? -1 : candidates.findIndex((t) => slot + t.span <= total && fits(slot, t.span, taken));
     if (index >= 0) {
       const tile = candidates.splice(index, 1)[0];
       occupy(tile.id, slot, tile.span, false, tile);

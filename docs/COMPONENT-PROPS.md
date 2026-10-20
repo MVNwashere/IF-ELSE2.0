@@ -9,15 +9,15 @@ All amounts are plain numbers in EUR (positive). Dates are ISO `YYYY-MM-DD`. Eve
 |---|---|---|
 | `BalanceHero` | hero | `{ balance_eur, monthly_income_eur, monthly_spend_eur, trend_30d_eur, sparkline: number[] }` — sparkline = 30 daily end-of-day balances ending at `as_of` |
 | `RunwayHero` | hero | `{ balance_eur, runway_days: number \| null, next_income_date: string \| null, next_income_eur: number \| null, daily_budget_eur }` — daily budget = balance ÷ max(1, days until next income) |
-| `FamilyBudgetHero` | hero | `{ month_label, month_income_eur, month_spent_eur, month_budget_eur, child_benefit_eur, childcare_eur, top_categories: [{category, eur}] }` — top 4 categories this month |
-| `TaxReserveHero` | hero | `{ quarter_label, quarter_income_eur, reserve_eur, reserve_pct, vat_due_date, days_to_due }` |
-| `PensionHero` | hero | `{ balance_eur, pension_eur, pension_received_date: string \| null, next_pension_date: string \| null, upcoming_bills_eur, upcoming_bills_count }` |
+| `FamilyBudgetHero` | hero | `{ month_label, month_income_eur, month_spent_eur, month_budget_eur, child_benefit_eur, childcare_eur, top_categories: [{category, label?, eur}] }` — top 4 categories this month; spent, income and categories are overwritten from Customer State so they match "Spending this month" |
+| `TaxReserveHero` | hero | `{ quarter_label, quarter_income_eur, reserve_eur, reserve_pct, vat_due_date, days_to_due, vat_payment?: {date, name, category, amount} \| null, action?: {label, action} }` — `vat_payment` = the expected payment to the tax office, at the reserve amount (the "Coming up" card shows the same figure) |
+| `PensionHero` | hero | `{ balance_eur, pension_eur, pension_received_date: string \| null, next_pension_date: string \| null, upcoming_bills_eur, upcoming_bills_count, bills_horizon_days? }` — bills come from the same list as "Coming up" (next 30 days) |
 | `ForYouFeed` | full | `{}` (cards come from `feed.cards`) |
 | `QuickActions` | full | `{ actions: [{label, action, icon}] }` — 3–4 items; `icon` ∈ `transfer, split, invoice, scan, call, savings, card, insurance, budget, pension` |
 | `UpcomingBills` | half | `{ bills: [{counterparty, amount_eur, date, category}], total_eur }` — next 14 days, max 5 |
 | `SplitBills` | half | `{ recent: [{counterparty, amount_eur, date}], hint }` — recent shareable spends (leisure/groceries), max 3 |
-| `InvoiceTracker` | half | `{ unpaid, unpaid_eur, paid_quarter_eur, clients: [{name, eur, last_date}] }` — clients = distinct invoice payers last 180d, max 4 |
-| `SavingsGoal` | half | `{ goal_label, saved_eur, target_eur, monthly_eur }` |
+| `InvoiceTracker` | half | `{ unpaid, unpaid_eur, paid_quarter_eur, open: [{name, eur, last_date, days}], recent: [{name, eur, date}] }` — `open`/`unpaid_eur` come from the late-payer detector (`cards.gen_late_client`), the same estimate as the late-client card and the "Get paid on time" goal; `recent` = last 3 payments received |
+| `SavingsGoal` | half | `{ goal_label, saved_eur, target_eur, monthly_eur }` — `saved_eur` = put aside in the last 12 months; `target_eur` = the next milestone above it (3, 6 or 12 months of spending, or the next €5.000 for child savings), never the amount saved itself |
 | `ScamShield` | half | `{ tips: string[], hotline }` — 3 tips |
 | `AdvisorContact` | half | `{ advisor_name, reason, slots: string[] }` — 2–3 slot labels like "Tue 14:00" |
 | `SpendingByCategory` | half | `{ month_label, total_eur, categories: [{category, eur}] }` — top 6 |
@@ -25,6 +25,9 @@ All amounts are plain numbers in EUR (positive). Dates are ISO `YYYY-MM-DD`. Eve
 | `SubscriptionsTile` | half | `{ monthly_total_eur, count, items: [{counterparty, amount_eur, period_days, previous_amount_eur: number \| null}] }` — max 6, biggest first; `previous_amount_eur` set when the price changed |
 
 Sizes: `hero` (the first section, full width, big), `full` (full width), `half` (half width; two halves sit side by side, an odd one stretches).
+
+Every hero also gets `balance_eur` (the current account, from Customer State) when it has none: the KBC ball on the
+home shows it, so the ball and the cards always agree.
 
 Rules:
 - Exactly one hero, always first. `ForYouFeed` always second.

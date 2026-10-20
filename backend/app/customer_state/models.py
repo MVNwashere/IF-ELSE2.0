@@ -185,6 +185,7 @@ class CashFlow(Model):
     expected_30_day_balance: float | None
     lowest_projected_balance: float | None
     liquidity_pressure: Literal["low", "medium", "high", "unknown"]
+    lowest_projected_date: dt.date | None = None   # the day the projection bottoms out (None: today is the low)
 
 
 class Savings(Model):

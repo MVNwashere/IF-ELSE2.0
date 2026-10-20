@@ -79,7 +79,7 @@ Every card below has:
 
 ### YS-09 · Cheaper Phone Plan & Subscriptions
 **Type:** Insight · **Fits:** STU, YPRO
-**What it is:** Shows when the customer pays more than people like them for phone and streaming.
+**What it is:** Shows when you pay more than people like you for phone and streaming.
 **In the feed:** "You pay € 47 a month for phone and streaming. People your age pay € 31". Two suggested cuts underneath with the saving next to each.
 **When clicked:** A list of each subscription with its price and how it compares, plus simple steps to switch or cancel. Related cards: Subscription Audit.
 
@@ -107,7 +107,7 @@ Every card below has:
 
 ### EC-03 · Subscription Audit
 **Type:** Insight · **Fits:** YPRO, STU, PAR with five or more subscriptions
-**What it is:** A list of everything the customer pays for every month.
+**What it is:** A list of everything you pay for every month.
 **In the feed:** The total per year in large type ("€ 684 a year on subscriptions") and the first three subscriptions with logo and price.
 **When clicked:** Every subscription in a list, with how long it has been running and a "Cancel" button per row. Related cards: Unused Subscription Alert.
 
@@ -143,7 +143,7 @@ Every card below has:
 
 ### EC-09 · Tax Return Checklist
 **Type:** Action · **Fits:** YPRO, SELF, HOME, about six weeks before the deadline
-**What it is:** Helps the customer prepare their tax return.
+**What it is:** Helps you prepare your tax return.
 **In the feed:** A countdown ("32 days left"), a progress bar and a checklist preview with ticks for documents the bank already found.
 **When clicked:** The full checklist with each item explained and pre-filled where possible (income statements, mortgage interest, donations). Related cards: VAT & Tax Deadline, Your First Tax Return.
 
@@ -223,7 +223,7 @@ Every card below has:
 
 ### HM-01 · Mortgage Readiness
 **Type:** Tool · **Fits:** YPRO, PAR thinking about buying
-**What it is:** An estimate of how much the customer could borrow.
+**What it is:** An estimate of how much you could borrow.
 **In the feed:** "You could borrow about € 240k" with three sliders (income, partner's income, other debts).
 **When clicked:** A fuller calculator and an explanation of what lenders look at. A reminder that it is only an estimate. Related cards: First-Time Buyer Guide, Home Deposit Tracker.
 
@@ -381,7 +381,7 @@ Every card below has:
 
 ### SV-06 · Savings Account Rate Finder
 **Type:** Product · **Fits:** YPRO, PAR, HOME, PRE, SEN whose savings earn a low rate
-**What it is:** Compares the customer's savings rate with better ones.
+**What it is:** Compares your savings rate with better ones.
 **In the feed:** "You earn 0.5%. A better account pays 2.4%", with the extra yearly interest in euros.
 **When clicked:** A side-by-side of accounts, notice periods and rates, and a simple "Move money" action. Related cards: Idle Cash Warning.
 
@@ -399,7 +399,7 @@ Every card below has:
 
 ### SV-09 · Market Moves for My Holdings
 **Type:** Editorial · **Fits:** INV, HOME, PRE with investments, when holdings move sharply
-**What it is:** Explains big changes in the customer's holdings in a calm way.
+**What it is:** Explains big changes in your holdings in a calm way.
 **In the feed:** "Your tech holdings fell 4.1% today", with a three-line explanation of why.
 **When clicked:** A short article with the affected holdings, what happened and historical context. Related cards: Investments, Portfolio Rebalance Nudge.
 
@@ -451,7 +451,7 @@ Every card below has:
 
 ### BZ-07 · Income Protection
 **Type:** Product · **Fits:** SELF without disability or sick cover
-**What it is:** Shows what happens if the customer can't work for a while.
+**What it is:** Shows what happens if you can't work for a while.
 **In the feed:** A simple picture: income line dropping to zero while the cost line keeps going. "If you can't work for 3 months…".
 **When clicked:** A simulation of the months they could cope, and cover options. Related cards: Insurance, Own Pension Planner.
 
@@ -627,7 +627,7 @@ All cards in this group use large text, high contrast and a single column. A hel
 
 ### LE-06 · Inflation & Your Basket
 **Type:** Insight · **Fits:** All adults
-**What it is:** Shows how prices have changed for the customer's own spending.
+**What it is:** Shows how prices have changed for your own spending.
 **In the feed:** "Your groceries cost 6.8% more than a year ago" and a small bar against the national average.
 **When clicked:** A category-by-category list of price changes and ways to save. Related cards: Emergency Fund Builder, Student Survival Countdown.
 

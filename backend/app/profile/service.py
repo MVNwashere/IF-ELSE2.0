@@ -16,7 +16,7 @@ from ..engine.layout import PERSONA_LABEL
 from ..engine.persona import DECLARED_PHRASE, infer_persona_mix
 from ..schemas import (PERSONAS, CorrectionView, DataAccessSummary, DeclaredView, FieldOption, InferredGoal, InferredPersona,
                        PermissionView, PersonaWeight, ProfileField, ProfileResponse)
-from .fields import FIELDS, PURPOSE_DEFS, value_label
+from .fields import FIELDS, PURPOSE_DEFS, suggestions, value_label
 
 
 class ProfileError(Exception):
@@ -48,15 +48,22 @@ def build(conn, customer_id: int, as_of: dt.date, persona_mix: list[PersonaWeigh
         raise ProfileError(404, "Customer not found")
     prefs = db.get_prefs(conn, customer_id)
     stated = {f.key: f for f in prefs.facts}
+    features = compute_features(customer, db.get_transactions(conn, customer_id),
+                                db.get_balance_today(conn, customer_id), as_of)
+    proposed = suggestions(features)
     fields = []
     for f in FIELDS.values():
         row = stated.get(f.key)
+        guess = None if row else proposed.get(f.key)
         fields.append(ProfileField(
             key=f.key, label=f.label, category=f.category, kind=f.kind, hint=f.hint,
             options=[FieldOption(value=v, label=lbl) for v, lbl in f.options.items()], min=f.min, max=f.max,
             used_for=list(f.used_for), value=row.value if row else None,
             value_label=value_label(f.key, row.value) if row else None, source=row.source if row else None,
-            updated_on=row.updated_at if row else None))
+            updated_on=row.updated_at if row else None,
+            suggested_value=guess[0] if guess else None,
+            suggested_label=value_label(f.key, guess[0]) if guess else None,
+            suggested_reason=guess[1] if guess else None))
 
     mix = persona_mix if persona_mix is not None else _persona_mix(conn, customer_id, as_of, prefs)
     personas = [InferredPersona(persona=p.persona, label=PERSONA_LABEL[p.persona], weight_pct=round(p.weight * 100),

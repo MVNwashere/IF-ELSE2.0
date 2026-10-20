@@ -121,9 +121,17 @@ export default function AboutYouSheet({ asOf, onClose, onPassport, onChanged, no
             <div className={`pf-row ${open === f.key ? "open" : ""}`} key={f.key}>
               <button type="button" className="pf-row-head" aria-expanded={open === f.key} onClick={() => setOpen(open === f.key ? null : f.key)}>
                 <span className="pf-k">{f.label}</span>
-                <span className={`pf-v ${f.value === null ? "unset" : ""}`}>{f.value_label ?? "Not set"}</span>
+                <span className={`pf-v ${f.value === null ? "unset" : ""}`}>{f.value_label ?? (f.suggested_label ? "Not confirmed" : "Not set")}</span>
               </button>
               {f.source && <div className="pf-src">{sourceText(f)}</div>}
+              {f.value === null && f.suggested_value != null && f.suggested_label && open !== f.key && (
+                <div className="pf-suggest">
+                  <span>We think: <b>{f.suggested_label}</b><small>{f.suggested_reason}</small></span>
+                  <button type="button" className="btn-primary small" disabled={busy}
+                    onClick={() => void run(() => profileData.setFact(f.key, f.suggested_value!, "you", asOf), "Saved to your profile")}>Confirm</button>
+                  <button type="button" className="link" disabled={busy} onClick={() => setOpen(f.key)}>Change</button>
+                </div>
+              )}
               {open === f.key && (
                 <FieldEditor
                   key={`${f.key}:${JSON.stringify(f.value)}`}

@@ -382,17 +382,22 @@ def gen_late_client(f: Features, c: Customer, txs: list[Transaction], as_of: dt.
     _, cp, items, med_gap, since = best
     name, last = _name(cp), items[-1]
     typical = round(statistics.median(t.amount for t in items), 2)
+    # payments that should have arrived since the last one: the one estimate every screen uses
+    missed = max(1, round(since / max(med_gap, 1)) - 1)
+    open_eur = round(typical * missed, 2)
     return [Card(
         card_key=f"late_client:{_slug(cp)}-{last.date.isoformat()}", card_type="late_client", family="anomaly",
         stage="info",
-        title=f"{name} usually pays every ~{med_gap} days; last payment was {since} days ago",
-        body=f"A typical payment from {name} is about {fmt_eur(typical)}. If an invoice is still open, a friendly reminder may help.",
-        eur_impact=typical, due_date=None, confidence=0.65, commercial=False,
+        title=f"{name} hasn't paid in {since} days",
+        body=f"They usually pay every ~{med_gap} days, so about {fmt_eur(open_eur)} may be open "
+             f"({missed} × {fmt_eur(typical)}). A friendly reminder usually works.",
+        eur_impact=open_eur, due_date=None, confidence=0.65, commercial=False,
         evidence=[f"{len(items)} payments from {name} so far, typically every {med_gap} days",
                   f"Last payment {fmt_eur(last.amount)} on {fmt_date(last.date)}, the longest wait so far",
                   "We only see payments, not your open invoices"],
         cta=Cta(label="Send a reminder", action="invoice_reminder"),
-        details={"median_gap_days": med_gap, "days_since_last": since},
+        details={"median_gap_days": med_gap, "days_since_last": since, "client": name, "typical_eur": typical,
+                 "missed": missed, "open_eur": open_eur, "last_date": last.date.isoformat()},
     )]
 
 
@@ -452,6 +457,8 @@ def gen_new_payee(f: Features, c: Customer, txs: list[Transaction], as_of: dt.da
                       "No earlier payments to or from this recipient in your history",
                       "Scammers often push for one large, urgent payment to a new account"],
             cta=Cta(label="Yes, that was me", action="confirm_payee"),
+            # the answer that matters most gets its own button: stop the payment and talk to someone now
+            details={"alt_cta": {"label": "No, that wasn't me", "action": "report_fraud", "danger": True}},
         ))
     out.sort(key=lambda k: -k.eur_impact)
     return out[:NEW_PAYEE_MAX_CARDS]

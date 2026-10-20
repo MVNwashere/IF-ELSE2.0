@@ -141,7 +141,7 @@
       "YPRO"
     ],
     "fit_rule": "STU, YPRO",
-    "summary": "Shows when the customer pays more than people like them for phone and streaming.",
+    "summary": "Shows when you pay more than people like you for phone and streaming.",
     "feed_design": "\"You pay € 47 a month for phone and streaming. People your age pay € 31\". Two suggested cuts underneath with the saving next to each.",
     "detail": "A list of each subscription with its price and how it compares, plus simple steps to switch or cancel.",
     "related": [
@@ -210,7 +210,7 @@
       "PAR"
     ],
     "fit_rule": "YPRO, STU, PAR with five or more subscriptions",
-    "summary": "A list of everything the customer pays for every month.",
+    "summary": "A list of everything you pay for every month.",
     "feed_design": "The total per year in large type (\"€ 684 a year on subscriptions\") and the first three subscriptions with logo and price.",
     "detail": "Every subscription in a list, with how long it has been running and a \"Cancel\" button per row.",
     "related": [
@@ -314,7 +314,7 @@
       "HOME"
     ],
     "fit_rule": "YPRO, SELF, HOME, about six weeks before the deadline",
-    "summary": "Helps the customer prepare their tax return.",
+    "summary": "Helps you prepare your tax return.",
     "feed_design": "A countdown (\"32 days left\"), a progress bar and a checklist preview with ticks for documents the bank already found.",
     "detail": "The full checklist with each item explained and pre-filled where possible (income statements, mortgage interest, donations).",
     "related": [
@@ -526,7 +526,7 @@
       "PAR"
     ],
     "fit_rule": "YPRO, PAR thinking about buying",
-    "summary": "An estimate of how much the customer could borrow.",
+    "summary": "An estimate of how much you could borrow.",
     "feed_design": "\"You could borrow about € 240k\" with three sliders (income, partner's income, other debts).",
     "detail": "A fuller calculator and an explanation of what lenders look at. A reminder that it is only an estimate.",
     "related": [
@@ -1013,7 +1013,7 @@
       "SEN"
     ],
     "fit_rule": "YPRO, PAR, HOME, PRE, SEN whose savings earn a low rate",
-    "summary": "Compares the customer's savings rate with better ones.",
+    "summary": "Compares your savings rate with better ones.",
     "feed_design": "\"You earn 0.5%. A better account pays 2.4%\", with the extra yearly interest in euros.",
     "detail": "A side-by-side of accounts, notice periods and rates, and a simple \"Move money\" action.",
     "related": [
@@ -1068,7 +1068,7 @@
       "PRE"
     ],
     "fit_rule": "INV, HOME, PRE with investments, when holdings move sharply",
-    "summary": "Explains big changes in the customer's holdings in a calm way.",
+    "summary": "Explains big changes in your holdings in a calm way.",
     "feed_design": "\"Your tech holdings fell 4.1% today\", with a three-line explanation of why.",
     "detail": "A short article with the affected holdings, what happened and historical context.",
     "related": [
@@ -1202,7 +1202,7 @@
       "SELF"
     ],
     "fit_rule": "SELF without disability or sick cover",
-    "summary": "Shows what happens if the customer can't work for a while.",
+    "summary": "Shows what happens if you can't work for a while.",
     "feed_design": "A simple picture: income line dropping to zero while the cost line keeps going. \"If you can't work for 3 months…\".",
     "detail": "A simulation of the months they could cope, and cover options.",
     "related": [
@@ -1693,7 +1693,7 @@
       "SEN"
     ],
     "fit_rule": "All adults",
-    "summary": "Shows how prices have changed for the customer's own spending.",
+    "summary": "Shows how prices have changed for your own spending.",
     "feed_design": "\"Your groceries cost 6.8% more than a year ago\" and a small bar against the national average.",
     "detail": "A category-by-category list of price changes and ways to save.",
     "related": [

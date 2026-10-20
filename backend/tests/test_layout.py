@@ -34,7 +34,7 @@ REQUIRED_PROPS = {
     "QuickActions": {"actions"},
     "UpcomingBills": {"bills", "total_eur"},
     "SplitBills": {"recent", "hint"},
-    "InvoiceTracker": {"unpaid", "unpaid_eur", "paid_quarter_eur", "clients"},
+    "InvoiceTracker": {"unpaid", "unpaid_eur", "paid_quarter_eur", "open", "recent"},
     "SavingsGoal": {"goal_label", "saved_eur", "target_eur", "monthly_eur"},
     "ScamShield": {"tips", "hotline"},
     "AdvisorContact": {"advisor_name", "reason", "slots"},
@@ -283,11 +283,11 @@ def test_every_section_has_all_props_and_validates():
         assert set(props) == REQUIRED_PROPS[comp], comp
 
     ib = layout.REGISTRY["InvoiceTracker"]["props"](ctx)
-    assert ib["clients"][0]["name"] == "Studio Nord" and ib["clients"][0]["eur"] == 6200
+    assert ib["recent"][0]["name"] == "Studio Nord" and ib["open"] == [] and ib["unpaid_eur"] == 0
     ub = layout.REGISTRY["UpcomingBills"]["props"](ctx)
     assert ub["bills"][0]["counterparty"] == "Engie" and ub["total_eur"] == 145
     sg = layout.REGISTRY["SavingsGoal"]["props"](ctx)
-    assert sg["goal_label"] == "Child savings" and sg["saved_eur"] == 75
+    assert sg["goal_label"] == "Child savings" and sg["saved_eur"] == 75 and sg["target_eur"] > sg["saved_eur"]
     sb = layout.REGISTRY["SplitBills"]["props"](ctx)
     assert len(sb["recent"]) == 2
     bh = layout.REGISTRY["BalanceHero"]["props"](ctx)

@@ -69,6 +69,7 @@ Backend, `backend/app/ecosystem/`:
 | `models.py` | Pydantic models for every API shape (mirrored in `frontend/src/ecosystem/types.ts`) |
 | `context.py` | What KBC already knows at a date: holdings, partner-shareable values, numbers for step texts, freelance assumptions, keyword constants |
 | `intent.py` | 24 detectors (one per playbook), suppression of commercial goals, `detect()` and `detect_with_suppressed()` |
+| `fit.py` | A life area per goal and a stated rule per goal for "probably not for you" ("You already invoice clients"). Detected goals are always suggested; unlikely goals stay available to start yourself |
 | `service.py` | The engine: goals, step state machine, consent grants and revoke, partner fallback and demotion, households, stalled journeys, webhooks, console overview, partner onboarding |
 | `store.py` | SQLite tables (`eco_goals`, `eco_steps`, `eco_grants`, `eco_events`, `eco_ledger`, `eco_sources`, `eco_partner_calls`, `eco_members`, `eco_approvals`, `eco_shown`). Bound parameters only; reads filter on the session's customer id |
 | `webhooks.py` | HMAC signing and verification, simulated partners (done, late, reject, fail, timeout) and deletion confirmations |
@@ -87,7 +88,8 @@ Frontend:
 
 | File | What |
 |---|---|
-| `ecosystem/GoalsScreen.tsx` | The Goals tab: overview, shared-with-you invitations, goals in motion, every available goal (KBC's suggestions first), achieved goals |
+| `ecosystem/GoalsScreen.tsx` | The Goals tab: overview, shared-with-you invitations, goals in motion, "Suggested for you" (detected), "Explore goals" filtered by life area, "Probably not for you right now" (folded, with the reason), achieved goals |
+| `ecosystem/GoalCelebration.tsx` | The moment a goal completes: what it delivered (verified euros, hours) and the next goal |
 | `ecosystem/RoadmapSheet.tsx` | A goal's roadmap before it starts (preview endpoint), with Approve & start or Not now |
 | `ecosystem/JourneySheet.tsx` | One goal as a checklist: provider, why them, win, result, measured outcomes, stall prompt, invite |
 | `ecosystem/ConsentSheet.tsx` | Approve a step: what the provider will and will not see, for how long, partner choice, what KBC earns |

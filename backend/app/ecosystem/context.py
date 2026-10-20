@@ -226,11 +226,12 @@ class CustomerContext:
 
 def _k(eur: float, step: int = 5) -> str:
     """€187,400 → '185' (thousands, rounded to `step`)."""
-    return f"{max(step, round(eur / 1000 / step) * step):,}"
+    return f"{max(step, round(eur / 1000 / step) * step):,}".replace(",", ".")
 
 
 def _eur(x: float) -> str:
-    return f"{round(x):,}"
+    """Belgian grouping, like every amount in the app: 1950 → '1.950'."""
+    return f"{round(x):,}".replace(",", ".")
 
 
 def holdings_at(customer: Customer, txs: list[Transaction], f: Features) -> set[str]:
@@ -306,10 +307,8 @@ def build_context(customer: Customer, all_txs: list[Transaction], balance_today:
     late = gen_late_client(f, customer, all_txs, as_of)
     if late:
         d = late[0].details
-        name = late[0].title.split(" usually pays")[0]
-        missed = max(1, round(d["days_since_last"] / max(d["median_gap_days"], 1)) - 1)
-        ctx.vars.update(late_client=name, late_since=fmt_date(as_of - dt.timedelta(days=d["days_since_last"])),
-                        open_total=_eur(late[0].eur_impact * missed))
+        ctx.vars.update(late_client=d["client"], late_since=fmt_date(as_of - dt.timedelta(days=d["days_since_last"])),
+                        open_total=_eur(d["open_eur"]))
     payee = gen_new_payee(f, customer, all_txs, as_of)
     if payee:
         ctx.vars["new_payee"] = payee[0].title.split(" to ", 1)[1].split(". Was")[0]

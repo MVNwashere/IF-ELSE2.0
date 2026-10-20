@@ -171,6 +171,8 @@ def calculate(raw: Observations, signals: list[Signal], patterns: list[Pattern],
             balance += sum(f.amount for f in flows if f.date == day) - daily
             projections.append(round(balance, 2))
     lowest = min([pos.current_balance] + projections) if projections else None
+    lowest_day = (as_of + dt.timedelta(days=projections.index(lowest) + 1)
+                  if projections and lowest < pos.current_balance else None)
     pressure = ("unknown" if lowest is None else "high" if lowest < 0 else "medium"
                 if lowest < max(100, (avg("expenses") or 0) * .2) else "low")
     cash = CashFlow(monthly=monthly, average_monthly_free_cash_flow=avg("free_cash_flow"),
@@ -179,7 +181,7 @@ def calculate(raw: Observations, signals: list[Signal], patterns: list[Pattern],
                     upcoming_outflows=[f for f in flows if f.amount < 0],
                     expected_7_day_balance=projections[6] if projections else None,
                     expected_30_day_balance=projections[29] if projections else None,
-                    lowest_projected_balance=lowest, liquidity_pressure=pressure)
+                    lowest_projected_balance=lowest, lowest_projected_date=lowest_day, liquidity_pressure=pressure)
     category_metrics = {}
     # shares of the profiled spend only, so the gap to total expenses doesn't reveal restricted spend
     total = sum(values.get(m, 0) for values in categories.values() for m in months[-6:])

@@ -23,9 +23,10 @@ from dataclasses import dataclass
 
 from .. import db
 from ..profile.fields import held_back_playbooks
-from ..schemas import DeclaredSignalRow, Prefs
+from ..schemas import DeclaredSignalRow, Features, Prefs
 from . import outcomes, sources, store
 from .context import CustomerContext, apply_sources, build_context
+from .fit import AREA, playbook_fit
 from .intent import detect
 from .models import (
     ConsentGrant, ConsentsResponse, DataField, EcosystemOverview, EventRow, FallbackOffer, FeeDisclosure, FunnelRow,
@@ -348,9 +349,15 @@ def stall_prompt(conn, row, goal: Goal, at: dt.date) -> StallPrompt | None:
                                 "of it? You can keep it, pause it (no reminders) or stop it.")
 
 
-def playbook_summaries() -> list[PlaybookSummary]:
-    return [PlaybookSummary(playbook_id=p.id, title=p.title, icon=p.icon, tagline=p.tagline, ecosystems=p.ecosystems,
-                            steps=len(p.steps)) for p in registry().playbooks.values()]
+def playbook_summaries(features: Features | None = None, suggested: frozenset[str] = frozenset()) -> list[PlaybookSummary]:
+    """Every goal a customer can state, with its life area and (given the customer's features) how well it fits."""
+    out = []
+    for p in registry().playbooks.values():
+        fit, reason = playbook_fit(p.id, features, suggested) if features is not None else ("open", "")
+        out.append(PlaybookSummary(playbook_id=p.id, title=p.title, icon=p.icon, tagline=p.tagline,
+                                   ecosystems=p.ecosystems, steps=len(p.steps), area=AREA.get(p.id, "Money and safety"),
+                                   fit=fit, fit_reason=reason))
+    return out
 
 
 def withheld_goals(prefs: Prefs) -> set[str] | None:
@@ -410,7 +417,8 @@ def goals_response(conn, customer_id: int, as_of: dt.date, declared: list[Declar
                                icon=reg.playbooks[r["playbook_id"]].icon, from_name=r["from_name"])
                for r in store.invitations(conn, customer_id) if r["playbook_id"] in reg.playbooks]
     return GoalsResponse(as_of=as_of, candidates=cands, goals=goals, invitations=invites,
-                         holdings=_holdings_with_journeys(conn, ctx), playbooks=playbook_summaries())
+                         holdings=_holdings_with_journeys(conn, ctx),
+                         playbooks=playbook_summaries(ctx.features, frozenset(c.playbook_id for c in cands)))
 
 
 # ---- customer actions -------------------------------------------------------------------------------------------
@@ -907,6 +915,7 @@ def overview(conn) -> EcosystemOverview:
         projection["hours_saved"] += journeys * pot.hours_saved
         projection["kbc_revenue_eur"] += journeys * pot.kbc_revenue_eur
         projection["partner_fees_eur"] += journeys * pot.partner_fees_eur
+    funnel.sort(key=lambda r: (-r.detected, r.title))   # the goals KBC sees most often first
     ledger = store.ledger(conn)
     events = store.events(conn)
     all_calls = store.calls(conn)
@@ -967,7 +976,7 @@ def overview(conn) -> EcosystemOverview:
             "Partners and value-share terms are illustrative, not real contracts",
             f"Partners that miss their SLA {DEMOTE_AFTER}× are ranked below partners that answer (never by fee)",
         ],
-        scoring_ms=round(ms, 1),
+        scoring_ms=round(ms, 1), customers_scored=n,
     )
 
 
