@@ -6,6 +6,7 @@ import { AUTO_STYLE } from "./ui/PersonaliseSheet";
 import { data, MOCK } from "./data";
 import ControlPanel from "./demo/ControlPanel";
 import Login from "./Login";
+import EcosystemConsole from "./ecosystem/EcosystemConsole";
 import Phone from "./Phone";
 import PhoneScaler from "./PhoneScaler";
 
@@ -62,7 +63,7 @@ export default function App() {
       try {
         const s = await data.session();
         setSession(s);
-        await loadAll(null);
+        if (s.role !== "advisor") await loadAll(null);
       } catch (e) {
         if (!(e instanceof ApiError && e.status === 401)) fail(e);
       } finally { setChecked(true); }
@@ -74,7 +75,7 @@ export default function App() {
     try {
       const s = await data.login(username, password);
       setSession(s); setAsOf(null);
-      await loadAll(null);
+      if (s.role !== "advisor") await loadAll(null);
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }, [loadAll]);
 
@@ -84,7 +85,7 @@ export default function App() {
       if (session) await data.logout().catch(() => undefined);
       const s = await data.login(username, DEMO_PASSWORD);
       setSession(s); setAsOf(null); setHome(null); setTimeline(null);
-      await loadAll(null);
+      if (s.role !== "advisor") await loadAll(null);
     } catch (e) { fail(e); } finally { setBusy(false); }
   }, [session, loadAll, fail]);
 
@@ -181,6 +182,8 @@ export default function App() {
         showToast("Thanks, your home adapts");
         return apply(() => data.declare(a.signal!, "set", at));
       case "open_card":
+      case "start_goal":   // handled in Phone (ecosystem)
+      case "open_goal":
         return true;
     }
   }, [apply, asOf, showToast, label]);
@@ -191,6 +194,10 @@ export default function App() {
   }, [apply, asOf, showToast]);
 
   const onCta = useCallback((action: string) => showToast(`Simulated: ${action.replace(/_/g, " ")}`), [showToast]);
+
+  if (checked && session?.role === "advisor") {
+    return <EcosystemConsole username={session.username} onLogout={() => void logout()} onSwitchCustomer={(u) => void switchCustomer(u)} />;
+  }
 
   return (
     <div className="shell">

@@ -1,6 +1,8 @@
 // Typed client. Mirrors backend/app/schemas.py — keep both in sync.
 
-export type Persona = "student" | "young_professional" | "young_family" | "freelancer" | "retiree";
+import type { ConsentsResponse, EcosystemOverview, Goal, GoalsResponse, StepDecision } from "./ecosystem/types";
+
+export type Persona ="student" | "young_professional" | "young_family" | "freelancer" | "investor" | "retiree";
 export type Family = "deadline" | "anomaly" | "forecast" | "opportunity" | "milestone" | "protection";
 export type Stage = "early" | "soon" | "urgent" | "info";
 export type CardType = string; // backend validates against the legacy, core and catalogue registries
@@ -93,7 +95,8 @@ export interface HomeResponse {
 // ---- Kate ----
 export type KateActionKind =
   | "pin_tile" | "hide_tile" | "add_tile" | "snooze_card" | "dismiss_card"
-  | "set_style" | "declare" | "open_card" | "reset_style";
+  | "set_style" | "declare" | "open_card" | "reset_style"
+  | "start_goal" | "open_goal";
 /** A proposal only: the app shows a button; on tap it calls the regular endpoint. */
 export interface KateAction {
   kind: KateActionKind;
@@ -103,6 +106,8 @@ export interface KateAction {
   card_type: CardType | null;
   style: StylePrefs | null;       // set_style: the full new StylePrefs to POST to /api/me/style
   signal: DeclaredSignal | null;
+  playbook_id?: string | null;    // start_goal
+  goal_id?: number | null;        // open_goal
 }
 export interface KateTurn { role: "user" | "kate"; text: string }
 export interface KateReply { reply: string; actions: KateAction[]; quick_replies: string[]; source: "rules" | "llm" }
@@ -123,7 +128,7 @@ export class ApiError extends Error {
   constructor(status: number, message: string) { super(message); this.status = status; }
 }
 
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -165,4 +170,14 @@ export const api = {
   kate: (message: string, card_key: string | null, history: KateTurn[], asOf?: string) =>
     call<KateReply>("POST", withAsOf("/api/me/kate", asOf), { message, card_key, history }),
   advisorOverview: () => call<AdvisorOverview>("GET", "/api/advisor/overview"),
+  // ---- ecosystem engine (types in ecosystem/types.ts) ----
+  goals: (asOf?: string) => call<GoalsResponse>("GET", withAsOf("/api/me/goals", asOf)),
+  startGoal: (playbook_id: string, asOf?: string) => call<Goal>("POST", withAsOf("/api/me/goals", asOf), { playbook_id }),
+  stepDecision: (goalId: number, stepId: string, decision: StepDecision, asOf?: string) =>
+    call<Goal>("POST", withAsOf(`/api/me/goals/${encodeURIComponent(goalId)}/steps/${encodeURIComponent(stepId)}`, asOf), { decision }),
+  cancelGoal: (goalId: number) => call<{ ok: boolean }>("POST", `/api/me/goals/${encodeURIComponent(goalId)}/cancel`),
+  consents: () => call<ConsentsResponse>("GET", "/api/me/consents"),
+  revokeConsent: (grantId: number) => call<ConsentsResponse>("POST", `/api/me/consents/${encodeURIComponent(grantId)}/revoke`),
+  goalsReset: () => call<{ ok: boolean }>("POST", "/api/me/goals-reset"),
+  ecosystemOverview: () => call<EcosystemOverview>("GET", "/api/ecosystem/overview"),
 };

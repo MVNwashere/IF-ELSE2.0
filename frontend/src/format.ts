@@ -51,6 +51,7 @@ export const PERSONA_LABEL: Record<string, string> = {
   young_professional: "young professional",
   young_family: "young family",
   freelancer: "freelancer",
+  investor: "investor",
   retiree: "retiree",
 };
 

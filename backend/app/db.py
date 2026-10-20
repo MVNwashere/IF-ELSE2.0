@@ -110,6 +110,8 @@ def init_schema(conn: sqlite3.Connection) -> None:
     migrate(conn)
     from .customer_state.storage import init_schema as init_customer_state
     init_customer_state(conn)
+    from .ecosystem.store import init_schema as init_ecosystem
+    init_ecosystem(conn)
 
 
 def migrate(conn: sqlite3.Connection) -> None:

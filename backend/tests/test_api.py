@@ -74,7 +74,7 @@ def test_as_of_is_clamped(client):
     _login(client, "sara")
     r = client.get("/api/me/home?as_of=2099-01-01")
     assert r.status_code == 200
-    assert r.json()["as_of"] <= "2026-09-30"
+    assert r.json()["as_of"] <= "2026-10-20"
     assert client.get("/api/me/home?as_of=not-a-date").status_code == 422
 
 
@@ -115,9 +115,11 @@ def test_feed_personas_follow_history_without_future_products(client):
     client.cookies.clear()
     _login(client, "lotte")
     student = client.get("/api/me/home?as_of=2018-09-30").json()
-    freelancer = client.get("/api/me/home?as_of=2026-09-30").json()
+    employed = client.get("/api/me/home?as_of=2026-09-30").json()
+    freelancer = client.get("/api/me/home?as_of=2026-10-20").json()   # first client paid on 16 Oct
     assert student["feed_personas"][0]["code"] == "STU"
-    assert freelancer["feed_personas"][0]["code"] == "SELF"
+    assert "SELF" not in {p["code"] for p in employed["feed_personas"]}
+    assert "SELF" in {p["code"] for p in freelancer["feed_personas"]}
     assert "STU" not in {p["code"] for p in freelancer["feed_personas"]}
 
 

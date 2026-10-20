@@ -1,8 +1,9 @@
-"""The three hand-crafted demo customers (DESIGN.md §6.1).
+"""The hand-crafted demo customers (DESIGN.md §6.1; marc added in round 2).
 
-  lotte (9001)  2018 student in Leuven → 2021 first job → 2022 moves in + mortgage → 2024 baby → 2026 freelance
+  lotte (9001)  2018 student in Leuven → 2021 first job → 2021-22 house hunt + mortgage → 2024 baby → Oct 2026 goes freelance (first invoice 4 days before TODAY)
   sara  (9002)  freelancer AND young mother; car insurance renews in 12 days; Netflix price increase
   jan   (9003)  71, retiree; duplicate charge; idle cash
+  marc  (9004)  52, the investor: salary, mortgage nearly paid off, pension savings, €48k idle, a trip booked
 
 Eight years of history so that yearly patterns and the time-travel slider work. The running balance of each
 demo customer is calibrated per life era (see `calibrate_balance`) so that the walk-back
@@ -40,18 +41,28 @@ def _lotte() -> tuple[str, Customer, list[Transaction], float]:
 
     # ---- 2021-07: first salary at Cronos Groep (started 1 June, paid on the 1st); rents a flat from August
     first_salary = D(2021, 7, 1)
-    salary_end = D(2025, 12, 1)
+    salary_end = D(2026, 10, 1)
 
     def salary(d: dt.date) -> float:
         return 2350 * (1.03 ** (d.year - 2021))
 
     b.monthly(first_salary, salary_end, 1, salary, "salary", "Cronos Groep")
-    # Belgian 13th month every December; when she leaves at the end of 2025 the exit holiday pay is paid out too
+    # Belgian 13th month every December; when she leaves at the end of Sep 2026 the pro-rata 13th month and the
+    # exit holiday pay are paid out with the last pay slip
     b.yearly(D(2021, 12, 1), D(2025, 12, 31), 12, 20, lambda d: salary(d) * 0.85, "salary", "Cronos Groep (eindejaarspremie)")
-    b.add(D(2025, 12, 31), 1900, "salary", "Cronos Groep (vertrekvakantiegeld)")
+    b.add(D(2026, 9, 30), salary(D(2026, 9, 30)) * 0.85 * 9 / 12, "salary", "Cronos Groep (eindejaarspremie pro rata)")
+    b.add(D(2026, 9, 30), 2100, "salary", "Cronos Groep (vertrekvakantiegeld)")
     b.monthly(D(2021, 8, 1), D(2022, 3, 31), 1, 720, "rent", "Immo Vermeulen")
     living_costs(b, D(2021, 6, 1), D(2022, 3, 31), scale=0.9, subscription=("Netflix", 13.99, 13.99),
                  telecom=("Telenet", 52.0, 52.0))
+
+    # ---- 2021-10 → 2022-02: the leading signals of a house purchase, months before the deed (round 2: intent).
+    # A property-portal search alert, a pre-purchase building inspection, then the deposit at the preliminary
+    # sales agreement, paid into the notary's escrow account (funded from savings).
+    b.monthly(D(2021, 10, 6), D(2022, 2, 28), 6, 9.99, "property", "Zimmo Premium zoekalert")
+    b.add(D(2022, 1, 18), 395, "property", "Bouwkundig Expertisebureau Vandamme")
+    b.add_signed(D(2022, 2, 7), +15000.0, "savings_transfer", "KBC Spaarrekening (naar zichtrekening)")
+    b.add(D(2022, 2, 8), 15000, "property", "Notaris Van den Broeck (derdenrekening)")
 
     # ---- 2022-03: moves in with partner, buys a house (deposit comes back from her savings account)
     b.add_signed(D(2022, 3, 14), +12000.0, "savings_transfer", "KBC Spaarrekening (naar zichtrekening)")
@@ -64,6 +75,9 @@ def _lotte() -> tuple[str, Customer, list[Transaction], float]:
     # Telenet price increase in September 2022
     living_costs(b, D(2022, 4, 1), D(2024, 1, 31), scale=1.15, subscription=("Netflix", 13.99, 13.99),
                  telecom=("Telenet", 52.0, 58.0), telecom_increase_date=D(2022, 9, 12))
+    # energy crisis: the yearly settlement bill for the new (uninsulated) house, and higher advances after it
+    b.add(D(2022, 11, 14), 640, "utilities", "Engie (jaarafrekening)")
+    b.monthly(D(2022, 12, 10), D(2023, 11, 30), 10, 95, "utilities", "Engie (voorschot verhoging)")
     # gym membership, price bump in February 2025
     b.monthly(D(2023, 1, 20), TODAY, 20, lambda d: 29.99 if d >= D(2025, 2, 20) else 24.99, "subscription", "Basic-Fit")
 
@@ -77,24 +91,11 @@ def _lotte() -> tuple[str, Customer, list[Transaction], float]:
                  telecom=("Telenet", 58.0, 58.0))
     b.yearly(D(2024, 3, 1), TODAY, 3, 20, 96, "insurance_family", KBC_INSURANCE)
 
-    # ---- 2026-01: goes freelance (salary stops after Dec 2025); first invoice on 15 Jan.
-    # Invoices are hand-picked and land early in the month (before the fixed costs), two per month, 4 clients.
-    invoices = [
-        (D(2026, 1, 15), 1850, "Bright Agency"), (D(2026, 1, 28), 1400, "Gemeente Herent"),
-        (D(2026, 2, 4), 2150, "Vzw Kompas"), (D(2026, 2, 17), 1680, "Bright Agency"),
-        (D(2026, 3, 5), 1920, "Dupont & Co"), (D(2026, 3, 18), 2300, "Gemeente Herent"),
-        (D(2026, 4, 3), 1750, "Bright Agency"), (D(2026, 4, 16), 2050, "Vzw Kompas"),
-        (D(2026, 5, 6), 2400, "Dupont & Co"), (D(2026, 5, 19), 1500, "Bright Agency"),
-        (D(2026, 6, 4), 1980, "Gemeente Herent"), (D(2026, 6, 17), 2200, "Vzw Kompas"),
-        (D(2026, 7, 3), 1650, "Bright Agency"), (D(2026, 7, 16), 2350, "Dupont & Co"),
-        (D(2026, 8, 5), 2100, "Gemeente Herent"), (D(2026, 8, 18), 1450, "Vzw Kompas"),
-        (D(2026, 9, 4), 2250, "Bright Agency"), (D(2026, 9, 17), 1900, "Dupont & Co"),
-    ]
-    for d, amt, cp in invoices:
-        b.add(d, amt, "invoice_income", cp)
-    # no random invoices (invoice_end before start), but quarterly VAT and social contributions
-    freelance_income(b, D(2026, 1, 16), TODAY, ["Bright Agency"], invoice_end=D(2026, 1, 15),
-                     social_fund="Xerius", social_amount=1150)
+    # ---- Oct 2026: goes freelance (left Cronos at the end of September). The round 2 hero story starts here:
+    # she registers her business at the enterprise counter, then her first client pays four days before TODAY.
+    # Nothing else yet: the first VAT return (Jan 2027) and social contributions (Dec 2026) lie in the future.
+    b.add(D(2026, 10, 2), 105.50, "other", "Ondernemingsloket Xerius (inschrijving KBO)")
+    b.add(D(2026, 10, 16), 1850, "invoice_income", "Bright Agency")
 
     # ---- balance path per era; some student month-ends deliberately low so the runway card fires
     # salary lands on the 1st, so the month-end balance is the monthly minimum: bands are daily bands
@@ -102,7 +103,7 @@ def _lotte() -> tuple[str, Customer, list[Transaction], float]:
         (DEMO_START, (300, 900, 480)),
         (D(2021, 7, 1), (1600, 4500, 1900)),
         (D(2024, 2, 1), (2100, 5000, 2400)),
-        (D(2025, 12, 1), (3200, 8000, 5500)),
+        (D(2026, 9, 30), (3200, 8000, 5500)),
     ])
     low_months = {(2019, 10): 250, (2020, 4): 250, (2020, 11): 260}
     balance_today = calibrate_balance(b, 420.0, bands, overrides=low_months, excess=SAVINGS)
@@ -121,7 +122,7 @@ def _lotte() -> tuple[str, Customer, list[Transaction], float]:
                 {"type": "price_increase", "date": "2022-09-12", "counterparty": "Telenet", "from": 52.0, "to": 58.0},
                 {"type": "baby", "date": baby.isoformat()},
                 {"type": "price_increase", "date": "2025-02-20", "counterparty": "Basic-Fit", "from": 24.99, "to": 29.99},
-                {"type": "first_invoice", "date": "2026-01-15"},
+                {"type": "first_invoice", "date": "2026-10-16"},
             ],
         },
     )
@@ -135,12 +136,16 @@ def _sara() -> tuple[str, Customer, list[Transaction], float]:
     # employee until end 2021, freelancer since 2022 with 6 clients (~€3,500–4,500 a month)
     b.monthly(DEMO_START, D(2021, 12, 31), 27, 2600, "salary", "Universiteit Gent", jitter_amount=0.01)
     clients = ["Studio Nord", "Bakkerij Peeters", "Vzw De Kring", "Atelier Vos", "Immo Verstraete", "Sofico BV"]
-    freelance_income(b, D(2022, 1, 1), TODAY, clients, lo=800, hi=2500, per_month=2.5,
+    # VAT and contributions run until the end of September: the Q3 VAT return is due on TODAY and not paid yet
+    freelance_income(b, D(2022, 1, 1), D(2026, 9, 30), clients, lo=800, hi=2500, per_month=2.5,
                      social_fund="Xerius", social_amount=1280, invoice_end=D(2026, 6, 30))
     # Q3 2026 invoices hand-picked: ≈ €9,000 so the VAT reserve is ≈ €1,900
     for d, amt, cp in [(D(2026, 7, 6), 1650, "Studio Nord"), (D(2026, 7, 21), 1180, "Vzw De Kring"),
                        (D(2026, 8, 4), 2100, "Immo Verstraete"), (D(2026, 8, 19), 940, "Bakkerij Peeters"),
                        (D(2026, 9, 3), 1820, "Sofico BV"), (D(2026, 9, 12), 1310, "Atelier Vos")]:
+        b.add(d, amt, "invoice_income", cp)
+    # Q4 has started: two invoices paid in October before TODAY
+    for d, amt, cp in [(D(2026, 10, 5), 1740, "Studio Nord"), (D(2026, 10, 14), 1390, "Sofico BV")]:
         b.add(d, amt, "invoice_income", cp)
     # a steady retainer client (monthly, around the 24th) who stopped paying after June: the late-client card
     b.monthly(D(2025, 1, 24), D(2026, 6, 30), 24, 650, "invoice_income", "Brouwerij Het Anker", jitter_amount=0.0)
@@ -152,9 +157,9 @@ def _sara() -> tuple[str, Customer, list[Transaction], float]:
     b.monthly(D(2019, 6, 5), TODAY, 5, 1120, "mortgage", "KBC Woningkrediet")
     b.yearly(D(2019, 6, 1), TODAY, 6, 3, 298, "insurance_home", KBC_INSURANCE)
 
-    # car insurance with an external insurer, renews 2026-10-12 (12 days after TODAY)
+    # car insurance with an external insurer, renews 2026-11-01 (12 days after TODAY)
     for year, premium in [(2019, 548), (2020, 560), (2021, 571), (2022, 589), (2023, 589), (2024, 612), (2025, 612)]:
-        b.add(D(year, 10, 12), premium, "insurance_car", "AG Insurance")
+        b.add(D(year, 11, 1), premium, "insurance_car", "AG Insurance")
 
     # baby Noor, Feb 2024
     baby = D(2024, 2, 3)
@@ -179,7 +184,7 @@ def _sara() -> tuple[str, Customer, list[Transaction], float]:
             "events": [
                 {"type": "first_invoice", "date": "2022-01-01"},
                 {"type": "baby", "date": baby.isoformat()},
-                {"type": "insurance_renewal", "date": "2026-10-12", "counterparty": "AG Insurance", "amount": 612},
+                {"type": "insurance_renewal", "date": "2026-11-01", "counterparty": "AG Insurance", "amount": 612},
                 {"type": "price_increase", "date": "2026-09-14", "counterparty": "Netflix", "from": 13.99, "to": 17.99},
                 {"type": "late_client", "date": "2026-06-24", "counterparty": "Brouwerij Het Anker", "amount": 650},
             ],
@@ -204,19 +209,19 @@ def _jan() -> tuple[str, Customer, list[Transaction], float]:
     b.scatter(DEMO_START, TODAY, "leisure", ["Tuincentrum Aveve", "Petanqueclub Rivierenhof", "De Roma"], 1.5, 10, 60)
     b.scatter(DEMO_START, TODAY, "other", ["Cadeau kleinkinderen", "Standaard Boekhandel", "Hema"], 1.0, 20, 120)
 
-    # duplicate charge: Colruyt €64.20 twice on 27 Sep 2026
-    b.add(D(2026, 9, 27), 64.20, "groceries", "Colruyt")
-    b.add(D(2026, 9, 27), 64.20, "groceries", "Colruyt")
+    # duplicate charge: Colruyt €64.20 twice on 17 Oct 2026
+    b.add(D(2026, 10, 17), 64.20, "groceries", "Colruyt")
+    b.add(D(2026, 10, 17), 64.20, "groceries", "Colruyt")
 
     # first payment ever to an unknown payee ("was this you?"): a typical helpdesk-scam amount, two days before TODAY
-    b.add(D(2026, 9, 28), 1250, "other", "Tech Support Services BV")
+    b.add(D(2026, 10, 18), 1250, "other", "Tech Support Services BV")
 
     # no savings product: the balance just sits on the current account (≈ €14,000 for years; the band is
-    # €1,200 higher than it would otherwise be so the idle-cash story survives the €1,250 new-payee payment)
+    # €1,800 higher than it would otherwise be so the idle-cash story survives the €1,250 new-payee payment)
     trips = [("leisure", "Neckermann Reizen"), ("leisure", "TUI"), ("other", "Cadeau kleinkinderen"),
              ("furniture", "Weba"), ("transport", "Garage Peeters")]
     until = TODAY - dt.timedelta(days=91)
-    balance_today = calibrate_balance(b, 13600.0, fixed_band(13400, 15000, 14000), excess=trips, until=until)
+    balance_today = calibrate_balance(b, 14200.0, fixed_band(14000, 15600, 14600), excess=trips, until=until)
     balance_today = round(balance_today + sum(t.amount for t in b.between(until + dt.timedelta(days=1), TODAY)), 2)
 
     customer = Customer(
@@ -226,8 +231,8 @@ def _jan() -> tuple[str, Customer, list[Transaction], float]:
             "personas": ["retiree"],
             "events": [
                 {"type": "pension_start", "date": "2020-04-03"},
-                {"type": "duplicate_charge", "date": "2026-09-27", "counterparty": "Colruyt", "amount": 64.20},
-                {"type": "new_payee", "date": "2026-09-28", "counterparty": "Tech Support Services BV", "amount": 1250},
+                {"type": "duplicate_charge", "date": "2026-10-17", "counterparty": "Colruyt", "amount": 64.20},
+                {"type": "new_payee", "date": "2026-10-18", "counterparty": "Tech Support Services BV", "amount": 1250},
                 {"type": "idle_cash", "date": TODAY.isoformat(), "balance": balance_today},
             ],
         },
@@ -235,6 +240,54 @@ def _jan() -> tuple[str, Customer, list[Transaction], float]:
     return "jan", customer, b.txs, balance_today
 
 
+def _marc() -> tuple[str, Customer, list[Transaction], float]:
+    """Round 2 persona: the 52-year-old investor. Good salary, mortgage almost paid off, two students at
+    university, pension savings already at KBC, and about €48,000 doing nothing on the current account."""
+    rng = random.Random(9004)
+    b = TxBuilder(9004, rng, DEMO_START, TODAY)
+
+    def salary(d: dt.date) -> float:
+        return 4600 * (1.02 ** (d.year - 2018))
+
+    b.monthly(DEMO_START, TODAY, 1, salary, "salary", "Barco NV")
+    b.yearly(DEMO_START, TODAY, 12, 20, lambda d: salary(d) * 0.9, "salary", "Barco NV (eindejaarspremie)")
+    b.monthly(DEMO_START, TODAY, 5, 1250, "mortgage", "KBC Woningkrediet")   # ends June 2027
+    b.yearly(DEMO_START, TODAY, 3, 1, 395, "insurance_home", KBC_INSURANCE)
+    b.yearly(DEMO_START, TODAY, 3, 1, 110, "insurance_family", KBC_INSURANCE)
+    b.yearly(DEMO_START, TODAY, 12, 15, 1020, "savings_transfer", "KBC Pensioenspaarfonds")
+    # two children at university in Ghent: a monthly transfer for their student room
+    b.monthly(D(2022, 9, 1), TODAY, 3, 450, "other", "Overschrijving Lars (kot Gent)")
+    b.monthly(D(2025, 9, 1), TODAY, 3, 450, "other", "Overschrijving Emma (kot Gent)")
+    living_costs(b, DEMO_START, TODAY, scale=1.5, subscription=("Netflix", 13.99, 17.99),
+                 telecom=("Proximus", 89.0, 89.0))
+    b.scatter(DEMO_START, TODAY, "leisure", ["Restaurant De Vitrine", "Decathlon", "Kinepolis", "Fnac"], 2.0, 25, 140)
+    # autumn trip to Lisbon booked in September 2026
+    b.add(D(2026, 9, 8), 1180, "leisure", "Brussels Airlines")
+    b.add(D(2026, 9, 9), 940, "leisure", "Booking.com")
+
+    # no savings account: the surplus simply piles up on the current account (≈ €48,000 today). Calibrate until
+    # three months before TODAY so no excess sweep (a big garage bill) lands in the 90-day spend window.
+    trips = [("leisure", "TUI"), ("furniture", "Vanden Borre"), ("transport", "Garage D'Ieteren")]
+    until = TODAY - dt.timedelta(days=91)
+    balance_today = calibrate_balance(b, 30000.0, era_bands([
+        (DEMO_START, (28000, 34000, 30000)),
+        (D(2022, 1, 1), (36000, 44000, 40000)),
+        (D(2025, 1, 1), (44000, 50000, 46000)),
+    ]), excess=trips, until=until)
+    balance_today = round(balance_today + sum(t.amount for t in b.between(until + dt.timedelta(days=1), TODAY)), 2)
+
+    customer = Customer(
+        id=9004, first_name="Marc", last_name="Claes", birth_year=1974, city="Mechelen", language="nl",
+        products=["current", "mortgage", "home_insurance", "family_insurance", "pension_savings"],
+        consent_personalization=True,
+        ground_truth={
+            "personas": ["young_professional"],
+            "events": [{"type": "idle_cash", "date": TODAY.isoformat(), "balance": balance_today}],
+        },
+    )
+    return "marc", customer, b.txs, balance_today
+
+
 def demo_customers() -> list[tuple[str, Customer, list[Transaction], float]]:
     """Returns [(username, customer, transactions, balance_today), ...]."""
-    return [_lotte(), _sara(), _jan()]
+    return [_lotte(), _sara(), _jan(), _marc()]

@@ -115,7 +115,7 @@ function mockPinAt(component: Component, position: number | null): void {
   mockState.suggestions = mockState.suggestions.filter((s) => s.component !== component);
 }
 
-const QUICK = ["Make the text bigger", "Switch to dark mode", "What can you do?"];
+const QUICK = ["I want to buy a house", "Make the text bigger", "Switch to dark mode", "What can you do?"];
 
 function action(kind: KateAction["kind"], label: string, extra: Partial<KateAction> = {}): KateAction {
   return { kind, label, component: null, card_key: null, card_type: null, style: null, signal: null, ...extra };
@@ -140,6 +140,17 @@ function mockKate(message: string, cardKey: string | null, history: KateTurn[]):
       quick_replies: QUICK,
       source: "rules",
     };
+  }
+  if (m.includes("house") || m.includes("buy") || m.includes("move")) {
+    return {
+      reply: "Your savings and rent payments suggest you're ready to buy. Want KBC to take care of it? I'll line up the search, valuation, loan and insurance; you approve every step.",
+      actions: [action("start_goal", "Yes, take care of it", { playbook_id: "buy_home" })],
+      quick_replies: ["How is my renovation going?"],
+      source: "rules",
+    };
+  }
+  if (m.includes("renovat") || m.includes("energy")) {
+    return { reply: "Your energy scan is done. Next: fixed-price quotes from RenoPartners, waiting for your OK.", actions: [action("open_goal", "Open my renovation", { goal_id: 1 })], quick_replies: [], source: "rules" };
   }
   if (m.includes("dark")) {
     return { reply: "Sure, dark mode is easier on the eyes in the evening.", actions: [action("set_style", "Switch to dark", { style: { ...style, appearance: "dark" } })], quick_replies: ["Make the text bigger"], source: "rules" };
@@ -169,7 +180,7 @@ function mockKate(message: string, cardKey: string | null, history: KateTurn[]):
 
 export const data = {
   login(username: string, password: string): Promise<LoginResponse> {
-    if (MOCK) return Promise.resolve({ role: "customer", username });
+    if (MOCK) return Promise.resolve({ role: username === "advisor" ? "advisor" : "customer", username });
     return api.login(username, password);
   },
   session(): Promise<LoginResponse> {

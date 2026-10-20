@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import type { Card as CardT, Decision } from "../api";
 import { maskText, useEur, useMasked } from "../privacy";
 import Sheet from "../ui/Sheet";
+import { ProductChips } from "../ecosystem/bits";
+import type { ProductRef } from "../ecosystem/types";
 import Card from "./Card";
 import CaughtUp from "./CaughtUp";
 
@@ -13,7 +15,7 @@ interface Props {
   hiddenCount: number;
   asOf: string;
   onFeedback: (card: CardT, decision: Decision) => void;
-  onCta: (action: string) => void;
+  onCta: (action: string, card?: CardT) => void;
   onAskKate: (cardKey: string) => void;
 }
 
@@ -68,6 +70,15 @@ export default function CardStack({ cards, caughtUp, hiddenCount, asOf, onFeedba
         <Sheet title={maskText(active.title, masked)} onClose={() => setActive(null)} full>
           <div className="feed-detail">
             <p>{maskText(active.body, masked)}</p>
+            {Array.isArray(active.card?.details?.products) && (active.card.details.products as ProductRef[]).length > 0 && (
+              <ProductChips products={active.card.details.products as ProductRef[]} />
+            )}
+            {(() => {
+              const full = cards.find((c) => c.card_key === active.card?.card_key);
+              return full?.cta?.action === "start_goal" && typeof full.details?.playbook_id === "string" ? (
+                <button type="button" className="btn-primary" onClick={() => { setActive(null); onCta("start_goal", full); }}>{full.cta.label}</button>
+              ) : null;
+            })()}
             {Array.isArray(metrics) && metrics.length > 0 && (
               <div className="feed-detail-metrics">
                 {(metrics as { label: string; value: number }[]).map((row, i) => (

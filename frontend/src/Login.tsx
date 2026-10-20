@@ -9,6 +9,8 @@ const QUICK = [
   { label: "Lotte", username: "lotte" },
   { label: "Sara", username: "sara" },
   { label: "Jan", username: "jan" },
+  { label: "Marc", username: "marc" },
+  { label: "KBC console", username: "advisor" },
 ];
 
 export default function Login({ onLogin, error }: Props) {

@@ -19,7 +19,7 @@ from app import db
 from app.auth import hash_password
 from app.schemas import CATEGORIES, INCOME_CATEGORIES, Customer, Transaction
 
-TODAY = dt.date(2026, 9, 30)
+TODAY = dt.date(2026, 10, 20)
 REGULAR_HISTORY_DAYS = 400
 DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo")
 
@@ -626,20 +626,21 @@ def build(db_path: str, n: int = 1000, seed: int = 42, verbose: bool = True) -> 
         for cid in range(1, n + 1):
             c, txs, bal = make_regular(cid, seed)
             store(c, txs, bal, f"c{cid}")
-        for username, c, txs, bal in demo_customers():
+        demos = demo_customers()
+        for username, c, txs, bal in demos:
             store(c, txs, bal, username)
         db.insert_user(conn, "advisor", pw_hash, "advisor", None)
     conn.close()
 
-    summary = {"customers": n + 3, "transactions": n_tx, "scenarios": dict(sorted(scenario_counts.items()))}
+    summary = {"customers": n + len(demos), "transactions": n_tx, "scenarios": dict(sorted(scenario_counts.items()))}
     if verbose:
         print(f"Built {db_path}")
-        print(f"  customers:    {summary['customers']} ({n} regular + 3 demo)")
+        print(f"  customers:    {summary['customers']} ({n} regular + {summary['customers'] - n} demo)")
         print(f"  transactions: {n_tx}")
         print("  scenarios:")
         for k, v in summary["scenarios"].items():
             print(f"    {k:20s} {v}")
-        print(f"  logins: lotte / sara / jan / c1..c{n} / advisor  (password: {DEMO_PASSWORD!r})")
+        print(f"  logins: lotte / sara / jan / marc / c1..c{n} / advisor  (password: {DEMO_PASSWORD!r})")
     return summary
 
 

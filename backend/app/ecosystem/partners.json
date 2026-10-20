@@ -1,0 +1,152 @@
+{
+ "fields": [
+  {"field": "first_name", "label": "Your first name"},
+  {"field": "email", "label": "Your e-mail address"},
+  {"field": "region", "label": "The region you live in"},
+  {"field": "budget_range", "label": "Your budget range (not your income)"},
+  {"field": "property_address", "label": "The address of the house"},
+  {"field": "property_details", "label": "Size, year built and EPC label of the house"},
+  {"field": "household", "label": "Who lives with you (number of adults and children)"},
+  {"field": "income", "label": "Your income", "sensitive": true},
+  {"field": "balances", "label": "Your account balances", "sensitive": true},
+  {"field": "transactions", "label": "Your transactions", "sensitive": true},
+  {"field": "energy_use", "label": "Your yearly energy bill"},
+  {"field": "chosen_works", "label": "The works you chose (e.g. roof insulation)"},
+  {"field": "company_number", "label": "Your company (VAT) number"},
+  {"field": "open_invoices", "label": "The unpaid invoices you selected", "sensitive": true},
+  {"field": "travel_dates", "label": "Your travel dates"},
+  {"field": "destination", "label": "Your destination country"},
+  {"field": "birth_year", "label": "Your year of birth"},
+  {"field": "investor_profile", "label": "Your investor profile (risk appetite, horizon)"},
+  {"field": "family_situation", "label": "Your family situation (partner, children)", "sensitive": true}
+ ],
+ "never_shared_default": ["Your income", "Your account balances", "Your transactions"],
+ "partners": [
+  {
+   "id": "kbc", "name": "KBC", "kind": "kbc",
+   "ecosystems": ["Housing", "Energy and sustainability", "Pensions", "Investing", "Savings", "Business",
+                  "Family and protection", "Health and wellbeing", "Wealth and estate planning", "Travel",
+                  "Administration and documents", "Security", "Everyday banking and payments", "Business protection"],
+   "catalogue_ids": [],
+   "blurb": "Your bank. Data stays inside KBC.",
+   "allowed_fields": ["first_name", "email", "region", "budget_range", "property_address", "property_details",
+                      "household", "income", "balances", "transactions", "energy_use", "chosen_works",
+                      "company_number", "open_invoices", "travel_dates", "destination", "birth_year",
+                      "investor_profile", "family_situation"],
+   "value_share": {"model": "revenue_share", "pct": 0, "note": "KBC's own service"},
+   "vetting": ["Regulated by the NBB and FSMA", "GDPR controller for your data"],
+   "sla_hours": 0, "integration": "KBC core services"
+  },
+  {
+   "id": "immoscoop", "name": "Immoscoop", "kind": "partner",
+   "ecosystems": ["Housing"],
+   "catalogue_ids": ["search-for-a-home-immoscoop", "property-valuation-by-an-estate-agent-immoscoop"],
+   "blurb": "Property search and valuation by local estate agents.",
+   "allowed_fields": ["first_name", "email", "region", "budget_range", "property_address", "household"],
+   "value_share": {"model": "lead_fee", "amount_eur": 45, "note": "per qualified buyer KBC introduces"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "Estate agents are BIV-registered"],
+   "sla_hours": 24, "integration": "KBC Partner Hub + application status webhooks"
+  },
+  {
+   "id": "de_immowinkel", "name": "De Immowinkel", "kind": "partner",
+   "ecosystems": ["Housing"],
+   "catalogue_ids": ["certificates-and-inspections-de-immowinkel"],
+   "blurb": "EPC certificates, electrical and asbestos inspections.",
+   "allowed_fields": ["first_name", "email", "property_address"],
+   "value_share": {"model": "fee_per_completed_step", "amount_eur": 20, "note": "per certificate ordered through KBC"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "Certified energy experts (VEKA)"],
+   "sla_hours": 72, "integration": "KBC Partner Hub + application status webhooks"
+  },
+  {
+   "id": "setle", "name": "Setle", "kind": "partner",
+   "ecosystems": ["Housing", "Energy and sustainability"],
+   "catalogue_ids": ["estimate-renovation-costs-and-grants-setle"],
+   "blurb": "Renovation cost and grant estimate for a specific house.",
+   "allowed_fields": ["property_address", "property_details", "household"],
+   "value_share": {"model": "fee_per_completed_step", "amount_eur": 30, "note": "per renovation report"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed"],
+   "sla_hours": 48, "integration": "KBC Partner Hub + application status webhooks"
+  },
+  {
+   "id": "impact_us_today", "name": "Impact us today", "kind": "partner",
+   "ecosystems": ["Housing", "Energy and sustainability"],
+   "catalogue_ids": ["insulation-quote-impact-us-today", "heating-quote-impact-us-today",
+                     "quote-for-new-windows-impact-us-today", "air-conditioning-quote-impact-us-today"],
+   "blurb": "Quotes from vetted contractors for insulation, heating and windows.",
+   "allowed_fields": ["first_name", "email", "property_address", "property_details", "chosen_works"],
+   "value_share": {"model": "revenue_share", "pct": 0.03, "note": "3% of the signed contract, paid by the contractor"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "Contractors checked for registration and insurance"],
+   "sla_hours": 72, "integration": "KBC Partner Hub + application status webhooks"
+  },
+  {
+   "id": "encon", "name": "Encon", "kind": "partner",
+   "ecosystems": ["Energy and sustainability"],
+   "catalogue_ids": ["sustainability-advice-encon"],
+   "blurb": "Independent energy and sustainability advice.",
+   "allowed_fields": ["first_name", "email", "property_details", "energy_use"],
+   "value_share": {"model": "fee_per_completed_step", "amount_eur": 60, "note": "per advice session booked"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed"],
+   "sla_hours": 72, "integration": "KBC Developer Portal API"
+  },
+  {
+   "id": "billit", "name": "Billit", "kind": "partner",
+   "ecosystems": ["Business"],
+   "catalogue_ids": ["e-invoicing-billit"],
+   "blurb": "Peppol e-invoicing, linked to your KBC business account.",
+   "allowed_fields": ["first_name", "email", "company_number"],
+   "value_share": {"model": "subscription", "amount_eur": 4, "note": "KBC earns per active subscription per month"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "Accredited Peppol access point"],
+   "sla_hours": 24, "integration": "KBC Developer Portal API"
+  },
+  {
+   "id": "go_solid", "name": "Go Solid", "kind": "partner",
+   "ecosystems": ["Business"],
+   "catalogue_ids": ["collect-unpaid-invoices-go-solid"],
+   "blurb": "Friendly, then firm, collection of unpaid invoices.",
+   "allowed_fields": ["first_name", "email", "company_number", "open_invoices"],
+   "value_share": {"model": "revenue_share", "pct": 0.05, "note": "share of the collection fee"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "Registered with the FPS Economy for amicable debt collection"],
+   "sla_hours": 48, "integration": "KBC Partner Hub + application status webhooks"
+  },
+  {
+   "id": "firsty", "name": "Firsty", "kind": "partner",
+   "ecosystems": ["Travel"],
+   "catalogue_ids": ["travel-esim-firsty"],
+   "blurb": "Travel eSIM: mobile data abroad without roaming bills.",
+   "allowed_fields": ["first_name", "email", "travel_dates", "destination"],
+   "value_share": {"model": "revenue_share", "pct": 0.1, "note": "10% of the eSIM price"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed"],
+   "sla_hours": 1, "integration": "KBC Developer Portal API"
+  },
+  {
+   "id": "brussels_airport", "name": "Brussels Airport", "kind": "partner",
+   "ecosystems": ["Travel"],
+   "catalogue_ids": ["airport-fast-lane-and-lounge-pass-brussels-airport"],
+   "blurb": "Fast Lane security and lounge access.",
+   "allowed_fields": ["first_name", "travel_dates"],
+   "value_share": {"model": "revenue_share", "pct": 0.08, "note": "8% of the pass price"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed"],
+   "sla_hours": 1, "integration": "KBC Developer Portal API"
+  },
+  {
+   "id": "helena", "name": "Helena", "kind": "partner",
+   "ecosystems": ["Health and wellbeing"],
+   "catalogue_ids": ["view-medical-records-helena"],
+   "blurb": "Your medical records in one place, shared only with whom you choose.",
+   "allowed_fields": ["first_name", "email", "household"],
+   "value_share": {"model": "lead_fee", "amount_eur": 5, "note": "per activated account"},
+   "vetting": ["KBC partner due diligence passed", "Data processing agreement signed", "eHealth platform connected"],
+   "sla_hours": 24, "integration": "KBC Partner Hub"
+  },
+  {
+   "id": "bolero", "name": "Bolero", "kind": "partner",
+   "ecosystems": ["Investing"],
+   "catalogue_ids": ["self-directed-investing-bolero"],
+   "blurb": "KBC's own self-directed investing platform.",
+   "allowed_fields": ["first_name", "email", "investor_profile"],
+   "value_share": {"model": "revenue_share", "pct": 0, "note": "KBC group company"},
+   "vetting": ["KBC group company", "Regulated by the FSMA"],
+   "sla_hours": 24, "integration": "KBC group API"
+  }
+ ]
+}

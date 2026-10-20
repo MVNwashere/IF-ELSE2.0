@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import threading
 import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
@@ -21,6 +22,10 @@ from . import auth, db
 from .auth import Principal
 from .customer_state.api import router as customer_state_router
 from .customer_state.service import get_state
+from .ecosystem import service as ecosystem_service
+from .ecosystem.api import router as ecosystem_router
+from .ecosystem.links import enrich_feed
+from .ecosystem.registry import registry
 from .engine import kate, pipeline
 from .engine.persona import dominant
 from .recommender.feed import recommend
@@ -37,7 +42,7 @@ COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "0") == "1"
 PORTFOLIO_SIZE = 2_300_000
 KATE_MAX_PER_MINUTE = 30
 # The synthetic dataset's reference "today". Time travel is clamped to [first transaction, DEMO_TODAY].
-DEMO_TODAY = dt.date.fromisoformat(os.environ.get("DEMO_TODAY", "2026-09-30"))
+DEMO_TODAY = dt.date.fromisoformat(os.environ.get("DEMO_TODAY", "2026-10-20"))
 
 
 def ensure_db() -> None:
@@ -53,12 +58,16 @@ async def lifespan(app: FastAPI):
     ensure_db()
     with db.tx() as conn:
         db.init_schema(conn)  # idempotent; migrates databases built by older versions
+    registry()  # validate the catalogue, partner registry and playbooks before serving anyone
+    # warm the KBC console's portfolio scan in the background (≈4 s for 1,000 customers)
+    threading.Thread(target=ecosystem_service.warm_portfolio, daemon=True).start()
     yield
 
 
 app = FastAPI(title="KBC Adaptive Home", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
 app.include_router(customer_state_router)
+app.include_router(ecosystem_router)
 
 
 @app.middleware("http")
@@ -106,6 +115,8 @@ def _load_and_build(customer_id: int, as_of: dt.date | None, touch: bool = True)
             db.touch_visit(conn, customer_id, effective)
         state = get_state(conn, customer_id, effective, balance_reference=DEMO_TODAY)
         home.feed, personas = recommend(customer, state, prefs)
+        enrich_feed(home.feed, ecosystem_service.relevant_playbooks(conn, customer, txs, balance_today, effective,
+                                                               prefs.declared))
         home.feed_personas = [FeedPersona.model_validate(persona) for persona in personas]
     return home, features
 
@@ -256,7 +267,9 @@ def me_kate(body: KateRequest, as_of: dt.date | None = Depends(_as_of_param),
             user: Principal = Depends(auth.require_customer)) -> KateReply:
     _kate_rate_limit(user.user_id)
     home, features = _load_and_build(user.customer_id, as_of, touch=False)
-    return kate.reply(home, features, body)
+    with db.tx() as conn:
+        goals = ecosystem_service.goals_response(conn, user.customer_id, features.as_of, home.declared)
+    return kate.reply(home, features, body, goals=goals)
 
 
 @app.post("/api/me/consent", response_model=HomeResponse)

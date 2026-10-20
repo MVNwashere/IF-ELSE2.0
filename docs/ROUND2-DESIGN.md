@@ -18,7 +18,7 @@ source: CLAUDE.md, finals-guide-summary.md, kbc-ecosystems-summary.md, round 1 c
 ## 1. The idea in one paragraph
 
 In round 1 KBC learned to **notice**: the app reads a customer's own signals and knows who they are and what is
-happening. In round 2 KBC learns to **act**. A recognised intent ("we want to buy a house") becomes a **goal** with a
+happening. In round 2 KBC learns to **act**. A recognised intent ("I'm going freelance") becomes a **goal** with a
 **journey** of concrete steps. Each step is routed to a KBC service or a **vetted partner** from a trusted network.
 The customer approves every step and every piece of data shared, and the **outcome is measured** for all three
 parties. KBC is the orchestrator, and the customer gets peace of mind.
@@ -45,29 +45,56 @@ parties. KBC is the orchestrator, and the customer gets peace of mind.
 runs headless; the v1 app is one channel). It's an ecosystem: partners plug in through a registry and an adapter
 contract.
 
-## 3. Hero journey (recommended, decision still open in LOG.md)
+## 3. Hero journey: Lotte goes freelance, told as a life timeline from today forward
 
-**"We want to buy a house": Lotte, 2021–2022.** Why this one:
-- It's the team's own example, and the Housing + Energy ecosystems are the richest in the KBC catalogue.
-- Lotte's synthetic history already contains it: first job in 2021, a notary payment on 15 Mar 2022 and a KBC
-  mortgage from April 2022. With v1's time travel we can show the engine spotting the intent *before* the purchase.
-- It crosses domains (housing, energy, insurance, admin), which is what "ecosystem" means.
+**Time frame: today and the future, never the past.** The demo starts on the pitch date, **20 Oct 2026**. Lotte's
+earlier history (student, first job, house, baby) is only context the engine reads; we don't present it as chapters.
+Everything after today is simulated forward with v1's time-travel slider and is labelled as simulated in the UI.
+
+**The story.** Lotte (27, Leuven, mortgage, a toddler) left her job at the end of September. On 16 Oct 2026 her first
+client pays her first invoice. The engine spots the intent from her own signals: salary stopped, first invoice income.
+
+**Why this is "before they realise they need help"** (every fact to verify before it goes on a slide):
+- Social contributions for starters are provisional. The **regularisation** on the real income arrives about two years
+  later, and many starters haven't saved for it.
+- **Peppol e-invoicing** is mandatory for Belgian B2B invoices since 1 Jan 2026, with fines.
+- Quarterly VAT returns and **advance tax payments** (otherwise a tax surcharge).
+- Compared with an employee: a **pension gap** and **no income protection** if she gets sick.
+
+### The hero chapter (deep, live in the demo)
 
 | # | Step | Provider (from the catalogue) | Data shared (consent scope) | Win |
 |---|---|---|---|---|
-| 1 | What can we afford? | KBC housing budget calculator | none (stays at KBC) | Customer: realistic budget in 1 minute |
-| 2 | Find and value homes | **Immoscoop** (search, valuation) | budget range, region | Partner: qualified buyer lead |
-| 3 | Know the renovation bill before you bid | **Setle** (renovation costs and grants), **De Immowinkel** (EPC certificate) | property address | Customer: no surprise renovation duty (Flemish rule, verify with `/be-domain`) |
-| 4 | Mortgage including renovation | KBC Home Loan API | already at KBC | KBC: mortgage + energy loan |
-| 5 | Insured from the day of signing | KBC Home Insurance API | property details | KBC: insurance; customer: no gap |
-| 6 | Make it energy-efficient | **Impact us today** (quotes), KBC energy loan, solar/battery calculator | address, chosen works | Customer: grants + lower bills; partner: contract |
-| 7 | Keep the paperwork | KBC digital vault, MyHome | deed, EPC, quotes | Customer: everything in one place |
+| 1 | Spot the start: first invoice in, salary stopped | KBC intent detector | none (stays at KBC) | Customer: help on day 1, not after the first fine |
+| 2 | Keep business and private money apart | KBC business account and card | already at KBC | KBC: a new business relationship |
+| 3 | Invoice the right way (Peppol) | **Billit** | business name, VAT number, IBAN | Customer: no fines; partner: subscription |
+| 4 | Never be surprised by a bill | KBC automatic reserve: a % of every invoice into a tax and contributions pot | none (stays at KBC) | Customer: regularisation and taxes covered in advance |
+| 5 | Start-up advice and social insurance fund | **Start it @KBC**, Boostpack | name, start date, activity | Customer: set up correctly; partner: qualified starter |
+| 6 | Protect the income and close the pension gap | KBC business income insurance, supplementary pension for the self-employed | income estimate (KBC only) | Customer: safety net; KBC: insurance + pension |
+| 7 | Keep the paperwork | KBC digital vault | invoices, contracts | Customer: everything in one place |
 
-**Backup playbooks** (same engine, a JSON file each, shown for 15 s in the pitch to prove it scales):
-- **Freelance start** (Lotte, Jan 2026, first invoice detected): business account, Peppol invoicing via **Billit**,
-  automatic tax and social-contributions reserve, supplementary pension for the self-employed, income protection.
-- **The 50-year-old investor** (open candidate in LOG.md): pension gap check, managed investing, Private Plan,
-  inheritance planning. Would need a new synthetic customer.
+### The life timeline (from today forward)
+
+Each finished goal feeds the next one: the ledger and new signals of one journey become input for the intent
+detector. This is how we show the system follows a life, not a product, and that "a new goal is a file".
+
+| When (simulated) | Chapter | Depth in the demo | Ecosystem and partners |
+|---|---|---|---|
+| **20 Oct 2026 (today)** | Going freelance | **Hero, live** | Business, Pensions, Business protection |
+| Jan 2027 | First Peppol invoices and the first VAT return done automatically | Outcome check, 5 s | Business (Billit) |
+| Summer 2027 | Work trip abroad: eSIM, travel insurance, Fast Lane | Light, 5 s | Travel (Firsty, Brussels Airport) |
+| Late 2027 | Revenue keeps growing → the engine proposes the next goal: **first employee** | Seeded goal, 10 s | Work and employees (NOWJOBS, Team Protect Plan) |
+| 2028 | The regularisation bill arrives and is already covered by the reserve | **Payoff**, 10 s | Ledger: the measured outcome |
+
+**Backup playbook:** the 50-year-old investor (pension gap check, managed investing, Private Plan, inheritance
+planning). Only if there is time; it needs the `marc` customer.
+
+### Synthetic data changes
+
+Lotte's data currently has her freelance since Jan 2026 with nine months of invoices. Re-date it to fit the story:
+the salary continues until 1 Oct 2026, the first invoice payment lands on 16 Oct 2026, and `TODAY` / `DEMO_TODAY`
+moves to 2026-10-20. Check the v1 cards that depend on relative dates (for example sara's car insurance renewing 12
+days after `TODAY`). Future chapters are generated by the playbooks' simulated signals, not stored as transactions.
 
 ## 4. Architecture
 
@@ -117,14 +144,15 @@ after a tap.
 
 ## 6. Customer experience (v1 app = the channel)
 
-- **Goal hero tile** on the adaptive home: "Buying a home: 3 of 7 steps done", with a progress ring. It uses the v1
+- **Goal hero tile** on the adaptive home: "Going freelance: 3 of 7 steps done", with a progress ring. It uses the v1
   registry (a new component `GoalHero`), so the layout planner can make it the hero.
 - **Journey sheet**: the steps as a checklist. Each step shows provider, *why this partner*, what it costs or
   saves, and one Approve button.
-- **Approve sheet = consent passport preview**: "Setle will see: the address of the house. Not your income. Until
-  30 June." Approve or decline.
-- **Kate** opens with the detected intent ("Your savings and rent payments suggest you're looking to buy. Want
-  KBC to take care of it?") and can propose the next step.
+- **Approve sheet = consent passport preview**: "Billit will see: your business name, VAT number and IBAN. Not
+  your income or your private account. Until you stop." Approve or decline.
+- **Kate** opens with the detected intent ("Your first client just paid you. Congratulations on going freelance!
+  Want KBC to set up the rest?") and can propose the next step.
+- **Life timeline**: a strip above the journey from today into the future; dragging it fast-forwards simulated time.
 - **Ecosystem console** (replaces the advisor view): the goal funnel, partner network status, a live event feed of
   webhooks and the triple-win counter projected to 2.3M customers.
 
@@ -134,7 +162,7 @@ Keep every v1 control. New for round 2:
 - Partner webhooks: HMAC-SHA256 over the body with a per-partner secret from `.env`, timestamp window, idempotency
   key, and a strict Pydantic schema. The partner id comes from the path *and* must match the signature key.
 - Data minimisation is enforced in code: adapters receive a payload built from the grant's scope only, and there is
-  a unit test that the income never leaves for Immoscoop.
+  a unit test that the income never leaves for Billit.
 - Every consent grant, revoke and outbound payload goes to `audit_log`.
 - Playbooks and the partner registry are static files validated at startup. No LLM decides which partner gets data.
 
@@ -142,29 +170,28 @@ Keep every v1 control. New for round 2:
 
 | Time | Beat |
 |---|---|
-| 0:00–0:20 | Hook: "Buying a house means 7 parties, 40 documents and one scared couple. Today KBC sells only the mortgage." |
-| 0:20–0:50 | Lotte in 2021 (time travel): Kate spots the intent from her own signals and offers the goal. One tap. |
-| 0:50–1:50 | The journey: approve Immoscoop (consent passport shows exactly what's shared), the webhook comes back, Setle shows the renovation bill and grants *before* she bids, mortgage + insurance + energy loan in one flow. Progress ring fills. |
-| 1:50–2:20 | Ecosystem console: the same events seen by KBC and partners; the triple-win ledger ticks; projection to 2.3M. |
-| 2:20–2:40 | Scale: "A new goal is a file". Show the freelance and investor playbooks running on the same engine. |
-| 2:40–3:00 | Trust: AI proposes, the customer approves, partners see only what's granted. Close: "Peace of mind. KBC takes care of it." |
+| 0:00–0:20 | Hook: "Going freelance means an accountant, a social insurance fund, Peppol, VAT and a bill two years later that nobody warned you about. Today your bank opens a business account and that's it." |
+| 0:20–0:45 | **Today, 20 Oct 2026.** Lotte's first client pays. Kate spots the intent from her own signals and offers the goal. One tap. |
+| 0:45–1:35 | The hero journey: business account, approve Billit (the consent passport shows exactly what's shared), the webhook comes back, the automatic reserve is set, income protection and pension proposed. Progress ring fills. |
+| 1:35–2:10 | Fast-forward on the life timeline: Jan 2027 VAT done, summer 2027 trip, late 2027 the engine proposes "first employee", **2028 the regularisation bill arrives and is already covered**. |
+| 2:10–2:35 | Ecosystem console: the same events seen by KBC and partners; the triple-win ledger ticks; projection to 2.3M. "A new goal is a file." |
+| 2:35–3:00 | Trust: AI proposes, the customer approves, partners see only what's granted. Close: "Peace of mind. KBC takes care of it." |
 
 ## 9. Work plan (today; adjust names in LOG.md)
 
 | Until | Backend (2 people) | Frontend (1–2 people) | Pitch (1 person, part-time) |
 |---|---|---|---|
-| 10:30 | Playbook + partner JSON schema; house playbook; `journey.py` state machine with tests | Mock JSON for `GET /api/me/goals`; `GoalHero` tile | Aikido connected to this repo, first scan |
-| 12:30 | `consent.py`, `adapters.py` mocks, endpoints, webhook with HMAC; intent detector for Lotte 2021 | Journey sheet + approve/consent sheet on mock data | Deck skeleton; verify facts (renovation duty, grants) |
-| 14:00 | Ledger + `/api/ecosystem/overview`; Kate `start_goal`/`approve_step`; freelance playbook | Wire to real API; ecosystem console page | Script, timings |
+| 10:30 | Playbook + partner JSON schema; freelance playbook; `journey.py` state machine with tests; re-date Lotte's data (§3) | Mock JSON for `GET /api/me/goals`; `GoalHero` tile | Aikido connected to this repo, first scan |
+| 12:30 | `consent.py`, `adapters.py` mocks, endpoints, webhook with HMAC; intent detector for Lotte's first invoice (16 Oct 2026) | Journey sheet + approve/consent sheet on mock data | Deck skeleton; verify facts (regularisation, Peppol, advance payments) |
+| 14:00 | Ledger + `/api/ecosystem/overview`; Kate `start_goal`/`approve_step`; travel and first-employee playbooks, goal chaining | Wire to real API; life timeline strip; ecosystem console page | Script, timings |
 | 14:30 | **Feature freeze.** Demo path test, Aikido rescan and fixes | Polish, reset button for the demo | Record the screen video (no own device at the pitch) |
 | 15:45 | README (what's new today, how to run, what's unfinished), Builderbase submission | | Rehearse twice; deck exported as PDF |
 
 ## 10. Open questions
 
-1. Which hero journey: house (recommended) or the 50-year-old investor? Record it in LOG.md.
-2. Value-share model to show: lead fee, revenue share, or a flat fee per completed step? (Pick one, label it
+1. Value-share model to show: lead fee, revenue share, or a flat fee per completed step? (Pick one, label it
    illustrative.)
-3. Can we name real catalogue partners (Immoscoop, Setle, Impact us today, Billit) on slides? They come from KBC's
+2. Can we name real catalogue partners (Billit, Start it @KBC, Firsty, NOWJOBS) on slides? They come from KBC's
    own catalogue, so probably yes; ask a KBC mentor.
-4. Check facts before they go on a slide: the Flemish renovation obligation after purchase, current grant names and
-   amounts, Peppol fines.
+3. Check facts before they go on a slide: how and when the regularisation of social contributions works, the Peppol
+   start date and fines, advance tax payment surcharges, and the number of new self-employed per year in Belgium.

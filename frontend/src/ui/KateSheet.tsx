@@ -41,6 +41,8 @@ export function confirmation(action: KateAction, gallery: GalleryItem[]): string
     case "reset_style": return "Done, everything is back to Auto.";
     case "declare": return "Thanks for telling me. I've adapted your home to it.";
     case "open_card": return null;
+    case "start_goal": return "Done. I've lined up the steps; you approve each one before anything is shared.";
+    case "open_goal": return null;
   }
 }
 

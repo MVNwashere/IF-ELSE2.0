@@ -7,6 +7,7 @@ interface Props {
   home: HomeResponse;
   onStyle: (style: StylePrefs) => void;
   onClose: () => void;
+  onPassport?: () => void;
 }
 
 export const AUTO_STYLE: StylePrefs = {
@@ -38,7 +39,7 @@ function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on
   );
 }
 
-export default function PersonaliseSheet({ home, onStyle, onClose }: Props) {
+export default function PersonaliseSheet({ home, onStyle, onClose, onPassport }: Props) {
   const style = home.style;
   const theme = home.layout.theme;
   const why = home.layout.explanations["theme"];
@@ -102,6 +103,13 @@ export default function PersonaliseSheet({ home, onStyle, onClose }: Props) {
         <Toggle label="Reduce motion" hint="No sliding or morphing animations." on={style.reduce_motion} onChange={(v) => set({ reduce_motion: v })} />
         <Toggle label="Hide amounts" hint="Amounts show as € •••• until you tap." on={style.privacy} onChange={(v) => set({ privacy: v })} />
       </div>
+
+      {onPassport && (
+        <div className="ps-group">
+          <div className="ps-label">Privacy</div>
+          <button type="button" className="btn-ghost block" style={{ marginTop: 0 }} onClick={onPassport}>🔐 Consent passport: who sees my data</button>
+        </div>
+      )}
 
       <button type="button" className="btn-ghost block" disabled={!anyOverride} onClick={() => onStyle(AUTO_STYLE)}>Reset all to Auto</button>
     </Sheet>

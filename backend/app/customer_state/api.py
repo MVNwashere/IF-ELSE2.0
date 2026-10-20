@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/me/customer-state", tags=["customer-state"])
 
 
 def load_state(as_of: dt.date | None = None, user: Principal = Depends(auth.require_customer)) -> CustomerState:
-    reference = dt.date.fromisoformat(os.environ.get("DEMO_TODAY", "2026-09-30"))
+    reference = dt.date.fromisoformat(os.environ.get("DEMO_TODAY", "2026-10-20"))
     with db.tx() as conn:
         try:
             return get_state(conn, user.customer_id, min(as_of or reference, reference), balance_reference=reference)

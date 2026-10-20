@@ -12,8 +12,8 @@ from app.customer_state.patterns import detect
 from app.customer_state.service import get_state
 from app.customer_state.storage import put_account, put_details
 from app.schemas import Customer, Transaction
-from synth.customer_state import IDS, seed
-from synth.generate import TODAY, make_regular
+from synth.customer_state import IDS, SCENARIO_TODAY as TODAY, seed
+from synth.generate import TODAY as DEMO_TODAY, make_regular
 
 
 @pytest.fixture
@@ -389,7 +389,7 @@ def test_customer_state_api_session_isolation_and_domains(tmp_path, monkeypatch)
         assert client.get("/api/me/customer-state/cash-flow").status_code == 200
         assert client.get("/api/me/customer-state/invalid").status_code == 404
         assert client.get("/api/me/customer-state?as_of=bad").status_code == 422
-        assert client.get("/api/me/customer-state?as_of=2099-01-01").json()["as_of"] == str(TODAY)
+        assert client.get("/api/me/customer-state?as_of=2099-01-01").json()["as_of"] == str(DEMO_TODAY)
         assert response.headers["cache-control"] == "no-store"
         client.cookies.clear()
         client.post("/api/login", json={"username": "state_debt", "password": "demo"})

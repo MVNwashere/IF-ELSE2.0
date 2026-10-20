@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { HomeResponse, TimelineResponse } from "../api";
+import { eco } from "../ecosystem/client";
+import { ECO_RESET_EVENT } from "../ecosystem/useGoals";
 import { addDays, daysBetween, longDate, PERSONA_LABEL, pct } from "../format";
 
 interface Props {
@@ -23,6 +25,8 @@ const DEMO = [
   { username: "lotte", hint: "time travel 2018 → 2026" },
   { username: "sara", hint: "freelancer + young mother" },
   { username: "jan", hint: "retiree, 71" },
+  { username: "marc", hint: "the 52-year-old investor" },
+  { username: "advisor", hint: "KBC ecosystem console" },
 ];
 
 export default function ControlPanel(p: Props) {
@@ -172,6 +176,7 @@ export default function ControlPanel(p: Props) {
         )}
         <div className="row" style={{ marginTop: 6 }}>
           <button className="pbtn small" disabled={p.busy || !p.home} onClick={p.onResetFeedback}>Reset feedback</button>
+          <button className="pbtn small" disabled={p.busy || !p.home} title="Delete this customer's goals and consent grants" onClick={() => { void eco.goalsReset().then(() => window.dispatchEvent(new Event(ECO_RESET_EVENT))).catch(() => undefined); }}>Reset goals</button>
         </div>
         {p.error && <div className="err" style={{ marginTop: 8 }}>{p.error}</div>}
       </section>

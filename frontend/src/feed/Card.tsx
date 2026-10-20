@@ -9,7 +9,7 @@ interface Props {
   card: CardT;
   asOf: string;
   onFeedback: (card: CardT, decision: Decision) => void;
-  onCta: (action: string) => void;
+  onCta: (action: string, card?: CardT) => void;
   onAskKate: (cardKey: string) => void;
   onOpen: () => void;
 }
@@ -86,7 +86,7 @@ export default function Card({ card, asOf, onFeedback, onCta, onAskKate, onOpen 
             <span className="kate-dot" aria-hidden="true">K</span>Ask Kate
           </button>
           {card.cta && (
-            <button type="button" className="cta" onClick={() => onCta(card.cta!.action)}>{card.cta.label}</button>
+            <button type="button" className="cta" onClick={() => onCta(card.cta!.action, card)}>{card.cta.label}</button>
           )}
         </div>
 
