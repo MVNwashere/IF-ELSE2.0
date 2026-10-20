@@ -480,7 +480,8 @@ React 19 + TypeScript + Vite, with Framer Motion. In development Vite proxies `/
 | Accounts | `accounts/` | Tapping the hero opens an accounts screen. Until the backend sends `accounts` on the hero (see [COMPONENT-PROPS.md](COMPONENT-PROPS.md)), it derives clearly labelled demo accounts and bookings from the home data. |
 | Explain mode | `Phone.tsx` | A header with the feed persona mix and the theme explanation. |
 | Demo engine | `demo/` (`data.ts`, `ecosystem.ts`, `nudges.ts`, `profile.ts`, `store.ts`), `demo-data/` | Backend-free mode for `?mock=1`. Signing in or switching customers keeps its store (it plays the backend's role); everything else in browser storage is cleared as usual. |
-| UI tests | `tests/demo-mode.spec.ts`, `playwright.config.ts` | `npm test`: Playwright against the demo engine (fails on any `/api` request). |
+| Jury mode | `jury/Jury.tsx`, `jury/jury.css`, `App.tsx` | `?jury=1` or `--mode jury` (`npm run dev:jury`, `npm run build:jury` → `dist-jury/`): the demo engine with the phone full screen for a judge's own phone, no demo panel or advisor console. A persona picker replaces the login; a guide ticks off three steps (goal started, partner consent granted, a style change) by reading the demo store (`subscribe` in `demo/store.ts`), with Another person and Restart (clears the store). |
+| UI tests | `tests/demo-mode.spec.ts`, `tests/jury-mode.spec.ts`, `playwright.config.ts` | `npm test`: Playwright against the demo engine (fails on any `/api` request); the jury test runs on an emulated iPhone. |
 
 ## How the app surfaces the ecosystem
 

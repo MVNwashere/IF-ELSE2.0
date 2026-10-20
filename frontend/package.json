@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "dev:mock": "vite --mode mock --host 127.0.0.1 --port 5175 --strictPort",
+    "dev:jury": "vite --mode jury --host --port 5176 --strictPort",
     "build": "tsc -b && vite build",
+    "build:jury": "tsc -b && vite build --mode jury",
     "preview": "vite preview",
     "test": "playwright test"
   },

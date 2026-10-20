@@ -60,6 +60,13 @@ Without a backend: `npm run dev:mock` (http://127.0.0.1:5175), or any URL with `
 demo engine (`frontend/src/demo/`): bundled fixtures for lotte, sara, jan, marc and the advisor (password `demo`), with
 choices saved in the browser. `npm test` runs the Playwright UI tests against that mode.
 
+Jury demo (for the pitch QR code): `npm run build:jury` writes a static site to `frontend/dist-jury/` that runs on the
+demo engine with no backend, so it can go on any static host (Netlify, Vercel, GitHub Pages; relative asset paths, so a
+subfolder works too). It shows the phone app full screen on the judge's own phone: pick Lotte, Sara, Jan or Marc
+instead of logging in, and a three-step guide follows their progress (start a goal, approve a partner, let Kate change
+the home). Each phone keeps its own state; Restart wipes it. Try it locally with `npm run dev:jury` (port 5176, also
+reachable from a phone on the same Wi-Fi), or add `?jury=1` to any URL.
+
 To rebuild the synthetic data explicitly: `py -3.12 -m synth.generate --n 1000 --seed 42` (or delete
 `backend/kbc.db`).
 

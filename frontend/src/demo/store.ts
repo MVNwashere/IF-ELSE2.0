@@ -47,8 +47,15 @@ function load(): SavedState {
   return fresh();
 }
 export const saved = load();
+const listeners = new Set<() => void>();
+/** Runs after every save, so a view of the demo state (the jury guide) can follow along. */
+export function subscribe(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => { listeners.delete(fn); };
+}
 export function persist(): void {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch { /* Still usable without storage. */ }
+  listeners.forEach((fn) => fn());
 }
 export function copy<T>(value: T): T { return structuredClone(value); }
 export async function reply<T>(value: T): Promise<T> { return copy(value); }

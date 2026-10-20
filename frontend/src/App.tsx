@@ -3,13 +3,14 @@ import { abortSessionRequests, ApiError, isAbort } from "./api";
 import type { Card, Component, Decision, HomeResponse, KateAction, KateTurn, LayoutPrefState, StylePrefs, TimelineResponse } from "./api";
 import { componentLabel } from "./format";
 import { AUTO_STYLE } from "./ui/PersonaliseSheet";
-import { data, MOCK, profileData } from "./data";
+import { data, JURY, MOCK, profileData } from "./data";
 import ControlPanel from "./demo/ControlPanel";
 import { STORAGE_KEY as DEMO_STORAGE_KEY } from "./demo/store";
 import Login from "./Login";
 import EcosystemConsole from "./ecosystem/EcosystemConsole";
 import Phone from "./Phone";
 import PhoneScaler from "./PhoneScaler";
+import { JuryGuide, JuryPicker } from "./jury/Jury";
 
 interface Session { role: "customer" | "advisor"; username: string }
 
@@ -268,8 +269,44 @@ export default function App() {
 
   const onCta = useCallback((action: string) => showToast(`Simulated: ${action.replace(/_/g, " ")}`), [showToast]);
 
-  if (checked && session?.role === "advisor") {
+  if (!JURY && checked && session?.role === "advisor") {
     return <EcosystemConsole key={session.username} username={session.username} onLogout={() => void logout()} onSwitchCustomer={(u) => void switchCustomer(u)} />;
+  }
+
+  const phone = session && home && (
+    <Phone
+      key={session.username}
+      home={home}
+      asOf={asOf ?? home.as_of}
+      explain={explain}
+      loading={busy}
+      toast={toast}
+      onFeedback={onFeedback}
+      onCta={onCta}
+      onLayoutPref={onLayoutPref}
+      onPinAt={onPinAt}
+      onLayoutReset={onLayoutReset}
+      onStyle={onStyle}
+      onSuggestion={onSuggestion}
+      onKate={onKate}
+      onKateAction={onKateAction}
+      onRefresh={onRefresh}
+    />
+  );
+
+  if (JURY) {
+    return (
+      <div className="jury-stage">
+        {!checked ? null : !session || session.role !== "customer" || !phone ? (
+          <JuryPicker onPick={(u) => login(u, DEMO_PASSWORD)} error={error} />
+        ) : (
+          <>
+            {phone}
+            <JuryGuide key={`guide-${session.username}`} username={session.username} onSwitch={() => void logout()} />
+          </>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -294,28 +331,7 @@ export default function App() {
         <div className="stage-area-bg" />
         {!checked ? null : (
           <PhoneScaler>
-            {!session || !home ? (
-              <Login onLogin={login} error={error} />
-            ) : (
-              <Phone
-                key={session.username}
-                home={home}
-                asOf={asOf ?? home.as_of}
-                explain={explain}
-                loading={busy}
-                toast={toast}
-                onFeedback={onFeedback}
-                onCta={onCta}
-                onLayoutPref={onLayoutPref}
-                onPinAt={onPinAt}
-                onLayoutReset={onLayoutReset}
-                onStyle={onStyle}
-                onSuggestion={onSuggestion}
-                onKate={onKate}
-                onKateAction={onKateAction}
-                onRefresh={onRefresh}
-              />
-            )}
+            {phone || <Login onLogin={login} error={error} />}
           </PhoneScaler>
         )}
       </main>
