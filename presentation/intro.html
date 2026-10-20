@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IF-ELSE 2.0 · Pitch intro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deep:#031b42; --navy:#06306a; --kbc:#0b4a8f; --paper:#EEF6FD; --muted:#B4CDE6;
+  --cyan:#00AEEF; --sky:#7fd6ff; --sun:#F2B544; --red:#E5484D;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.75,.15,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#021230;color:var(--paper);font-family:var(--body);overflow:hidden}
+
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;overflow:hidden;cursor:pointer;
+  transform-origin:center center;transform:translate(-50%,-50%);
+  background:radial-gradient(1300px 900px at 55% 50%,#0d55a3 0%,var(--navy) 50%,var(--deep) 100%)}
+
+.aurora{position:absolute;border-radius:50%;filter:blur(130px);opacity:0;transition:opacity 1.6s var(--ease)}
+.a1{width:1000px;height:800px;left:-250px;top:-250px;background:#1478d6;opacity:.45;animation:drift1 18s ease-in-out infinite alternate}
+.a2{width:900px;height:900px;right:-300px;bottom:-350px;background:var(--cyan);opacity:.22;animation:drift2 22s ease-in-out infinite alternate}
+.a3{width:800px;height:500px;left:900px;top:380px;background:#c4761a;animation:drift1 16s ease-in-out infinite alternate-reverse}
+#stage[data-step="x"] .a3{opacity:.28}
+#stage[data-step="6"] .a2,#stage[data-step="7"] .a2{opacity:.42}
+@keyframes drift1{to{transform:translate(160px,90px) scale(1.1)}}
+@keyframes drift2{to{transform:translate(-140px,-120px) scale(1.15)}}
+.grid{position:absolute;inset:0;opacity:.4;
+  background-image:radial-gradient(rgba(180,205,230,.2) 1.2px,transparent 1.2px);background-size:48px 48px;
+  mask-image:radial-gradient(1000px 640px at 50% 50%,#000 30%,transparent 100%)}
+
+/* generic reveal */
+.ov{position:absolute;opacity:0;transform:translateY(26px);pointer-events:none;
+  transition:opacity .55s var(--ease),transform .8s var(--ease);transition-delay:0s}
+.ov.on{opacity:1;transform:none;transition-delay:var(--d,0s)}
+.split .w{display:inline-block;opacity:0;transform:translateY(45%) rotate(3deg);filter:blur(10px);
+  transition:opacity .7s var(--ease),transform .9s var(--ease),filter .8s var(--ease)}
+.on .split .w,.split.on .w{opacity:1;transform:none;filter:none;transition-delay:calc(var(--d,0s) + var(--i) * 65ms)}
+h1,h2{font-family:var(--display);font-weight:750;letter-spacing:-2px;line-height:1.05}
+.accent{color:var(--cyan)}
+.warm{color:var(--sun)}
+.eyebrow{font:700 22px var(--body);letter-spacing:4px;text-transform:uppercase;color:var(--cyan)}
+
+svg.layer{position:absolute;inset:0;width:1920px;height:1080px;overflow:visible;pointer-events:none}
+.draw{fill:none;stroke-dasharray:1 1;stroke-dashoffset:1;transition:stroke-dashoffset 1s var(--ease),opacity .6s;transition-delay:0s}
+.draw.on{stroke-dashoffset:0;transition:stroke-dashoffset 1.6s var(--ease),opacity .6s;transition-delay:var(--d,0s)}
+
+
+/* ============ slide 0: the challenge ============ */
+#askLab{left:0;width:1920px;top:250px;text-align:center;transition:opacity .55s var(--ease),transform .9s var(--ease)}
+#q0{left:210px;width:1500px;top:310px;text-align:center;font-size:86px;transform-origin:50% 0;
+  transition:opacity .55s var(--ease),transform 1s var(--ease)}
+#stage[data-step="1"] #q0.on{transform:translateY(-150px) scale(.62)}
+#stage[data-step="1"] #askLab.on{transform:translateY(-160px)}
+#q0 .hl .w{background:linear-gradient(transparent 62%,rgba(0,174,239,.55) 62%) no-repeat 0 0/0% 100%;
+  transition:opacity .7s var(--ease),transform .9s var(--ease),filter .8s var(--ease),background-size .5s var(--ease)}
+#q0.on .hl .w{background-size:100% 100%;transition-delay:calc(var(--d,0s) + var(--i) * 65ms),calc(var(--d,0s) + var(--i) * 65ms),calc(var(--d,0s) + var(--i) * 65ms),calc(1.6s + (var(--i) - 11) * 120ms)}
+#vline{stroke:rgba(0,174,239,.6);stroke-width:3;stroke-dasharray:1 1}
+.verb{position:absolute;top:660px;width:0;height:0}
+.verb .c{position:absolute;left:-62px;top:-62px;width:124px;height:124px;border-radius:50%;display:grid;place-items:center;font-size:48px;
+  background:radial-gradient(circle at 35% 30%,#5fd6ff,var(--cyan) 45%,#0b4a8f);box-shadow:0 0 50px rgba(0,174,239,.45);
+  transform:scale(0);transition:transform .7s cubic-bezier(.3,1.7,.4,1)}
+.verb .t{position:absolute;left:0;top:84px;transform:translate(-50%,16px);opacity:0;text-align:center;white-space:nowrap;transition:opacity .6s,transform .8s var(--ease)}
+.verb .t b{display:block;font:800 40px var(--display);letter-spacing:-1px}
+.verb .t span{font:500 24px var(--body);color:var(--muted)}
+.verb.on .c{transform:scale(1);transition-delay:var(--d)}
+.verb.on .t{opacity:1;transform:translate(-50%,0);transition-delay:calc(var(--d) + .15s)}
+.verb.out .c{background:radial-gradient(circle at 35% 30%,#fff,#bfe8ff 50%,#7fd6ff)}
+#ctrl{left:0;width:1920px;top:930px;text-align:center;font:600 24px var(--body);letter-spacing:3px;text-transform:uppercase;color:rgba(180,205,230,.7)}
+
+/* ============ slide 1: chapters ============ */
+#t1{left:128px;top:104px;font-size:84px}
+#timeline{stroke:url(#tlgrad);stroke-width:6;stroke-linecap:round}
+.chap{position:absolute;left:0;top:0;width:0;height:0}
+.chap .dot{position:absolute;left:-13px;top:-13px;width:26px;height:26px;border-radius:50%;background:var(--paper);
+  box-shadow:0 0 0 6px rgba(0,174,239,.25),0 0 24px rgba(0,174,239,.6);transform:scale(0);transition:transform .6s cubic-bezier(.3,1.8,.4,1),background .6s,box-shadow .6s}
+.chap.on .dot{transform:scale(1);transition-delay:var(--d)}
+.chap .lab{position:absolute;left:0;bottom:34px;transform:translate(-50%,14px);opacity:0;white-space:nowrap;text-align:center;
+  font:700 28px var(--body);transition:opacity .6s,transform .7s var(--ease)}
+.chap .lab small{display:block;font:600 16px var(--body);letter-spacing:2px;text-transform:uppercase;color:var(--sky);margin-bottom:4px}
+.chap .prod{position:absolute;left:0;top:36px;transform:translate(-50%,-10px);opacity:0;white-space:nowrap;
+  font:500 19px var(--body);color:var(--muted);padding:6px 14px;border:1.5px dashed rgba(180,205,230,.4);border-radius:999px;
+  transition:opacity .6s,transform .7s var(--ease),color .6s,border-color .6s}
+.chap.on .lab{opacity:1;transform:translate(-50%,0);transition-delay:calc(var(--d) + .15s)}
+.chap.on .prod{opacity:1;transform:translate(-50%,0);transition-delay:calc(var(--d) + .35s)}
+#stage[data-step="x"] .chap .prod{opacity:.35}
+.chap .ring{position:absolute;left:-34px;top:-34px;width:68px;height:68px;border-radius:50%;border:3px dashed var(--sun);opacity:0;transition:opacity .6s}
+#stage[data-step="x"] .chap.next .ring{opacity:1;animation:spin 6s linear infinite}
+#stage[data-step="x"] .chap.next .dot{background:var(--sun);box-shadow:0 0 0 6px rgba(242,181,68,.25),0 0 30px rgba(242,181,68,.7)}
+#stage[data-step="x"] .chap.next .lab{color:var(--sun)}
+@keyframes spin{to{transform:rotate(360deg)}}
+#walker{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;will-change:transform}
+#walker .av{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font:800 36px var(--display);color:var(--deep);
+  background:linear-gradient(135deg,#ffffff,#bfe8ff);box-shadow:0 0 0 6px rgba(255,255,255,.18),0 16px 40px rgba(0,0,0,.4)}
+#walker span{font:700 22px var(--body);white-space:nowrap;background:rgba(3,27,66,.75);padding:3px 12px;border-radius:999px}
+#help{position:absolute;left:0;top:0;opacity:0;white-space:nowrap;will-change:transform;
+  font:700 20px var(--body);color:#3a2300;background:var(--sun);padding:8px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#help::after{content:"";position:absolute;left:50%;top:100%;margin-left:-8px;border:8px solid transparent;border-top-color:var(--sun)}
+#cap1{left:0;width:1920px;top:930px;text-align:center;font:500 34px var(--body);color:var(--muted)}
+#cap1 b{color:var(--paper)}
+
+#peace{left:128px;top:104px;font-size:84px}
+#peaceSub{left:130px;top:300px;font:500 32px var(--body);color:var(--muted)}
+#peaceSub b{color:var(--paper)}
+#stage[data-step="3"] .chap .prod,#stage[data-step="3"] .chap .lab{opacity:.3}
+#stage[data-step="3"] .chap.next .lab{opacity:1;color:var(--cyan)}
+#stage[data-step="3"] .chap.next .ring{opacity:1;border-color:var(--cyan);animation:spin 6s linear infinite}
+#stage[data-step="3"] .chap.next .dot{transform:scale(1.4)}
+#stage[data-step="3"] .a2{opacity:.4}
+
+/* ============ slide 2: round 1 -> round 2 ============ */
+#phone{position:absolute;left:250px;top:150px;width:380px;height:770px;border-radius:56px;padding:16px;
+  background:#0a1b33;box-shadow:0 0 0 2px rgba(255,255,255,.12),0 40px 90px rgba(0,0,0,.5),0 0 120px rgba(0,174,239,.25)}
+#screen{position:relative;width:100%;height:100%;border-radius:42px;overflow:hidden;background:#f3f8fd;color:#0b2447;padding:46px 20px 20px;display:flex;flex-direction:column;gap:14px}
+#screen .bar{position:absolute;left:0;right:0;top:12px;text-align:center;font:600 15px var(--body);color:#5a7392}
+#screen .hello{font:700 26px var(--display);letter-spacing:-.5px}
+#screen .chip{align-self:flex-start;font:700 15px var(--body);padding:5px 12px;border-radius:999px;background:#dbeefc;color:#0b4a8f;letter-spacing:.5px}
+#screen .hero{border-radius:24px;padding:20px;height:150px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;transition:background .6s}
+#screen .hero b{font:800 28px var(--display);letter-spacing:-.5px}
+#screen .hero span{font:500 17px var(--body);opacity:.85}
+#screen .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#screen .tile{height:118px;border-radius:20px;background:#fff;box-shadow:0 4px 14px rgba(11,36,71,.08);padding:14px;display:flex;flex-direction:column;justify-content:space-between;font:700 18px var(--body)}
+#screen .tile i{font-style:normal;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#e4f3fd;font-size:18px}
+#screen .kate{margin-top:auto;border-radius:999px;background:#e4eef8;padding:13px 18px;font:500 17px var(--body);color:#5a7392}
+.swap{transition:opacity .3s}
+.swap.out{opacity:0}
+#notif{position:absolute;left:12px;right:12px;top:40px;border-radius:20px;padding:14px 16px;background:#0b4a8f;color:#fff;z-index:2;
+  box-shadow:0 14px 34px rgba(11,36,71,.35);transform:translateY(-140%);transition:transform .8s cubic-bezier(.3,1.4,.4,1)}
+#notif small{display:block;font:700 13px var(--body);letter-spacing:2px;color:var(--sky)}
+#notif b{display:block;font:700 19px var(--body);margin-top:3px}
+#notif.show{transform:none}
+#phoneWrap{position:absolute;left:0;top:0;width:1920px;height:1080px}
+#phoneLab{left:250px;width:380px;top:940px;text-align:center;font:600 22px var(--body);color:var(--muted)}
+#phoneLab b{color:var(--paper)}
+
+#r1{left:760px;top:186px;width:1040px;transition:opacity .8s var(--ease),transform .8s var(--ease)}
+#stage[data-step="4"] #r1.on{animation:r1dim 4.2s var(--ease) forwards}
+@keyframes r1dim{0%{opacity:0}12%{opacity:1}75%{opacity:1}100%{opacity:.38}}
+#r1 h2,#r2 h2{font-size:62px;margin-top:14px}
+#r1 ul{list-style:none;margin-top:26px;display:flex;flex-direction:column;gap:14px}
+#r1 li{font:500 28px var(--body);color:var(--muted);display:flex;gap:16px;align-items:center}
+#r1 li i{font-style:normal;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(0,174,239,.18);color:var(--cyan);font-size:20px}
+#r2{left:760px;top:600px;width:1040px}
+#nextCard{margin-top:26px;display:flex;align-items:center;gap:24px;padding:20px 28px;border-radius:24px;
+  background:linear-gradient(100deg,rgba(0,174,239,.28),rgba(0,174,239,.06));border:1.5px solid rgba(0,174,239,.6);
+  box-shadow:0 0 50px rgba(0,174,239,.25)}
+#nextCard .lbl{font:700 16px var(--body);letter-spacing:3px;color:var(--sky)}
+#nextCard b{display:block;font:700 32px var(--display);letter-spacing:-.5px;margin-top:2px}
+#nextCard .src{margin-left:auto;text-align:right;font:500 20px var(--body);color:var(--muted)}
+#nextCard .pulse{width:18px;height:18px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 0 rgba(0,174,239,.7);animation:beacon 1.8s infinite;flex:none}
+@keyframes beacon{70%{box-shadow:0 0 0 22px rgba(0,174,239,0)}100%{box-shadow:0 0 0 0 rgba(0,174,239,0)}}
+
+
+/* ============ slide 4: how we predict ============ */
+#howLab{left:130px;top:96px}
+#howT{left:128px;top:130px;font-size:68px}
+#how{position:absolute;left:128px;top:270px;width:1664px;display:flex;align-items:stretch;gap:0}
+#how .ov{position:relative}
+.hc{flex:1;border-radius:28px;padding:30px 30px 26px;background:rgba(3,27,66,.6);border:1.5px solid rgba(180,205,230,.25);display:flex;flex-direction:column;gap:22px}
+.harrow{width:64px;display:grid;place-items:center;font:800 40px var(--display);color:var(--cyan)}
+.hh{display:flex;align-items:center;gap:16px}
+.hh i{font-style:normal;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:28px;color:#fff;
+  background:radial-gradient(circle at 35% 30%,#5fd6ff,var(--cyan) 45%,#0b4a8f);box-shadow:0 0 30px rgba(0,174,239,.4)}
+.hh b{font:800 44px var(--display);letter-spacing:-1px}
+.hc small{display:block;font:700 15px var(--body);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+.hc p{font:500 25px/1.3 var(--body);padding:6px 0 6px 36px;position:relative}
+.hr1 small{color:var(--muted)}
+.hr1 p{color:var(--muted)}
+.hr1 p::before{content:"✓";position:absolute;left:0;top:6px;color:var(--muted);font-weight:800}
+.hr2{border-radius:18px;padding:16px 18px;margin-top:auto;background:linear-gradient(100deg,rgba(0,174,239,.3),rgba(0,174,239,.08));
+  border:1.5px solid rgba(0,174,239,.65);box-shadow:0 0 40px rgba(0,174,239,.2);
+  opacity:0;transform:translateY(20px) scale(.97);transition:opacity .6s var(--ease),transform .8s cubic-bezier(.3,1.4,.4,1)}
+.hc.on .hr2{opacity:1;transform:none;transition-delay:calc(1.9s + var(--k) * .35s)}
+.hr2 small{color:var(--sky)}
+.hr2 p{color:var(--paper);font-weight:600}
+.hr2 p::before{content:"+";position:absolute;left:2px;top:3px;color:var(--cyan);font:800 28px var(--display)}
+#howTag{left:0;width:1920px;top:950px;text-align:center;font:600 34px var(--body)}
+
+/* ============ slide 3: the ecosystem ============ */
+#t3{left:128px;top:92px;font-size:66px}
+#t3sub{left:130px;top:186px;font:500 30px var(--body);color:var(--muted)}
+.srcc{position:absolute;left:128px;width:430px;height:96px;border-radius:22px;padding:0 22px;display:flex;align-items:center;gap:18px;
+  background:rgba(6,48,106,.85);border:1.5px solid rgba(180,205,230,.3);transition:opacity .55s var(--ease),transform .8s var(--ease),border-color .6s,box-shadow .6s}
+.srcc .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:rgba(180,205,230,.14);font-size:24px;flex:none}
+.srcc .tx{display:flex;flex-direction:column;line-height:1.2}
+.srcc .tx b{font:700 23px var(--body)}
+.srcc .tx span{font:500 18px var(--body);color:var(--muted)}
+.tog{margin-left:auto;width:60px;height:34px;border-radius:999px;background:rgba(180,205,230,.25);position:relative;flex:none;transition:background .4s}
+.tog::after{content:"";position:absolute;left:4px;top:4px;width:26px;height:26px;border-radius:50%;background:#fff;transition:transform .4s cubic-bezier(.3,1.5,.4,1)}
+#stage[data-step="6"] .srcc .tog,#stage[data-step="7"] .srcc .tog{background:var(--cyan);transition-delay:var(--t)}
+#stage[data-step="6"] .srcc .tog::after,#stage[data-step="7"] .srcc .tog::after{transform:translateX(26px);transition-delay:var(--t)}
+#stage[data-step="6"] .srcc,#stage[data-step="7"] .srcc{border-color:rgba(0,174,239,.65);box-shadow:0 0 30px rgba(0,174,239,.15)}
+#srcLab{left:130px;top:282px;font:700 18px var(--body);letter-spacing:3px;text-transform:uppercase;color:var(--sky)}
+
+#hub{position:absolute;left:930px;top:575px;width:230px;height:230px;margin:-115px 0 0 -115px;border-radius:50%;
+  display:grid;place-items:center;text-align:center;
+  background:radial-gradient(circle at 35% 30%,#5fd6ff 0%,var(--cyan) 38%,#0b4a8f 100%);
+  box-shadow:0 0 90px rgba(0,174,239,.55),inset 0 -12px 30px rgba(0,0,0,.25);
+  transform:scale(0) rotate(-30deg);opacity:0;transition:transform 1s cubic-bezier(.3,1.6,.4,1),opacity .4s}
+#hub.on{transform:none;opacity:1;transition-delay:.2s}
+#hub b{display:block;font:800 68px/1 var(--display);color:#fff;letter-spacing:-1px}
+#hub small{display:block;font:700 16px var(--body);color:#e6f8ff;letter-spacing:2px;text-transform:uppercase;margin-top:8px;line-height:1.3}
+#hub::before,#hub::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);opacity:0}
+#hub.on::before{animation:pulse 2.6s ease-out 1.2s infinite}
+#hub.on::after{animation:pulse 2.6s ease-out 2.5s infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.7);opacity:0}}
+
+#journey{left:1290px;top:290px;width:502px;border-radius:28px;padding:22px 24px 14px;
+  background:rgba(238,246,253,.97);color:#0b2447;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+#journey .hd{display:flex;align-items:center;gap:16px;padding-bottom:16px;border-bottom:1.5px solid #dbe7f3}
+#journey .hd .av{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font:800 28px var(--display);color:#fff;background:linear-gradient(135deg,#0b4a8f,#00AEEF)}
+#journey .hd b{display:block;font:800 26px var(--display);letter-spacing:-.5px}
+#journey .hd span{font:600 18px var(--body);color:#0b6fb3}
+.step{display:flex;align-items:center;gap:16px;height:84px;border-bottom:1.5px solid #e6eef6;
+  opacity:0;transform:translateX(30px);transition:opacity .5s var(--ease),transform .7s var(--ease)}
+.step:last-child{border-bottom:none}
+#journey.on .step{opacity:1;transform:none;transition-delay:calc(1.4s + var(--i) * .35s)}
+.step .ck{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font:800 17px var(--body);
+  border:2px solid #b8cde2;color:transparent;transition:all .4s}
+#journey.on .step .ck{background:var(--cyan);border-color:var(--cyan);color:#fff;transition-delay:calc(1.75s + var(--i) * .35s)}
+.step .st{display:flex;flex-direction:column;line-height:1.25}
+.step .st b{font:700 21px var(--body)}
+.step .st span{font:600 16px var(--body);color:#5a7392}
+
+#win{left:128px;top:884px;width:1664px;display:flex;gap:20px}
+.wc{flex:1;border-radius:22px;padding:18px 24px;background:rgba(3,27,66,.7);border:1.5px solid rgba(0,174,239,.45);
+  opacity:0;transform:translateY(20px);transition:opacity .5s,transform .7s var(--ease)}
+#win.on .wc{opacity:1;transform:none;transition-delay:calc(var(--i) * .25s)}
+.wc small{display:block;font:700 16px var(--body);letter-spacing:3px;text-transform:uppercase;color:var(--cyan)}
+.wc b{display:block;font:600 26px var(--body);margin-top:4px}
+#foot{left:128px;top:1034px;font:500 16px var(--body);color:rgba(180,205,230,.6)}
+#stage[data-step="7"] #foot{opacity:0}
+
+#flows path{stroke:rgba(0,174,239,.55);stroke-width:2.5}
+#flowDots{opacity:0;transition:opacity .4s}
+#stage[data-step="6"] #flowDots,#stage[data-step="7"] #flowDots{opacity:1;transition:opacity .8s 2s}
+#flowDots circle{fill:#c8f0ff}
+
+
+/* ============ slide 5: Juliette's life ============ */
+#lifeWrap,#lifeWrap.on{left:0;top:0;width:1920px;height:1080px;transform:none}
+#world{position:absolute;left:0;top:0;width:8400px;height:1080px;transform-origin:0 0;transition:transform 1.6s cubic-bezier(.65,0,.25,1)}
+#lifeSvg{position:absolute;left:0;top:0;overflow:visible}
+#lifePath{fill:none;stroke:url(#lifegrad);stroke-width:6;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:1;transition:stroke-dashoffset 1.6s cubic-bezier(.65,0,.25,1)}
+#legacy{fill:none;stroke:var(--sky);stroke-width:4;stroke-linecap:round;stroke-dasharray:2 16;opacity:0;transition:opacity 1.4s .4s}
+#legacy.on{opacity:.9}
+.lc{position:absolute;width:0;height:0;transition:opacity .9s}
+.lc.fut{opacity:0}.lc.past{opacity:.32}.lc.cur,.lc.all{opacity:1}
+.lc .dot{position:absolute;left:-12px;top:-12px;width:24px;height:24px;border-radius:50%;background:var(--paper);box-shadow:0 0 0 6px rgba(0,174,239,.25),0 0 24px rgba(0,174,239,.6)}
+.lc .age{position:absolute;left:0;bottom:205px;transform:translateX(-50%);font:800 180px/1 var(--display);letter-spacing:-6px;color:rgba(255,255,255,.09);white-space:nowrap;transition:color 1s}
+.lc.cur .age{color:rgba(0,174,239,.32)}
+.lc .ttl{position:absolute;left:0;bottom:122px;transform:translateX(-50%);font:750 62px var(--display);letter-spacing:-1.5px;white-space:nowrap}
+.lc .ln{position:absolute;left:0;bottom:74px;transform:translateX(-50%);font:500 28px var(--body);color:var(--muted);white-space:nowrap;transition:opacity .6s}
+.lc.past .ln,.lc.all .ln,.lc.past .age{opacity:0}
+.lc.cur .ttl,.lc.cur .ln{animation:rise .9s var(--ease) .7s both}
+@keyframes rise{from{opacity:0;transform:translate(-50%,24px)}to{opacity:1;transform:translate(-50%,0)}}
+.lc .chips{position:absolute;left:0;top:84px;transform:translateX(-50%);width:700px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.chipx{font:600 22px var(--body);padding:10px 18px;border-radius:999px;background:rgba(6,48,106,.92);border:1.5px solid rgba(0,174,239,.55);white-space:nowrap;
+  opacity:0;transform:translateY(16px) scale(.9);transition:opacity .5s,transform .6s cubic-bezier(.3,1.5,.4,1)}
+.chipx b{color:var(--cyan);margin-right:6px}
+.lc.cur .chipx,.lc.past .chipx,.lc.all .chipx{opacity:1;transform:none}
+.lc.cur .chipx{transition-delay:calc(1.3s + var(--i) * .15s)}
+.lc.dark .dot{background:#8aa3bf;box-shadow:none}
+#jul{position:absolute;left:0;top:0;width:100px;height:100px;margin:-50px 0 0 -50px;transition:transform 1.6s cubic-bezier(.65,0,.25,1)}
+#jul .face,#jul .star{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;transition:opacity 1.2s,transform 1.4s var(--ease)}
+#jul .face{font:800 46px var(--display);color:var(--deep);background:linear-gradient(135deg,#fff,#bfe8ff);box-shadow:0 0 0 7px rgba(255,255,255,.18),0 16px 40px rgba(0,0,0,.45)}
+#jul .star{font-size:56px;color:var(--sun);opacity:0;text-shadow:0 0 30px rgba(242,181,68,.8)}
+#jul.ill .face{box-shadow:0 0 0 7px rgba(242,181,68,.5),0 0 40px rgba(242,181,68,.6);animation:ill 1.8s ease-in-out infinite}
+@keyframes ill{50%{box-shadow:0 0 0 14px rgba(242,181,68,.15),0 0 40px rgba(242,181,68,.3)}}
+#jul.gone .face{opacity:0;transform:scale(.6)}
+#jul.gone .star{opacity:1;transform:translateY(-40px)}
+#fam{position:absolute;left:0;top:0;display:flex;align-items:flex-end;gap:10px;transform:translate(-50%,-50%);opacity:0;transition:opacity 1s .8s}
+#fam.on{opacity:1}
+#fam i{font-style:normal;width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font:800 32px var(--display);color:var(--deep);background:linear-gradient(135deg,#fff,#9fe1ff);box-shadow:0 12px 30px rgba(0,0,0,.4)}
+#fam i.k{width:60px;height:60px;font-size:26px}
+#fam i.g{width:46px;height:46px;font-size:20px}
+#lifeHud{left:128px;top:96px}
+#lifeHud b{display:block;font:750 56px var(--display);letter-spacing:-1.5px;margin-top:6px}
+#lifeEnd{left:0;width:1920px;top:150px;text-align:center;font-size:92px}
+#stage[data-step="13"] .a3{opacity:.3}
+#stage[data-step="15"] .a1{opacity:.12}
+#stage[data-step="15"] .a2{opacity:.05}
+#stage[data-step="17"] .a2{opacity:.45}
+
+
+/* ============ slide 7: close ============ */
+#closeWrap,#closeWrap.on{left:0;top:0;width:1920px;height:1080px}
+#closeWrap{transform:scale(.9)}
+#closeWrap.on{transform:none;transition:opacity 1s var(--ease),transform 1.4s var(--ease)}
+#logo{position:absolute;left:0;width:1920px;top:250px;text-align:center;font:800 150px/1 var(--display);letter-spacing:-5px;
+  text-shadow:0 0 60px rgba(0,174,239,.45)}
+#logo span{color:var(--cyan)}
+#logo em{font-style:normal;color:var(--cyan)}
+#orbit{position:absolute;left:960px;top:325px;width:0;height:0}
+#orbit i{position:absolute;left:0;top:0;width:18px;height:18px;border-radius:50%;background:var(--paper);
+  box-shadow:0 0 0 5px rgba(0,174,239,.25),0 0 20px rgba(0,174,239,.7);
+  offset-path:path("M -620 0 A 620 120 0 1 0 620 0 A 620 120 0 1 0 -620 0");offset-rotate:0deg;animation:orbit 36s linear infinite}
+#orbit i:nth-child(2){animation-delay:-5.14s}
+#orbit i:nth-child(3){animation-delay:-10.28s}
+#orbit i:nth-child(4){animation-delay:-15.42s}
+#orbit i:nth-child(5){animation-delay:-20.56s}
+#orbit i:nth-child(6){animation-delay:-25.7s}
+#orbit i:nth-child(7){animation-delay:-30.84s;background:var(--sun);box-shadow:0 0 20px rgba(242,181,68,.8)}
+@keyframes orbit{from{offset-distance:0%}to{offset-distance:100%}}
+#closeT{left:0;width:1920px;top:470px;text-align:center;font-size:96px}
+#closeWin{left:0;width:1920px;top:660px;display:flex;justify-content:center;gap:24px}
+#closeWin span{font:500 28px var(--body);color:var(--muted);padding:14px 26px;border-radius:999px;border:1.5px solid rgba(0,174,239,.5);background:rgba(3,27,66,.6)}
+#closeWin b{color:var(--cyan);margin-right:10px;font-weight:700}
+#closeQ{left:0;width:1920px;top:840px;text-align:center;font:600 40px var(--display);letter-spacing:-.5px}
+#closeQ b{color:var(--paper)}
+#closeQ small{display:block;margin-top:14px;font:500 22px var(--body);color:rgba(180,205,230,.7);letter-spacing:.5px}
+#stage[data-step="18"] .a2{opacity:.45}
+#stage[data-step="18"] #mark{opacity:0}
+
+/* chrome */
+#mark{position:absolute;right:128px;top:62px;font:800 22px var(--display);letter-spacing:1px;color:rgba(238,246,253,.6)}
+#mark i{font-style:normal;color:var(--cyan)}
+#counter{position:absolute;right:128px;bottom:40px;display:flex;gap:8px;align-items:center;font:600 16px var(--body);color:rgba(180,205,230,.6);transition:opacity .5s}
+#counter .pip{width:12px;height:4px;border-radius:2px;background:rgba(180,205,230,.25);transition:background .5s}
+#counter .pip.on{background:var(--cyan)}
+#stage[data-step="17"] #counter,#stage[data-step="18"] #counter{opacity:0}
+
+#notes{position:fixed;left:0;right:0;bottom:0;padding:18px 28px 22px;background:rgba(2,18,48,.95);border-top:1px solid #1f4a80;
+  font:400 19px/1.5 var(--body);color:var(--paper);transform:translateY(100%);transition:transform .4s var(--ease);z-index:10}
+#notes.show{transform:none}
+#notes .meta{font:600 14px var(--body);letter-spacing:1.5px;text-transform:uppercase;color:var(--cyan);margin-bottom:6px}
+#hint{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);white-space:nowrap;font:500 15px var(--body);color:rgba(180,205,230,.75);
+  background:rgba(2,18,48,.85);padding:8px 16px;border-radius:999px;transition:opacity 1s;z-index:9}
+#hint.hide{opacity:0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="stage" data-step="0">
+  <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+  <div class="grid"></div>
+
+  <!-- ================= SLIDE 0 · the challenge ================= -->
+  <div id="askLab" class="ov eyebrow" data-steps="0 1">The KBC challenge · we were asked</div>
+  <h1 id="q0" class="ov split" data-steps="0 1">How can KBC help customers achieve important life and business goals <span class="hl">before they realise they need help?</span></h1>
+  <svg class="layer" viewBox="0 0 1920 1080" aria-hidden="true">
+    <path id="vline" class="draw" data-steps="1" pathLength="1" style="--d:.5s" d="M360,660 L1560,660"/>
+  </svg>
+  <div id="verbs"></div>
+  <div id="ctrl" class="ov" data-steps="1" style="--d:2.2s">trusted · transparent · customer in control · scalable to millions</div>
+
+  <!-- ================= SLIDE 1 · life comes in chapters ================= -->
+  <h1 id="t1" class="ov split" data-steps="2">Life doesn't come in products.<br><span class="accent">It comes in chapters.</span></h1>
+  <svg class="layer" viewBox="0 0 1920 1080" aria-hidden="true">
+    <defs><linearGradient id="tlgrad" x1="0" x2="1"><stop offset="0" stop-color="#7fd6ff" stop-opacity=".4"/><stop offset=".6" stop-color="#00AEEF"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
+    <path id="timeline" class="draw" data-steps="2 3" pathLength="1" style="--d:.5s"
+      d="M150,640 C470,560 720,720 1000,640 S1520,560 1770,630"/>
+  </svg>
+  <div id="chapters"></div>
+  <div id="help" style="display:none"></div>
+  <div id="walker"><div class="av">J</div><span>Juliette</span></div>
+  <h1 id="peace" class="ov split" data-steps="3">Customers don't want more options.<br><span class="accent">They want peace of mind.</span></h1>
+  <div id="peaceSub" class="ov" data-steps="3" style="--d:1.2s">“KBC, just take care of it.” <b>So KBC has to be one chapter ahead.</b></div>
+  <div id="cap1" class="ov" data-steps="x" style="--d:2.2s">Today, customers often have to <b>recognise the need, compare options and coordinate providers</b> <b class="warm">themselves.</b></div>
+
+  <!-- ================= SLIDE 2 · round 1 -> round 2 ================= -->
+  <div id="phoneWrap" class="ov" data-steps="4">
+    <div id="phone"><div id="screen">
+      <div class="bar">9:41</div>
+      <div id="notif"><small>YOUR NEXT CHAPTER</small><b>Going freelance? Set it up →</b></div>
+      <div class="swap" id="sw1"><div class="hello" id="hello">Hi Lotte</div></div>
+      <div class="chip swap" id="pchip">STUDENT</div>
+      <div class="hero swap" id="hero"><b id="heroB">Student budget</b><span id="heroS">this week</span></div>
+      <div class="tiles swap" id="tiles"></div>
+      <div class="kate">Ask Kate…</div>
+    </div></div>
+  </div>
+  <div id="phoneLab" class="ov" data-steps="4" style="--d:.3s"><b>Round 1</b> · KBC Adaptive Home</div>
+
+  <div id="r1" class="ov" data-steps="4" style="--d:.2s">
+    <div class="eyebrow">Round 1 · 30 September</div>
+    <h2 class="split">We taught the app to read the chapter you're in.</h2>
+    <ul>
+      <li><i>◎</i>A persona mix from your own transactions</li>
+      <li><i>▦</i>A home screen that adapts to your life</li>
+      <li><i>✓</i>Kate proposes, you confirm</li>
+    </ul>
+  </div>
+  <div id="r2" class="ov" data-steps="4" style="--d:3.4s">
+    <div class="eyebrow">Round 2 · today</div>
+    <h2 class="split">Now KBC sees the <span class="accent">next chapter</span> coming.</h2>
+    <div id="nextCard"><div class="pulse"></div><div><div class="lbl">NEXT CHAPTER · JULIETTE, 26</div><b>Freelancer, in about 3 months</b></div><div class="src">from signals Juliette<br>chose to share</div></div>
+  </div>
+
+
+  <!-- ================= SLIDE 4 · how we predict, built on round 1 ================= -->
+  <div id="howLab" class="ov eyebrow" data-steps="5">Built on round 1</div>
+  <h1 id="howT" class="ov split" data-steps="5">How KBC sees <span class="accent">the next chapter.</span></h1>
+  <div id="how">
+    <div class="hc ov" data-steps="5" style="--d:.5s;--k:0">
+      <div class="hh"><i>◉</i><b>Signals</b></div>
+      <div class="hr1"><small>Round 1 · built</small><p>Transactions → life events</p><p>What you tell Kate</p></div>
+      <div class="hr2"><small>Round 2 · new</small><p>Partner signals, with consent</p></div>
+    </div>
+    <div class="harrow ov" data-steps="5" style="--d:.8s">→</div>
+    <div class="hc ov" data-steps="5" style="--d:.7s;--k:1">
+      <div class="hh"><i>◎</i><b>Patterns</b></div>
+      <div class="hr1"><small>Round 1 · built</small><p>Persona mix, with evidence</p></div>
+      <div class="hr2"><small>Round 2 · new</small><p>Signals combined → next chapter + confidence</p><p>Rules today, a trained model tomorrow</p></div>
+    </div>
+    <div class="harrow ov" data-steps="5" style="--d:1s">→</div>
+    <div class="hc ov" data-steps="5" style="--d:.9s;--k:2">
+      <div class="hh"><i>✓</i><b>Trust</b></div>
+      <div class="hr1"><small>Round 1 · built</small><p>Kate proposes, you confirm</p><p>“Why am I seeing this?”</p><p>Feedback re-ranks instantly</p></div>
+      <div class="hr2"><small>Round 2 · new</small><p>The surer KBC is, the more it prepares</p></div>
+    </div>
+  </div>
+  <div id="howTag" class="ov" data-steps="5" style="--d:3.4s">We're not starting from zero. <span class="accent">We're starting from round 1.</span></div>
+
+  <!-- ================= SLIDE 3 · the ecosystem ================= -->
+  <h1 id="t3" class="ov split" data-steps="6 7">Many signals in. <span class="accent">One plan out.</span></h1>
+
+  <svg class="layer" viewBox="0 0 1920 1080" aria-hidden="true">
+    <g id="flows"></g>
+    <g id="flowDots"></g>
+  </svg>
+
+  <div id="srcLab" class="ov" data-steps="6 7" style="--d:.5s">Signals · Juliette decides</div>
+  <div id="sources"></div>
+  <div id="hub" data-steps="6 7"><div><b>KBC</b><small>next-chapter<br>engine</small></div></div>
+
+  <div id="journey" class="ov" data-steps="6 7" style="--d:1s">
+    <div class="hd"><div class="av">J</div><div><b>Juliette, 26</b><span>Next chapter: freelancer</span></div></div>
+    <div id="steps"></div>
+  </div>
+
+  <div id="win" class="ov" data-steps="7">
+    <div class="wc" style="--i:0"><small>Customer</small><b>Shares signals, gets a plan.</b></div>
+    <div class="wc" style="--i:1"><small>KBC</small><b>Helps before it's too late.</b></div>
+    <div class="wc" style="--i:2"><small>Partners</small><b>The right customer, at the right moment.</b></div>
+  </div>
+  <div id="foot" class="ov" data-steps="6 7" style="--d:2.5s">Illustrative journey · partner names from KBC's ecosystem catalogue</div>
+
+
+  <!-- ================= SLIDE 5 · Juliette's life ================= -->
+  <div id="lifeWrap" class="ov" data-steps="8 9 10 11 12 13 14 15 16 17">
+    <div id="world">
+      <svg id="lifeSvg" width="8400" height="1080" viewBox="0 0 8400 1080" aria-hidden="true">
+        <defs><linearGradient id="lifegrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="6400" y2="0"><stop offset="0" stop-color="#7fd6ff" stop-opacity=".3"/><stop offset=".15" stop-color="#00AEEF"/><stop offset=".85" stop-color="#7fd6ff"/><stop offset="1" stop-color="#ffffff" stop-opacity=".6"/></linearGradient></defs>
+        <path id="lifePath" pathLength="1"/>
+        <path id="legacy"/>
+      </svg>
+      <div id="lifeCh"></div>
+      <div id="fam"><i>P</i><i class="k">K</i><i class="g">G</i></div>
+      <div id="jul"><div class="face">J</div><div class="star">✦</div></div>
+    </div>
+  </div>
+  <div id="lifeHud" class="ov" data-steps="8 9 10 11 12 13 14 15 16" style="--d:.3s"><div class="eyebrow">One life · one ecosystem</div><b>Juliette</b></div>
+  <h1 id="lifeEnd" class="ov split" data-steps="17" style="--d:1.2s">One relationship. Every chapter.<br><span class="accent">And beyond.</span></h1>
+
+  <!-- ================= SLIDE 7 · close ================= -->
+  <div id="closeWrap" class="ov" data-steps="18">
+
+    <div id="logo">IF<span>/</span>ELSE</div>
+  </div>
+  <h1 id="closeT" class="ov split" data-steps="18" style="--d:.9s">KBC. <span class="accent">One chapter ahead.</span></h1>
+  <div id="closeWin" class="ov" data-steps="18" style="--d:1.8s">
+    <span><b>Customers</b> peace of mind</span><span><b>KBC</b> a relationship for life</span><span><b>Partners</b> the right moment</span>
+  </div>
+  <div id="closeQ" class="ov" data-steps="18" style="--d:2.6s"><b>Thank you</b> · Questions?<small>github.com/MVNwashere/IF-ELSE2.0 · Team If/Else</small></div>
+  <div id="mark">IF<i>/</i>ELSE 2.0</div>
+  <div id="counter"><span id="cnum">01 / 07</span></div>
+</div>
+
+<div id="notes"><div class="meta" id="nmeta"></div><div id="ntext"></div></div>
+<div id="hint">→ / space / click: next · ← back · N speaker notes · F fullscreen</div>
+
+<script>
+(() => {
+const stage = document.getElementById('stage');
+const W = 1920, H = 1080, LAST = 18;
+const SLIDE_OF = [1,1,2,2,3,4,5,5,6,6,6,6,6,6,6,6,6,6,7];
+for (let i = 0; i <= LAST; i++) { const d = document.createElement('div'); d.className = 'pip'; document.getElementById('counter').appendChild(d); }
+
+/* ---------- speaker notes (~55 s) ---------- */
+const NOTES = [
+  ['Slide 1 · the challenge · ~6 s', "KBC asked us one question: how can KBC help customers reach their life and business goals, before they realise they need help?"],
+  ['Slide 1 · the challenge · ~6 s', "That means three things: recognise the signal, understand the context, activate KBC and its partners. A win on every side."],
+  ['Slide 2 · the insight · ~5 s', "Our answer starts here. Life doesn't come in products. It comes in chapters."],
+  ['Slide 2 · the insight · ~9 s', "And in every chapter, customers don't want more options. They want peace of mind: 'KBC, just take care of it.' To do that, KBC has to be one chapter ahead."],
+  ['Slide 3 · round 1 → round 2 · ~8 s', "In round one, our app learned to read the chapter you're in. Today, KBC learns to see the next one coming."],
+  ['Slide 4 · how we predict · ~18 s', "So how do we actually predict? We're not starting from zero. Round one already turns transactions into life events, explains every suggestion, and lets Kate propose while you confirm. Round two adds partner signals, shared with consent, and combines them into a next-chapter prediction with a confidence score. The surer KBC is, the more it prepares. Rules today, a trained model tomorrow."],
+  ['Slide 5 · the engine · ~14 s', "Juliette is 26. With her consent, her employer, the enterprise register and her own transactions tell KBC she's about to go freelance. KBC turns that into one plan, with partners like Billit, and Juliette approves every step."],
+  ['Slide 5 · triple win · ~8 s', "Juliette gets peace of mind. KBC earns a relationship for life. Partners meet the right customer at the right moment, paid for outcomes, not clicks."],
+  ['Slide 6 · 19 · ~4 s', "And that's not one moment. That's a whole life. Juliette, 19: her first salary."],
+  ['Slide 6 · 23 · ~2 s', "Her first real job."],
+  ['Slide 6 · 27 · ~3 s', "27: she goes freelance, the chapter you just saw."],
+  ['Slide 6 · 31 · ~3 s', "Her career grows: saving for later, working abroad."],
+  ['Slide 6 · 34 · ~3 s', "A partner, a house, a first child."],
+  ['Slide 6 · 41 · ~4 s', "Then the unexpected. She falls ill, and KBC carries the paperwork."],
+  ['Slide 6 · 67 · ~3 s', "Retirement, and grandchildren."],
+  ['Slide 6 · one day · ~4 s', "(Pause.) And one day, Juliette passes away."],
+  ['Slide 6 · her family · ~7 s', "But her family still needs help, and KBC is there. Because even when Juliette no longer needs KBC, the people she loves still do."],
+  ['Slide 6 · finale · ~4 s', "One relationship. Every chapter. And beyond. This is IF-ELSE 2.0."],
+  ['Slide 7 · close · stays up during questions', "Peace of mind for customers, a relationship for life for KBC, the right moment for partners. KBC, one chapter ahead. Thank you, we'd love your questions."],
+];
+
+/* ---------- split headlines into words ---------- */
+document.querySelectorAll('.split').forEach(h => {
+  let i = 0;
+  const walk = node => [...node.childNodes].forEach(n => {
+    if (n.nodeType === 3) {
+      const frag = document.createDocumentFragment();
+      n.textContent.split(/(\s+)/).forEach(t => {
+        if (!t) return;
+        if (/^\s+$/.test(t)) { frag.appendChild(document.createTextNode(t)); return; }
+        const s = document.createElement('span'); s.className = 'w'; s.style.setProperty('--i', i++); s.textContent = t; frag.appendChild(s);
+      });
+      n.replaceWith(frag);
+    } else if (n.nodeType === 1 && n.tagName !== 'BR') walk(n);
+  });
+  walk(h);
+});
+
+
+/* ---------- slide 0: three verbs of the challenge ---------- */
+[['◉','Recognise','the signal',360],['◎','Understand','the context',760],['✦','Activate','KBC & partners',1160],['✓','Outcome','a triple win',1560]]
+  .forEach(([ic, v, sub, x], i) => {
+    const el = document.createElement('div');
+    el.className = 'verb' + (i === 3 ? ' out' : ''); el.dataset.steps = '1';
+    el.style.left = x + 'px'; el.style.setProperty('--d', (0.6 + i * 0.35) + 's');
+    el.innerHTML = `<div class="c">${ic}</div><div class="t"><b>${v}</b><span>${sub}</span></div>`;
+    document.getElementById('verbs').appendChild(el);
+  });
+
+/* ---------- slide 1: chapters on the timeline ---------- */
+const tl = document.getElementById('timeline');
+const TL_LEN = tl.getTotalLength();
+const at = f => tl.getPointAtLength(TL_LEN * f);
+const CHAPTERS = [
+  ['Student',       'student account', .03],
+  ['First job',     'salary account',  .18],
+  ['First home',    'mortgage',        .34],
+  ['Baby',          'savings plan',    .49],
+  ['Own business',  'business account',.64],
+  ['50+',           'investment plan', .79],
+  ['Retirement',    'pension savings', .96],
+];
+const chEl = document.getElementById('chapters');
+CHAPTERS.forEach(([name, prod, f], i) => {
+  const p = at(f), el = document.createElement('div');
+  el.className = 'chap' + (i === 6 ? ' next' : '');
+  el.dataset.steps = '2 3';
+  el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+  el.style.setProperty('--d', (0.9 + i * 0.2) + 's');
+  el.innerHTML = `<div class="ring"></div><div class="dot"></div><div class="lab"><small>Chapter ${i+1}</small>${name}</div><div class="prod">${prod}</div>`;
+  chEl.appendChild(el);
+});
+const walker = document.getElementById('walker'), help = document.getElementById('help');
+const wk = {u:0, o:0}, hp = {u:0, o:0};
+
+/* ---------- slide 2: the round-1 phone cycles through chapters ---------- */
+const PERSONAS = [
+  {hello:'Hi Lotte', chip:'STUDENT',      hero:['Student budget','this week'],           bg:'linear-gradient(135deg,#00AEEF,#0b6fb3)', tiles:[['⇆','Split bills'],['◎','Savings goal'],['☰','Subscriptions'],['✦','Ask Kate']]},
+  {hello:'Hi Lotte', chip:'YOUNG FAMILY', hero:['Family budget','this month'],           bg:'linear-gradient(135deg,#3a8dde,#0b4a8f)', tiles:[['♥','Childcare'],['◎','Savings for kids'],['☂','Home insurance'],['▤','Upcoming bills']]},
+  {hello:'Hi Sara',  chip:'FREELANCER',   hero:['Tax reserve','set aside this quarter'], bg:'linear-gradient(135deg,#1a9fd6,#06306a)', tiles:[['✉','Invoices'],['⏱','Runway'],['⌂','Pension (self-employed)'],['▤','Upcoming bills']]},
+  {hello:'Hi Jan',   chip:'RETIREE',      hero:['Pension','arrives on the 25th'],        bg:'linear-gradient(135deg,#0b4a8f,#031b42)', tiles:[['⚑','Scam shield'],['▤','Bill calendar'],['☎','Your advisor'],['✦','Ask Kate']]},
+];
+const JUL = {hello:'Hi Juliette', chip:'FIRST JOB', hero:['Salary','arrives on the 28th'], bg:'linear-gradient(135deg,#00AEEF,#0b4a8f)', tiles:[['◎','Savings goal'],['✉','Side invoices'],['⌂','Pension outlook'],['✦','Ask Kate']]};
+let pIdx = 0, pTimer = null, landTimer = null;
+function renderPersona(P, instant) {
+  const parts = ['sw1','pchip','hero','tiles'].map(id => document.getElementById(id));
+  const apply = () => {
+    document.getElementById('hello').textContent = P.hello;
+    document.getElementById('pchip').textContent = P.chip;
+    document.getElementById('heroB').textContent = P.hero[0];
+    document.getElementById('heroS').textContent = P.hero[1];
+    document.getElementById('hero').style.background = P.bg;
+    document.getElementById('tiles').innerHTML = P.tiles.map(([i,t]) => `<div class="tile"><i>${i}</i>${t}</div>`).join('');
+    parts.forEach(e => e.classList.remove('out'));
+  };
+  if (instant) return apply();
+  parts.forEach(e => e.classList.add('out'));
+  setTimeout(apply, 300);
+}
+renderPersona(PERSONAS[0], true);
+function phoneFor(step) {
+  clearInterval(pTimer); clearTimeout(landTimer);
+  document.getElementById('notif').classList.remove('show');
+  if (step !== 4) return;
+  pIdx = 0; renderPersona(PERSONAS[0]);
+  pTimer = setInterval(() => { pIdx++; if (pIdx < PERSONAS.length) renderPersona(PERSONAS[pIdx]); }, 900);
+  landTimer = setTimeout(() => { clearInterval(pTimer); renderPersona(JUL); setTimeout(() => document.getElementById('notif').classList.add('show'), 700); }, 3600);
+}
+
+/* ---------- slide 3: sources, flows, journey ---------- */
+const SOURCES = [
+  ['✉', 'Employer HR',           'contract ends in 3 months'],
+  ['§', 'Enterprise register',   'new company number'],
+  ['€', 'KBC transactions',      'first client payments · round 1'],
+  ['☂', 'Social insurance fund', 'self-employed status'],
+];
+const STEPS = [
+  ['Business account opened',        'KBC'],
+  ['Invoicing set up',               'Billit'],
+  ['Tax reserve on autopilot',       'KBC · round 1 feature'],
+  ['Self-employed pension started',  'KBC pension'],
+  ['Income insurance in place',      'KBC insurance'],
+];
+const HUB = {x:930, y:575};
+const srcEl = document.getElementById('sources');
+const svgNS = 'http://www.w3.org/2000/svg';
+const flows = document.getElementById('flows'), dots = document.getElementById('flowDots');
+let flowN = 0;
+function flow(d, delay) {
+  const off = (flowN++ * 0.53) % 2.4;
+  const p = document.createElementNS(svgNS, 'path');
+  p.setAttribute('d', d); p.setAttribute('pathLength', 1); p.setAttribute('class', 'draw'); p.dataset.steps = '6 7';
+  p.style.setProperty('--d', delay + 's'); flows.appendChild(p);
+  for (let k = 0; k < 2; k++) {
+    const c = document.createElementNS(svgNS, 'circle'); c.setAttribute('r', 5);
+    const m = document.createElementNS(svgNS, 'animateMotion');
+    m.setAttribute('dur', '2.4s'); m.setAttribute('repeatCount', 'indefinite'); m.setAttribute('begin', (off + k * 1.2).toFixed(2) + 's');
+    m.setAttribute('path', d);
+    c.appendChild(m); dots.appendChild(c);
+  }
+}
+SOURCES.forEach(([ic, name, sig], i) => {
+  const top = 330 + i * 120, el = document.createElement('div');
+  el.className = 'srcc ov'; el.dataset.steps = '6 7';
+  el.style.top = top + 'px'; el.style.setProperty('--d', (0.4 + i * 0.12) + 's'); el.style.setProperty('--t', (0.9 + i * 0.25) + 's');
+  el.innerHTML = `<div class="ic">${ic}</div><div class="tx"><b>${name}</b><span>${sig}</span></div><div class="tog"></div>`;
+  srcEl.appendChild(el);
+  const y = top + 48;
+  flow(`M558,${y} C720,${y} 760,${HUB.y} ${HUB.x - 115},${HUB.y}`, 1.0 + i * 0.25);
+});
+const stepsEl = document.getElementById('steps');
+STEPS.forEach(([t, tag], i) => {
+  const el = document.createElement('div'); el.className = 'step'; el.style.setProperty('--i', i);
+  el.innerHTML = `<div class="ck">✓</div><div class="st"><b>${t}</b><span>${tag} · approved by Juliette</span></div>`;
+  stepsEl.appendChild(el);
+  const y = 290 + 98 + i * 84 + 42;
+  flow(`M${HUB.x + 115},${HUB.y} C1150,${HUB.y} 1170,${y} 1290,${y}`, 1.5 + i * 0.35);
+});
+
+
+/* ---------- slide 5: Juliette's life, one long timeline the camera follows ---------- */
+const LIFE = [
+  ['19', 'First salary',      'Student jobs, her first own income.',       ['NOWJOBS · student jobs','KBC account','Kate']],
+  ['23', 'First real job',    'Independence, and new responsibilities.',    ['Salary account','Savings goal','Budget with Kate']],
+  ['27', 'Freelancer',        'The salaries stop. The invoices start.',     ['Billit invoicing','Business account','Tax reserve','Self-employed pension']],
+  ['31', 'Growing career',    'Saving for later, working across borders.',  ['Pension savings','Firsty travel eSIM','Travel insurance','Airport Fast Lane']],
+  ['34', 'A home, a family',  'A partner, a house, a first child.',         ['Home loan','Immoscoop','Home insurance','Family insurance']],
+  ['41', 'The unexpected',    'She falls ill. KBC carries the paperwork.',  ['Hospitalisation insurance','KBC Hospital Care','Income insurance','Helena']],
+  ['67', 'Retirement',        'Time for family and grandchildren.',         ['Supplementary pension','Private banker','Inheritance planning']],
+  ['',   'One day',           'Juliette passes away.',                      []],
+  ['',   'Her family',        'Even when Juliette no longer needs KBC, the people she loves still do.', ['Funeral insurance','Life insurance','Inheritance','Digital vault']],
+];
+const LX = k => 960 + k * 760, LY = k => 600 + (k % 2 ? -50 : 50);
+const curveTo = (a, b) => `C${a.x + 380},${a.y} ${b.x - 380},${b.y} ${b.x},${b.y}`;
+const LP = LIFE.map((_, k) => ({x: LX(k), y: LY(k)}));
+const startPt = {x: -400, y: 600};
+let dMain = `M${startPt.x},${startPt.y}`, prevPt = startPt;
+const meas = document.createElementNS(svgNS, 'path'); document.getElementById('lifeSvg').appendChild(meas);
+const lenAt = [];
+for (let k = 0; k <= 7; k++) { dMain += ' ' + curveTo(prevPt, LP[k]); prevPt = LP[k]; meas.setAttribute('d', dMain); lenAt.push(meas.getTotalLength()); }
+meas.remove();
+const lifePath = document.getElementById('lifePath'); lifePath.setAttribute('d', dMain);
+const totalLife = lenAt[7];
+const endPt = {x: LX(8) + 1000, y: 600};
+document.getElementById('legacy').setAttribute('d', `M${LP[7].x},${LP[7].y} ${curveTo(LP[7], LP[8])} ${curveTo(LP[8], endPt)}`);
+const lifeEls = LIFE.map(([age, ttl, ln, chips], k) => {
+  const el = document.createElement('div'); el.className = 'lc fut' + (k === 7 ? ' dark' : '');
+  el.style.left = LP[k].x + 'px'; el.style.top = LP[k].y + 'px';
+  el.innerHTML = `<div class="age">${age}</div><div class="ttl">${ttl}</div><div class="ln">${ln}</div><div class="dot"></div>` +
+    `<div class="chips">${chips.map((c, i) => `<div class="chipx" style="--i:${i}"><b>✓</b>${c}</div>`).join('')}</div>`;
+  document.getElementById('lifeCh').appendChild(el); return el;
+});
+const fam = document.getElementById('fam'); fam.style.left = LP[8].x + 'px'; fam.style.top = (LP[8].y - 20) + 'px';
+const jul = document.getElementById('jul'), world = document.getElementById('world');
+function lifeFor(k) {           // k = -1 (off), 0..8 chapters, 9 = finale
+  const fin = k === 9, ch = Math.min(Math.max(0, k), 8);
+  if (fin) {
+    const sc = 0.235, x0 = 260, x1 = LX(8) + 700;
+    world.style.transform = `translate(${(1920 - (x1 - x0) * sc) / 2 - x0 * sc}px, 470px) scale(${sc})`;
+  } else world.style.transform = `translate(${960 - LX(ch)}px, 0px) scale(1)`;
+  lifePath.style.strokeDashoffset = (1 - lenAt[Math.min(ch, 7)] / totalLife).toFixed(4);
+  document.getElementById('legacy').classList.toggle('on', ch >= 8);
+  lifeEls.forEach((el, i) => { el.className = 'lc ' + (fin ? 'all' : i < ch ? 'past' : i === ch ? 'cur' : 'fut') + (i === 7 ? ' dark' : ''); });
+  const jp = LP[Math.min(ch, 7)];
+  jul.style.transform = `translate(${jp.x}px, ${jp.y}px)`;
+  jul.classList.toggle('ill', ch === 5 && !fin);
+  jul.classList.toggle('gone', ch >= 7);
+  fam.classList.toggle('on', ch >= 8);
+}
+lifeFor(-1);
+
+/* ---------- step control ---------- */
+let cur = -1, stepStart = 0;
+function go(n) {
+  n = Math.max(0, Math.min(LAST, n));
+  if (n === cur) return;
+  cur = n; stage.dataset.step = n;
+  document.querySelectorAll('[data-steps]').forEach(el => el.classList.toggle('on', el.dataset.steps.split(' ').includes(String(n))));
+  phoneFor(n);
+  lifeFor(n >= 8 ? n - 8 : -1);
+  document.getElementById('cnum').textContent = '0' + SLIDE_OF[n] + ' / 07';
+  document.querySelectorAll('#counter .pip').forEach((p, i) => p.classList.toggle('on', i <= n));
+  document.getElementById('nmeta').textContent = NOTES[n][0];
+  document.getElementById('ntext').textContent = NOTES[n][1];
+  history.replaceState(null, '', '#' + (n + 1));
+  stepStart = performance.now();
+}
+
+/* walker + lagging "bank finds out" chip on slide 1 */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(64, now - last); last = now;
+  const on = false && now - stepStart > 500;
+  const wT = on ? .79 : 0, hT = on ? .66 : 0;
+  wk.u += (wT - wk.u) * (1 - Math.exp(-dt / 700));
+  hp.u += (hT - hp.u) * (1 - Math.exp(-dt / 1300));
+  wk.o += ((0) - wk.o) * (1 - Math.exp(-dt / 200));
+  hp.o += ((on && hp.u > .2 ? 1 : 0) - hp.o) * (1 - Math.exp(-dt / 250));
+  const pw = at(Math.max(0.001, wk.u)), ph = at(Math.max(0.001, hp.u));
+  walker.style.transform = `translate(${pw.x}px,${pw.y}px) translate(-50%,-250px)`;
+  walker.style.opacity = wk.o.toFixed(3);
+  help.style.transform = `translate(${ph.x}px,${ph.y}px) translate(-50%,-150px)`;
+  help.style.opacity = hp.o.toFixed(3);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- fit + input ---------- */
+function fit() { const s = Math.min(innerWidth / W, innerHeight / H); stage.style.transform = `translate(-50%,-50%) scale(${s})`; }
+addEventListener('resize', fit); fit();
+addEventListener('keydown', e => {
+  if (['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+  else if (['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(LAST);
+  else if (e.key.toLowerCase() === 'n') document.getElementById('notes').classList.toggle('show');
+  else if (e.key.toLowerCase() === 'f') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
+});
+stage.addEventListener('click', () => go(cur + 1));
+stage.addEventListener('contextmenu', e => { e.preventDefault(); go(cur - 1); });
+setTimeout(() => document.getElementById('hint').classList.add('hide'), 4500);
+
+go(Math.max(0, Math.min(LAST, (parseInt(location.hash.slice(1)) || 1) - 1)));
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
