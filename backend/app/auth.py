@@ -124,7 +124,7 @@ class SlidingWindowLimiter:
 
     def hit(self, key: object) -> float | None:
         """Record a hit and return its token, or None (nothing recorded) if the key is over the limit."""
-        now = time.time()
+        now = time.monotonic()  # immune to wall-clock changes
         with self._lock:
             q = self._hits.get(key)
             if q is None:
@@ -137,6 +137,17 @@ class SlidingWindowLimiter:
             q.append(now)
             self._evict(now)
             return now
+
+    def retry_after(self, key: object) -> int:
+        """Whole seconds until `key` has a free slot again (for the Retry-After header)."""
+        with self._lock:
+            q = self._hits.get(key)
+            if not q or len(q) < self.limit:
+                return 1
+            return max(1, int(q[0] + self.window_s - time.monotonic()) + 1)
+
+    def too_many(self, key: object, detail: str) -> HTTPException:
+        return HTTPException(status_code=429, detail=detail, headers={"Retry-After": str(self.retry_after(key))})
 
     def undo(self, key: object, token: float) -> None:
         with self._lock:
@@ -170,7 +181,7 @@ def authenticate(conn, username: str, password: str, ip: str):
         if token is None:
             for lim, k, t in taken:
                 lim.undo(k, t)
-            raise HTTPException(status_code=429, detail="Too many login attempts, try again later")
+            raise limiter.too_many(key, "Too many login attempts, try again later")
         taken.append((limiter, key, token))
     row = db.get_user(conn, username)
     ok = verify_password(password, row["password_hash"] if row else _DUMMY_HASH)

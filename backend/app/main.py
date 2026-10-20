@@ -148,7 +148,7 @@ _kate_limiter = auth.SlidingWindowLimiter(KATE_MAX_PER_MINUTE, 60)
 def _kate_rate_limit(user_id: int) -> None:
     # atomic check-and-count, before any of Kate's work
     if _kate_limiter.hit(user_id) is None:
-        raise HTTPException(status_code=429, detail="Kate needs a breather, try again in a minute")
+        raise _kate_limiter.too_many(user_id, "Kate needs a breather, try again in a minute")
 
 
 def _as_of_param(as_of: dt.date | None = Query(default=None)) -> dt.date | None:

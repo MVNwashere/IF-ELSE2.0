@@ -132,3 +132,35 @@ def test_restricted_transactions_do_not_change_the_profile(conn):
     assert after.spending.top_categories == before.spending.top_categories
     assert after.spending.top_merchants == before.spending.top_merchants
     assert all(tid not in c.evidence.transaction_ids for c in after.changes)
+
+
+def test_rate_limited_responses_carry_retry_after(conn, fresh_limiters):
+    for _ in range(auth.LOGIN_MAX_ATTEMPTS):
+        with pytest.raises(HTTPException):
+            auth.authenticate(conn, "state_stable", "wrong", "10.0.0.5")
+    with pytest.raises(HTTPException) as e:
+        auth.authenticate(conn, "state_stable", "wrong", "10.0.0.5")
+    assert e.value.status_code == 429
+    assert 1 <= int(e.value.headers["Retry-After"]) <= 15 * 60 + 1
+
+
+def test_kate_limit_is_exact_under_concurrency_and_sets_retry_after(monkeypatch):
+    from app import main
+    monkeypatch.setattr(main, "_kate_limiter", auth.SlidingWindowLimiter(10, 60))
+    barrier = threading.Barrier(50)
+    outcomes = []
+
+    def worker():
+        barrier.wait()
+        try:
+            main._kate_rate_limit(42)
+            outcomes.append(200)
+        except HTTPException as e:
+            outcomes.append(e.headers["Retry-After"] and e.status_code)
+
+    threads = [threading.Thread(target=worker) for _ in range(50)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert outcomes.count(200) == 10 and outcomes.count(429) == 40
