@@ -75,7 +75,10 @@ def main() -> None:
     from app import main as app_main
 
     with TestClient(app_main.app) as c:
-        assert c.post("/api/login", json={"username": args.user, "password": os.environ["DEMO_PASSWORD"]}).status_code == 200
+        # not an assert: under python -O the login request itself would be stripped
+        login = c.post("/api/login", json={"username": args.user, "password": os.environ["DEMO_PASSWORD"]})
+        if login.status_code != 200:
+            raise SystemExit(f"Login failed for {args.user!r}: HTTP {login.status_code}")
         c.put("/api/me/profile/permissions/kate_ai", json={"allowed": args.ai})
         passed, times, sources = 0, [], []
         for message, must, must_not in CASES:

@@ -5,6 +5,7 @@ import datetime as dt
 import hashlib
 import json
 
+from .. import db
 from . import normalization, storage
 from .inference import InferenceProvider, RuleInference, conditions
 from .metrics import calculate
@@ -24,12 +25,16 @@ def get_state(conn, customer_id: int, as_of: dt.date, *, balance_reference: dt.d
     # writer; reserve it before reading so concurrent rebuilds cannot publish mixed sources.
     if not conn.in_transaction:
         conn.execute("BEGIN IMMEDIATE")
+    # Each distinct date persists a snapshot. The routes clamp as_of; here, too, only dates in
+    # [first transaction, balance_reference] are cached, so no caller can grow the table without bound.
+    rng = db.date_range(conn, customer_id)
+    persist = rng is None or rng[0] <= as_of <= balance_reference
     provider = provider or RuleInference()
     raw = normalization.load(conn, customer_id, as_of, balance_reference)
     source = {"observations": raw.model_dump(mode="json"), "balance_reference": balance_reference.isoformat()}
     fingerprint = hashlib.sha256(json.dumps(source, sort_keys=True).encode()).hexdigest()
     version = f"{ALGORITHM_VERSION}:{provider.version}"
-    existing = storage.cached(conn, customer_id, as_of.isoformat(), version, fingerprint)
+    existing = persist and storage.cached(conn, customer_id, as_of.isoformat(), version, fingerprint)
     if existing:
         return existing
     signals = normalization.normalize(raw)
@@ -58,7 +63,8 @@ def get_state(conn, customer_id: int, as_of: dt.date, *, balance_reference: dt.d
                           changes=changes, events=events, inferences=[], risks=[], opportunities=[], **metrics)
     state.inferences = provider.infer(state)
     state.risks, state.opportunities = conditions(state)
-    storage.save(conn, state, version, fingerprint)
+    if persist:
+        storage.save(conn, state, version, fingerprint)
     return state
 
 

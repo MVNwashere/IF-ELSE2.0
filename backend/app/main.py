@@ -60,7 +60,7 @@ def ensure_db() -> None:
         return
     from synth.generate import build  # lazy: heavy import, only on first start
 
-    build(db.DB_PATH, n=SYNTH_N, seed=SYNTH_SEED)
+    build(db.DB_PATH, n=SYNTH_N, seed=SYNTH_SEED, verbose=False)  # quiet: no login hints in startup logs
 
 
 @asynccontextmanager

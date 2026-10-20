@@ -140,8 +140,10 @@ snapshots under concurrent writers. The caller commits or rolls back. This inten
 small SQLite application's scale; high-volume ingestion would need a background recalculation queue.
 
 Snapshots contain the source observations needed for replay/explanation, so a full response is larger
-than a domain projection. They never replace banking records. Historical as-of snapshots are retained;
-rebuilding an identical as-of/version replaces that cache entry instead of appending duplicate events.
+than a domain projection. They never replace banking records. Historical as-of snapshots are retained,
+up to `MAX_SNAPSHOTS_PER_CUSTOMER` per customer (oldest dropped first). Only dates between the first
+transaction and `balance_reference` are cached: the API routes clamp `as_of` to that range, and `get_state`
+computes but never stores a state for a date outside it. Rebuilding an identical as-of/version replaces that cache entry instead of appending duplicate events.
 Patterns and changes have deterministic IDs based on entity, source evidence and detection date, not
 wall-clock generation time. Price and monthly change history is recalculated from retained source
 history; missed recurring payments remain detectable after resumption. Correcting source history can

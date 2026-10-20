@@ -119,6 +119,17 @@ def test_snapshot_dates_before_history_are_clamped(tmp_path, monkeypatch):
     assert a == lo.isoformat()
 
 
+def test_get_state_does_not_persist_out_of_range_dates(conn):
+    def count():
+        return conn.execute("SELECT COUNT(*) FROM customer_state_snapshots WHERE customer_id=?",
+                            (IDS["stable"],)).fetchone()[0]
+    before = count()
+    for year in range(1900, 1950):
+        get_state(conn, IDS["stable"], dt.date(year, 1, 1), balance_reference=TODAY)
+    get_state(conn, IDS["stable"], dt.date(2999, 1, 1), balance_reference=TODAY)
+    assert count() == before
+
+
 def test_restricted_transactions_do_not_change_the_profile(conn):
     cid = IDS["stable"]
     before = get_state(conn, cid, TODAY, balance_reference=TODAY)

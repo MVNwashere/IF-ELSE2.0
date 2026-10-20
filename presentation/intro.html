@@ -637,7 +637,12 @@ SOURCES.forEach(([ic, name, sig], i) => {
 const stepsEl = document.getElementById('steps');
 STEPS.forEach(([t, tag], i) => {
   const el = document.createElement('div'); el.className = 'step'; el.style.setProperty('--i', i);
-  el.innerHTML = `<div class="ck">✓</div><div class="st"><b>${t}</b><span>${tag} · approved by Juliette</span></div>`;
+  // DOM nodes + textContent, not innerHTML: the step texts can never be parsed as markup
+  const ck = document.createElement('div'); ck.className = 'ck'; ck.textContent = '✓';
+  const st = document.createElement('div'); st.className = 'st';
+  const b = document.createElement('b'); b.textContent = t;
+  const span = document.createElement('span'); span.textContent = `${tag} · approved by Juliette`;
+  st.append(b, span); el.append(ck, st);
   stepsEl.appendChild(el);
   const y = 290 + 98 + i * 84 + 42;
   flow(`M${HUB.x + 115},${HUB.y} C1150,${HUB.y} 1170,${y} 1290,${y}`, 1.5 + i * 0.35);
