@@ -57,6 +57,10 @@ Personas who should be able to do **everything in their own app**, for example:
 
 ## Where we come from: IF-ELSE v1 → 2.0
 
+**In short: we are bringing our previous idea (IF-ELSE) into IF-ELSE2.0, but with a new goal.** v1 is not thrown
+away. It becomes the customer-facing part of a larger ecosystem. The new goal (above: intent → impact, KBC takes
+care of everything through a trusted partner network) determines what we build and what we keep.
+
 - **v1** (`C:\Users\mrano\IF-ELSE`, preliminary round, 30 Sept) was a **front-end step for the user**: *KBC
   Adaptive Home*. The home screen adapts to a persona mix inferred from transactions, with an explainable "For You"
   feed, time travel, customisation and the assistant **Kate**. Stack: FastAPI + SQLite (Python 3.12), React + Vite.

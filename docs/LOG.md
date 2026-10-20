@@ -5,6 +5,8 @@ The goal and context are in [CLAUDE.md](../CLAUDE.md).
 
 ## 2026-10-20
 
+- **Decision:** we bring our previous idea (IF-ELSE v1, Adaptive Home) into IF-ELSE2.0 with a new goal. v1
+  becomes the customer-facing part; 2.0 builds the ecosystem engine behind it.
 - **Repo set up** (IF-ELSE2.0): folders `backend/`, `frontend/`, `data/`, `docs/`, `notes/`.
 - **Goal set:** KBC case "From intent to impact". We build the backend ecosystem engine behind the v1 front-end
   (Adaptive Home): intent → journey → vetted partners → measurable outcome, with KBC as the trusted orchestrator.
